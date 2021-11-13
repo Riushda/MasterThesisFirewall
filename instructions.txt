@@ -1,0 +1,29 @@
+# containerlab :
+Pour créer la topo : sudo containerlab deploy --topo firewall.clab.yml
+Pour détruire proprement la topo : sudo containerlab destroy --topo firewall.clab.yml
+
+Pour exécuter une commande sur un node : docker exec --user=root -it clab-firstLab-node + commande (par exemple ping, ...)
+
+Pour accéder au bash d'un client : sudo docker exec --user=root -it clab-firstLab-client /bin/sh
+Pour accéder au bash du firewall : sudo docker exec --user=root -it clab-firstLab-firewall /bin/bash
+
+Pour push une image sur un repo, il y a 3 étapes :
+                                                - sudo docker login --username username
+                                                - sudo docker tag my-image username/my-repo:my-image
+                                                - sudo docker push username/my-repo:my-image
+
+# Mosquitto library : 
+sudo docker exec -it clab-firstLab-client1 mosquitto_sub -h 10.10.4.2 -t '#'
+=> subscribe à tous les topics sur le broker grâce au wildcard #
+
+sudo docker exec -it clab-firstLab-client2 mosquitto_pub -h 10.10.4.2 -t 'hello' -m 'world'
+=> publish 'world' avec le topic 'hello' sur le broker. Json data can also be published instead of strings, par exemple "{\"value1\":20,\"value2\":40}"
+
+Pour l'authentification, publier avec -u user et -P password ou carrément --cafile certificat. A voir si il faut setup qqchose sur le broker pour que ça marche et
+si il faut le faire aussi avec le client pour subscribe. 
+=> pour plus de détail check http://www.steves-internet-guide.com/mosquitto_pub-sub-clients/
+
+# Firewall :
+Pour accéder au terminal du firewall : sudo docker exec --user root -it clab-firstLab-firewall /bin/bash
+pour tout bloquer avec iptables : iptables/ip6tables -P INPUT/FORWARD/OUTPUT DROP
+

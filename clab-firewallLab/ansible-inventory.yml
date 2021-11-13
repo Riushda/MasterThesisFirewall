@@ -1,0 +1,12 @@
+all:
+  children:
+    linux:
+      hosts:
+        clab-firewallLab-broker:
+          ansible_host: 172.20.20.4
+        clab-firewallLab-client1:
+          ansible_host: 172.20.20.2
+        clab-firewallLab-client2:
+          ansible_host: 172.20.20.5
+        clab-firewallLab-firewall:
+          ansible_host: 172.20.20.3
