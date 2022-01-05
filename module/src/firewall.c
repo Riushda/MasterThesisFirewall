@@ -59,11 +59,17 @@ static void netlink_recv_msg(struct sk_buff *skb)
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
     unsigned char buffer[RULE_SIZE];
+    int err;
 
     if (!skb)
         return NF_ACCEPT;
 
-    parse_to_buffer(skb, buffer);
+    err = parse_to_buffer(skb, buffer);
+    if (!err)
+    {
+        return NF_DROP;
+    }
+    
     if (search_item(buffer, table, TABLE_SIZE) != NULL)
     {
         printk(KERN_INFO "firewall: match!\n");

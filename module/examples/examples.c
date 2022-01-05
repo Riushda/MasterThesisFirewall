@@ -1,4 +1,5 @@
-/*struct rule *match;
+/*
+struct rule *match;
     unsigned char buffer[12];
 
     match = (struct rule *)kmalloc(sizeof(struct rule), GFP_KERNEL);
@@ -11,4 +12,5 @@
 
     rule_to_buffer(match, buffer);
     insert_item(buffer, table, TABLE_SIZE);
-    kfree(match);*/
+    kfree(match);
+    */

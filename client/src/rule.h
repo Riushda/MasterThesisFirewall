@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifndef UTILS_H
+#define UTILS_H
+
 struct rule
 {
     __be32 src;
@@ -13,11 +16,10 @@ struct rule
     __be16 dport;
 };
 
-void print_bits(size_t const size, void const *const ptr);
-
 int bitmask(size_t size, int *bitmask);
 
 int parse_ip(unsigned char *str_ip, __be32 *ip);
 
 int parse_port(unsigned char *str_port, __be16 *port);
 
+#endif
