@@ -1,48 +1,58 @@
+#include "htable.h"
 #include <stdio.h>
-#include "utils.h"
-#include "handlers.h"
 
 int main()
 {
-  char line[100];
-  FILE *fp = stdin;
-  int argc;
-  char **argv;
+  /*int value;
+  struct h_table t2;
+  init_table(&t2, 2);
+  insert_pair("test", &value, &t2);*/
 
-  fgets(line, 100, fp);
+  struct h_table t1;
+  init_table(&t1, 3);
+  char *s1 = "abc";
+  char *s2 = "def";
+  char *s3 = "hij";
+  insert_pair(s1, "", &t1);
 
-  argc = count_args(line);
+  //struct pair *p1 = search_pair("test", &t1);
 
-  int *lengths = (int *)malloc(sizeof(int) * argc);
-  if (lengths == NULL)
-  {
-    return -1;
-  }
-  memset(lengths, 0, sizeof(int) * argc);
+  //printf("%s\n", p1->key);
 
-  arg_lengths(line, argc, lengths);
+  //printf("%d\n", t1.c_size);
 
-  argv = (char **)malloc(argc * sizeof(char *));
-  for (int i = 0; i < argc; i++)
-  {
-    argv[i] = (char *)malloc(lengths[i] + 1);
-    if (argv[i] == NULL)
-    {
-      return -1;
-    }
-  }
+  display(&t1);
 
-  arg_values(line, argc, lengths, argv);
+  insert_pair(s2, "", &t1);
 
-  handle_cmd(argv[0], argc, argv);
+  display(&t1);
 
-  free(lengths);
-  for (int i = 0; i < argc; i++)
-  {
-    //printf("%s\n", argv[i]);
-    free(argv[i]);
-  }
-  free(argv);
+  insert_pair(s3, "", &t1);
+
+  display(&t1);
+
+  remove_pair(s1, &t1);
+
+  display(&t1);
+
+  remove_pair(s2, &t1);
+
+  display(&t1);
+
+  //struct pair *p2 = search_pair("test", (struct h_table *)p1->value);
+
+  //printf("%s\n", p2->key);
+
+  remove_pair(s3, &t1);
+
+  display(&t1);
+
+  //p1 = search_pair("test", &t1);
+
+  //printf("%d\n", p1 == NULL);
+
+  destroy_table(&t1);
+  //destroy_table(&t2);
 
   return 0;
 }
