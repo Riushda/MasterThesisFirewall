@@ -1,5 +1,5 @@
 #include <linux/slab.h>
-#include "utils.h"
+#include "constant.h"
 
 #ifndef HTABLE_H
 #define HTABLE_H

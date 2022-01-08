@@ -3,11 +3,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <getopt.h>
+#include "rule.h"
+#include "utils.h"
+#include "netlink.h"
+#include "constant.h"
 
 #ifndef HANDLERS_H
 #define HANDLERS_H
 
-enum R_VALUE
+enum
 {
     NO_HANDLER = -1,
     HANDLED = 1

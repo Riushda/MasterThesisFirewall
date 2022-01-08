@@ -1,11 +1,11 @@
-#include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include "constant.h"
+#include <string.h>
+
 
 #ifndef HTABLE_H
 #define HTABLE_H
-
-#define KEY_SIZE 5
 
 struct pair
 {
@@ -20,20 +20,18 @@ struct h_table
     size_t m_size;            /* max size */
 };
 
-unsigned long hash(unsigned char *str, size_t size);
-
 struct pair *search_pair(unsigned char *key, struct h_table *h_table);
 
 int insert_pair(unsigned char *key, void *value, struct h_table *h_table);
 
-void remove_pair(unsigned char *key, struct h_table *h_table);
+int remove_pair(unsigned char *key, struct h_table *h_table);
 
-void init_table(struct h_table *h_table, size_t m_size);
+int init_table(struct h_table *h_table, size_t m_size);
 
-void resize_table(struct h_table *h_table, short increase);
+int resize_table(struct h_table *h_table, short increase);
 
 void destroy_table(struct h_table *h_table);
 
-void display(struct h_table *h_table);
+void display_table(struct h_table *h_table);
 
 #endif

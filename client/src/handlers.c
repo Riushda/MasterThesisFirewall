@@ -1,9 +1,12 @@
 #include "handlers.h"
 
-int example(int argc, char **argv);
+int add_rule(int argc, char **argv);
+int remove_rule(int argc, char **argv);
 
 handler_t handler_functions[] = {
-    {"example", example}};
+    {"add", add_rule},
+    {"remove", remove_rule},
+    {NULL, NULL}};
 
 int handle_cmd(char *name, int argc, char **argv)
 {
@@ -30,66 +33,124 @@ int handle_cmd(char *name, int argc, char **argv)
     return NO_HANDLER;
 }
 
-void print_usage()
+void add_usage()
 {
-    printf("Usage: rectangle [ap] -l num -b num\n");
+    printf("Usage: add --src [IP] --dst [IP] --sp [PORT] --dp [PORT]\n");
 }
 
-int example(int argc, char **argv)
+int add_rule(int argc, char **argv)
 {
     int opt = 0;
-    int area = -1, perimeter = -1, breadth = -1, length = -1;
+    uint8_t src = -1, dst = -1, sp = -1, dp = -1;
+    struct rule rule;
 
-    //Specifying the expected options
-    //The two options l and b expect numbers as argument
     static struct option long_options[] = {
-        {"area", no_argument, 0, 'a'},
-        {"perimeter", no_argument, 0, 'p'},
-        {"length", required_argument, 0, 'l'},
-        {"breadth", required_argument, 0, 'b'},
-        {0, 0, 0, 0}};
+        {"src", required_argument, 0, 'a'},
+        {"dst", required_argument, 0, 'b'},
+        {"sport", required_argument, 0, 'c'},
+        {"dport", required_argument, 0, 'd'},
+        {NULL, 0, NULL, 0}};
 
     int long_index = 0;
-    while ((opt = getopt_long(argc, argv, "apl:b:",
+    while ((opt = getopt_long(argc, argv, "a:b:c:d:",
                               long_options, &long_index)) != -1)
     {
         switch (opt)
         {
         case 'a':
-            area = 0;
-            break;
-        case 'p':
-            perimeter = 0;
-            break;
-        case 'l':
-            length = atoi(optarg);
+            src = 0;
+            parse_ip(optarg, &rule.src, &rule.not_src);
             break;
         case 'b':
-            breadth = atoi(optarg);
+            dst = 0;
+            parse_ip(optarg, &rule.dst, &rule.not_dst);
+            break;
+        case 'c':
+            sp = 0;
+            parse_port(optarg, &rule.sport, &rule.not_sport);
+            break;
+        case 'd':
+            dp = 0;
+            parse_port(optarg, &rule.dport, &rule.not_dport);
             break;
         default:
-            print_usage();
+            add_usage();
             return -1;
         }
     }
-    if (length == -1 || breadth == -1)
+
+    if (src | dst | sp | dp)
     {
-        print_usage();
+        add_usage();
         return -1;
     }
 
-    // Calculate the area
-    if (area == 0)
+    print_rule(rule);
+    if (send_msg(A_RULE, &rule, sizeof(struct rule)))
     {
-        area = length * breadth;
-        printf("Area: %d\n", area);
+        return -1;
     }
 
-    // Calculate the perimeter
-    if (perimeter == 0)
+    return 0;
+}
+
+void remove_usage()
+{
+    printf("Usage: remove --src [IP] --dst [IP] --sp [PORT] --dp [PORT]\n");
+}
+
+int remove_rule(int argc, char **argv)
+{
+    int opt = 0;
+    uint8_t src = -1, dst = -1, sp = -1, dp = -1;
+    struct rule rule;
+
+    static struct option long_options[] = {
+        {"src", required_argument, 0, 'a'},
+        {"dst", required_argument, 0, 'b'},
+        {"sport", required_argument, 0, 'c'},
+        {"dport", required_argument, 0, 'd'},
+        {NULL, 0, NULL, 0}};
+
+    int long_index = 0;
+    while ((opt = getopt_long(argc, argv, "a:b:c:d:",
+                              long_options, &long_index)) != -1)
     {
-        perimeter = 2 * (length + breadth);
-        printf("Perimeter: %d\n", perimeter);
+        switch (opt)
+        {
+        case 'a':
+            src = 0;
+            parse_ip(optarg, &rule.src, &rule.not_src);
+            break;
+        case 'b':
+            dst = 0;
+            parse_ip(optarg, &rule.dst, &rule.not_dst);
+            break;
+        case 'c':
+            sp = 0;
+            parse_port(optarg, &rule.sport, &rule.not_sport);
+            break;
+        case 'd':
+            dp = 0;
+            parse_port(optarg, &rule.dport, &rule.not_dport);
+            break;
+        default:
+            remove_usage();
+            return -1;
+        }
     }
+
+    if (src | dst | sp | dp)
+    {
+        remove_usage();
+        return -1;
+    }
+
+    print_rule(rule);
+    if (send_msg(R_RULE, &rule, sizeof(struct rule)))
+    {
+        return -1;
+    }
+
     return 0;
 }

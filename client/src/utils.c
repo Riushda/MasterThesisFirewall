@@ -1,14 +1,14 @@
 #include "utils.h"
 
-void print_bits(size_t const size, void const *const ptr)
+void print_bits(void const *const ptr, size_t const size)
 {
     unsigned char *b = (unsigned char *)ptr;
     unsigned char byte;
     int i, j;
 
-    for (i = size - 1; i >= 0; i--)
+    for (i = 0; size > i; i++)
     {
-        for (j = 7; j >= 0; j--)
+        for (j = 0; 8 > j; j++)
         {
             byte = (b[i] >> j) & 1;
             printf("%u", byte);
@@ -39,6 +39,9 @@ int count_args(char *line)
 
     current = line;
     count = 0;
+
+    if (*current == '\n')
+        return 0;
 
     if (*current != '\0' && *current != ' ')
         count++;

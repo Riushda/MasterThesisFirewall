@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void print_bits(size_t const size, void const *const ptr)
+void print_bits(void const *const ptr, size_t const size)
 {
     unsigned char *b = (unsigned char *)ptr;
     unsigned char byte;

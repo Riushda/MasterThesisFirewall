@@ -4,22 +4,33 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "constant.h"
 
-#ifndef UTILS_H
-#define UTILS_H
+#ifndef RULE_H
+#define RULE_H
+
+enum
+{
+    A_RULE = 0,
+    R_RULE = 1
+};
 
 struct rule
 {
+    uint8_t not_src;
     __be32 src;
+    uint8_t not_dst;
     __be32 dst;
+    uint8_t not_sport;
     __be16 sport;
+    uint8_t not_dport;
     __be16 dport;
 };
 
-int bitmask(size_t size, int *bitmask);
+int parse_ip(unsigned char *str_ip, __be32 *ip, uint8_t *not_v);
 
-int parse_ip(unsigned char *str_ip, __be32 *ip);
+void parse_port(unsigned char *str_port, __be16 *port, uint8_t *not_v);
 
-int parse_port(unsigned char *str_port, __be16 *port);
+void print_rule(struct rule rule);
 
 #endif

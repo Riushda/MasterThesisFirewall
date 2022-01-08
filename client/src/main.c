@@ -1,58 +1,79 @@
-#include "htable.h"
-#include <stdio.h>
+#include <signal.h>
+#include "netlink.h"
+#include "utils.h"
+#include "handlers.h"
+
+void INThandler(int);
 
 int main()
 {
-  /*int value;
-  struct h_table t2;
-  init_table(&t2, 2);
-  insert_pair("test", &value, &t2);*/
+  signal(SIGINT, INThandler);
 
-  struct h_table t1;
-  init_table(&t1, 3);
-  char *s1 = "abc";
-  char *s2 = "def";
-  char *s3 = "hij";
-  insert_pair(s1, "", &t1);
+  char line[100];
+  FILE *fp = stdin;
+  int argc;
+  char **argv;
 
-  //struct pair *p1 = search_pair("test", &t1);
+  if (open_netlink())
+  {
+    return -1;
+  }
 
-  //printf("%s\n", p1->key);
+  while (1)
+  {
+    fgets(line, 100, fp);
+    argc = count_args(line);
 
-  //printf("%d\n", t1.c_size);
+    if (argc <= 0)
+      continue;
 
-  display(&t1);
+    int *lengths = (int *)malloc(sizeof(int) * argc);
+    if (lengths == NULL)
+    {
+      return -1;
+    }
 
-  insert_pair(s2, "", &t1);
+    memset(lengths, 0, sizeof(int) * argc);
+    arg_lengths(line, argc, lengths);
 
-  display(&t1);
+    argv = (char **)malloc(argc * sizeof(char *));
+    for (int i = 0; i < argc; i++)
+    {
+      argv[i] = (char *)malloc(lengths[i] + 1);
+      if (argv[i] == NULL)
+      {
+        return -1;
+      }
+    }
 
-  insert_pair(s3, "", &t1);
+    arg_values(line, argc, lengths, argv);
+    handle_cmd(argv[0], argc, argv);
 
-  display(&t1);
-
-  remove_pair(s1, &t1);
-
-  display(&t1);
-
-  remove_pair(s2, &t1);
-
-  display(&t1);
-
-  //struct pair *p2 = search_pair("test", (struct h_table *)p1->value);
-
-  //printf("%s\n", p2->key);
-
-  remove_pair(s3, &t1);
-
-  display(&t1);
-
-  //p1 = search_pair("test", &t1);
-
-  //printf("%d\n", p1 == NULL);
-
-  destroy_table(&t1);
-  //destroy_table(&t2);
+    free(lengths);
+    for (int i = 0; i < argc; i++)
+    {
+      free(argv[i]);
+    }
+    free(argv);
+  }
 
   return 0;
+}
+
+void INThandler(int sig)
+{
+  char c;
+
+  signal(sig, SIG_IGN);
+  printf("\nYou just hit Ctrl-C,\n"
+         "Do you really want to quit? [y/n] ");
+  c = getchar();
+  if (c == 'y' || c == 'Y')
+  {
+    close_netlink();
+    exit(0);
+  }
+  else
+    signal(SIGINT, INThandler);
+  getchar();
 }

@@ -12,6 +12,7 @@
 #include "rule.h"
 #include "htable.h"
 #include "utils.h"
+#include "constant.h"
 
 #define DRIVER_AUTHOR "Justin"
 #define DRIVER_DESC "Firewall"
@@ -53,22 +54,18 @@ static void netlink_send_msg(char *msg, int msg_size)
 static void netlink_recv_msg(struct sk_buff *skb)
 {
     nlh = (struct nlmsghdr *)skb->data;
-    printk(KERN_INFO "firewall: msg received\n");
+    printk(KERN_INFO "firewall: msg received %s\n", (char *)NLMSG_DATA(nlh));
 }
 
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
     unsigned char buffer[RULE_SIZE];
-    int err;
 
     if (!skb)
         return NF_ACCEPT;
 
-    err = parse_to_buffer(skb, buffer);
-    if (!err)
-    {
+    if(parse_to_buffer(skb, buffer))
         return NF_DROP;
-    }
     
     if (search_item(buffer, table, TABLE_SIZE) != NULL)
     {

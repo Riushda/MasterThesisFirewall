@@ -39,9 +39,10 @@ int insert_pair(unsigned char *key, void *value, struct h_table *h_table)
     struct pair **table;
 
     if (h_table->c_size >= h_table->m_size / 2)
-        resize_table(h_table, 1);
-
-    table = h_table->pair_table;
+        if (resize_table(h_table, 1))
+        {
+            return -1;
+        }
 
     pair = (struct pair *)malloc(sizeof(struct pair));
     if (pair == NULL)
@@ -51,10 +52,9 @@ int insert_pair(unsigned char *key, void *value, struct h_table *h_table)
 
     memset(pair->key, 0, sizeof(pair->key));
     memcpy(pair->key, key, sizeof(pair->key));
-
     pair->value = value;
-
     hashIndex = hash(key, h_table->m_size);
+    table = h_table->pair_table;
 
     while (table[hashIndex] != NULL)
     {
@@ -64,11 +64,10 @@ int insert_pair(unsigned char *key, void *value, struct h_table *h_table)
 
     table[hashIndex] = pair;
     h_table->c_size++;
-
     return 0;
 }
 
-void remove_pair(unsigned char *key, struct h_table *h_table)
+int remove_pair(unsigned char *key, struct h_table *h_table)
 {
     unsigned long hashIndex;
     struct pair **table;
@@ -90,16 +89,24 @@ void remove_pair(unsigned char *key, struct h_table *h_table)
     }
 
     if (h_table->c_size <= h_table->m_size / 4)
-        resize_table(h_table, 0);
+        if (resize_table(h_table, 0))
+        {
+            return -1;
+        }
 }
 
-void init_table(struct h_table *h_table, size_t m_size)
+int init_table(struct h_table *h_table, size_t m_size)
 {
     struct pair **table;
     int i;
 
     h_table->pair_table = (struct pair **)malloc(m_size * sizeof(struct pair *));
     table = h_table->pair_table;
+    if (table == NULL)
+    {
+        return -1;
+    }
+
     i = 0;
 
     while (i < m_size)
@@ -109,52 +116,72 @@ void init_table(struct h_table *h_table, size_t m_size)
     }
 
     memset(&h_table->c_size, 0, sizeof(size_t));
-    memset(&h_table->m_size, 0, sizeof(size_t));
-    memcpy(&h_table->m_size, &m_size, sizeof(size_t));
+    h_table->m_size = m_size;
 }
 
-void resize_table(struct h_table *h_table, short increase)
+int resize_table(struct h_table *h_table, short increase)
 {
-    struct pair **table;
+    struct pair **new_table;
+    struct pair **old_table;
     size_t new_size;
     size_t old_size;
+    unsigned long hashIndex;
     int i;
 
-    memcpy(&old_size, &h_table->m_size, sizeof(size_t));
+    old_size = h_table->m_size;
+    new_size = old_size;
+
     if (increase)
-        h_table->m_size = h_table->m_size * 2;
+        new_size = new_size * 2;
     else
     {
-        if (h_table->m_size <= 1)
+        if (old_size <= 1)
         {
-            return;
+            return -1;
         }
-        h_table->m_size = h_table->m_size / 2;
+        new_size = new_size / 2;
     }
-    table = h_table->pair_table;
-    h_table->pair_table = (struct pair **)malloc(h_table->m_size * sizeof(struct pair *));
-    i = 0;
 
-    while (i < h_table->m_size)
+    h_table->m_size = new_size;
+    old_table = h_table->pair_table;
+
+    h_table->pair_table = (struct pair **)malloc(h_table->m_size * sizeof(struct pair *));
+    new_table = h_table->pair_table;
+
+    if (new_table == NULL)
     {
-        memset(&h_table->pair_table[i], 0, sizeof(struct pair *));
-        i++;
+        return -1;
     }
 
     memset(&h_table->c_size, 0, sizeof(size_t));
+    i = 0;
+
+    while (i < new_size)
+    {
+        memset(&new_table[i], 0, sizeof(struct pair *));
+        i++;
+    }
 
     i = 0;
 
     while (i < old_size)
     {
-        if (table[i] != NULL)
+        if (old_table[i] != NULL)
         {
-            insert_pair(table[i]->key, table[i]->value, h_table);
-            free(table[i]);
+            hashIndex = hash(old_table[i]->key, new_size);
+            while (new_table[hashIndex] != NULL)
+            {
+                ++hashIndex;
+                hashIndex %= new_size;
+            }
+            new_table[hashIndex] = old_table[i];
+            h_table->c_size++;
         }
         i++;
     }
-    free(table);
+
+    free(old_table);
+    return 0;
 }
 
 void destroy_table(struct h_table *h_table)
@@ -177,7 +204,7 @@ void destroy_table(struct h_table *h_table)
     free(table);
 }
 
-void display(struct h_table *h_table)
+void display_table(struct h_table *h_table)
 {
     int i = 0;
     struct pair **table;

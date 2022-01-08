@@ -1,6 +1,6 @@
 obj-m = firewall.o
 KVERSION = $(shell uname -r)
-firewall-objs := ./src/firewall.o ./src/rule.o ./src/htable.o ./src/utils.o
+firewall-objs := ./src/firewall.o ./src/rule.o ./src/htable.o ./src/utils.o ./src/constant.h
 
 all:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules

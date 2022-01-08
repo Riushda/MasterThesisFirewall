@@ -6,7 +6,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-void print_bits(size_t const size, void const *const ptr);
+void print_bits(void const *const ptr, size_t const size);
 
 int count_args(char *line);
 
