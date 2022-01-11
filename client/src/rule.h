@@ -19,15 +19,17 @@ struct rule
 {
     uint8_t not_src;
     __be32 src;
+    int src_bm;
     uint8_t not_dst;
     __be32 dst;
+    int dst_bm;
     uint8_t not_sport;
     __be16 sport;
     uint8_t not_dport;
     __be16 dport;
 };
 
-int parse_ip(unsigned char *str_ip, __be32 *ip, uint8_t *not_v);
+int parse_ip(unsigned char *str_ip, __be32 *ip, int *bitmask);
 
 void parse_port(unsigned char *str_port, __be16 *port, uint8_t *not_v);
 

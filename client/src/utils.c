@@ -6,15 +6,16 @@ void print_bits(void const *const ptr, size_t const size)
     unsigned char byte;
     int i, j;
 
-    for (i = 0; size > i; i++)
+    for (i = size - 1; i >= 0; i--)
     {
-        for (j = 0; 8 > j; j++)
+        for (j = 7; j >= 0; j--)
         {
             byte = (b[i] >> j) & 1;
             printf("%u", byte);
         }
     }
-    puts("");
+    printf("\n");
+    fflush(stdout);
 }
 
 int remove_white_spaces(char *str)
@@ -114,4 +115,110 @@ void arg_values(char *line, int argc, int *lengths, char **argv)
     }
 
     free(tmp_line);
+}
+
+int bitmask(size_t size)
+{
+    int i;
+    int bitmask;
+
+    if (size > 32)
+        return -1;
+
+    memset(&bitmask, 0, sizeof(int));
+
+    for (i = 0; i < size; i++)
+    {
+        bitmask = (bitmask >> 1);
+        bitmask |= 2147483648;
+    }
+
+    return bitmask;
+}
+
+int is_set_ip(int ip, short offset)
+{
+    int bitmask;
+    int i;
+
+    if (offset > 31)
+        return -1;
+
+    bitmask = 2147483648 >> offset;
+
+    return (ip & bitmask) != 0;
+}
+
+int is_set_v(void *ptr, int index)
+{
+    uint8_t bitmask;
+    uint8_t *current;
+
+    current = (uint8_t *)ptr;
+    bitmask = 1 << (index % 8);
+
+    current += ((int)index / 8);
+    return (*current & bitmask) != 0;
+}
+
+void set_bit_v(void *ptr, int index)
+{
+    uint8_t bitmask;
+    uint8_t *current;
+
+    current = (uint8_t *)ptr;
+    bitmask = 1 << (index % 8);
+
+    current += ((int)index / 8);
+    *current |= bitmask;
+}
+
+void unset_shift_v(void *ptr, int index)
+{
+    uint8_t bitmask;
+    uint8_t *current;
+    uint8_t old_current;
+    int i;
+    int offset;
+
+    offset = (int)(index / 8);
+    if (offset >= VECTOR_SIZE)
+        return;
+
+    current = (uint8_t *)ptr;
+    current += offset;
+    old_current = *current;
+
+    for (i = 0; i < 8 - (index % 8); i++)
+        bitmask = (bitmask >> 1) + 128;
+
+    /* First remove the part starting from the index */
+    *current &= (2147483647 ^ bitmask);
+
+    /* Save the part after the index */
+    bitmask = bitmask << 1;
+    bitmask &= old_current;
+
+    /* Shift the part after the index and merge with part before the index */
+    bitmask = bitmask >> 1;
+    *current |= bitmask;
+
+    if (offset >= VECTOR_SIZE - 1)
+        return;
+
+    /* We must be careful with the first bit of the byte because the shift won't preserve it */
+    if ((*(current + 1) & 1) == 1)
+    {
+        *current |= 128;
+    }
+
+    /* Now we also need to shift all the bytes after the current byte */
+    for (i = offset + 1; i < VECTOR_SIZE; i++)
+    {
+        current++;
+        *current = *current >> 1;
+
+        if (i < VECTOR_SIZE - 1 & ((*(current + 1) & 1) == 1))
+            *current |= 128;
+    }
 }
