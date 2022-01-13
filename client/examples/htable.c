@@ -1,58 +1,18 @@
 #include "htable.h"
-#include <stdio.h>
 
 int main()
 {
-  /*int value;
-  struct h_table t2;
-  init_table(&t2, 2);
-  insert_pair("test", &value, &t2);*/
-
-  struct h_table t1;
-  init_table(&t1, 3);
-  char *s1 = "abc";
-  char *s2 = "def";
-  char *s3 = "hij";
-  insert_pair(s1, "", &t1);
-
-  //struct pair *p1 = search_pair("test", &t1);
-
-  //printf("%s\n", p1->key);
-
-  //printf("%d\n", t1.c_size);
-
-  display_table(&t1);
-
-  insert_pair(s2, "", &t1);
-
-  display_table(&t1);
-
-  insert_pair(s3, "", &t1);
-
-  display_table(&t1);
-
-  remove_pair(s1, &t1);
-
-  display_table(&t1);
-
-  remove_pair(s2, &t1);
-
-  display_table(&t1);
-
-  //struct pair *p2 = search_pair("test", (struct h_table *)p1->value);
-
-  //printf("%s\n", p2->key);
-
-  remove_pair(s3, &t1);
-
-  display_table(&t1);
-
-  //p1 = search_pair("test", &t1);
-
-  //printf("%d\n", p1 == NULL);
-
-  destroy_table(&t1);
-  //destroy_table(&t2);
-
-  return 0;
+    h_table_t htable;
+    entry_t *entry;
+    init_table(&htable, TABLE_SIZE);
+    insert_hash(&htable, "abc", 0);
+    insert_hash(&htable, "def", 1);
+    insert_hash(&htable, "hij", 2);
+    remove_hash(&htable, "abc", 0);
+    entry = search_hash(&htable, "abc");
+    printf("%s\n", entry->key);
+    print_bits(entry->vector, VECTOR_SIZE);
+    print_table(&htable);
+    destroy_table(&htable);
+    return 0;
 }

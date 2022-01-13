@@ -1,12 +1,5 @@
 #include "trie.h"
 
-struct node
-{
-    uint8_t vector[VECTOR_SIZE];
-    struct node *children[2];
-    uint8_t leaf;
-};
-
 struct node *init_node(void)
 {
     struct node *node;
@@ -21,7 +14,7 @@ struct node *init_node(void)
         memset(node->vector, 0, VECTOR_SIZE);
         node->leaf = 0;
 
-        for (i = 0; i < 2; i++)
+        for (i = 0; i < CHILD_NBR; i++)
             node->children[i] = NULL;
     }
 
@@ -34,7 +27,7 @@ void update_vector(struct node *node, int rule_index, void (*update)(void *, int
 
     update(node->vector, rule_index);
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < CHILD_NBR; i++)
     {
         if (node->children[i])
         {
@@ -121,7 +114,7 @@ void free_trie(struct node *node)
 {
     int i;
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < CHILD_NBR; i++)
     {
         if (node->children[i])
         {
@@ -139,7 +132,7 @@ void print_node(struct node *node, int level)
     printf("Vector: ");
     print_bits(node->vector, VECTOR_SIZE);
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < CHILD_NBR; i++)
     {
         printf("Has child %d: %d\n", i, node->children[i] != NULL);
     }
@@ -148,7 +141,7 @@ void print_node(struct node *node, int level)
     printf("Level: %d\n", level);
     printf("----------\n");
 
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < CHILD_NBR; i++)
     {
         if (node->children[i])
         {

@@ -11,11 +11,10 @@ int main()
     int ip3;
     int ip4;
     int bm;
-    uint8_t not_v;
-    parse_ip("0.0.0.1", &ip1, &not_v, &bm);
-    parse_ip("1.1", &ip2, &not_v, &bm);
-    parse_ip("2.2.0.1", &ip3, &not_v, &bm);
-    parse_ip("3.2.0.1", &ip4, &not_v, &bm);
+    parse_ip("0.0.0.1", &ip1, &bm);
+    parse_ip("1.1", &ip2, &bm);
+    parse_ip("2.2.0.1", &ip3, &bm);
+    parse_ip("3.2.0.1", &ip4, &bm);
     print_bits(&ip1, 4);
     print_bits(&ip2, 4);
     print_bits(&ip3, 4);
@@ -24,7 +23,7 @@ int main()
     printf("----------\n");
 
     root = init_node();
-    
+
     insert_node(root, ip1, 3, 0);
     insert_node(root, ip2, 6, 1);
     insert_node(root, ip3, 0, 2);

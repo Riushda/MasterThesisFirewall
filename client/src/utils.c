@@ -189,6 +189,7 @@ void unset_shift_v(void *ptr, int index)
     current += offset;
     old_current = *current;
 
+    bitmask = 0;
     for (i = 0; i < 8 - (index % 8); i++)
         bitmask = (bitmask >> 1) + 128;
 
@@ -221,4 +222,48 @@ void unset_shift_v(void *ptr, int index)
         if (i < VECTOR_SIZE - 1 & ((*(current + 1) & 1) == 1))
             *current |= 128;
     }
+}
+
+int is_null_v(void *ptr)
+{
+    uint8_t *current;
+    int i;
+    int sum;
+
+    current = (uint8_t *)ptr;
+    sum = 0;
+
+    for (i = 0; i < VECTOR_SIZE; i++)
+    {
+        sum += current[i];
+    }
+
+    return sum == 0;
+}
+
+uint8_t *and_v(uint8_t *vector1, uint8_t *vector2)
+{
+    uint8_t *current1;
+    uint8_t *current2;
+    uint8_t *current3;
+    uint8_t *result;
+    int i;
+
+    result = (uint8_t *)malloc(sizeof(uint8_t) * VECTOR_SIZE);
+
+    if (result)
+    {
+        current1 = vector1;
+        current2 = vector2;
+        current3 = result;
+
+        memset(result, 0, VECTOR_SIZE);
+        for (i = 0; i < VECTOR_SIZE; i++)
+        {
+            *current3 = *current1 & *current2;
+            current3++, current1++, current2++;
+        }
+    }
+
+    return result;
 }

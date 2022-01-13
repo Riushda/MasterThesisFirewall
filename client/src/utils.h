@@ -26,4 +26,8 @@ void set_bit_v(void *ptr, int index);
 
 void unset_shift_v(void *ptr, int index);
 
+int is_null_v(void *ptr);
+
+uint8_t *and_v(uint8_t *vector1, uint8_t *vector2);
+
 #endif

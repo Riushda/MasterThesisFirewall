@@ -1,14 +1,17 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "utils.h"
 #include "constant.h"
 
 #ifndef TRIE_H
 #define TRIE_H
 
-struct node *init_node(void);
+typedef struct node
+{
+    uint8_t vector[VECTOR_SIZE];
+    struct node *children[CHILD_NBR];
+    uint8_t leaf;
+} node_t;
 
-void update_vector(struct node *node, int rule_index, void (*update)(void *, int));
+struct node *init_node(void);
 
 void insert_node(struct node *root, const int ip, int bitmask, int rule_index);
 

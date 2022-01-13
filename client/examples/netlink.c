@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     parse_ip("127.0.0.1", &r->dst);
     parse_port("22", &r->sport);
     parse_port("22", &r->dport);
-    err = set_payload(payload, 0, sizeof(r), (void *) &r);
+    err = set_payload(payload, 0, sizeof(r), (void *)&r);
 
     /* Fill in the netlink message payload */
     strcpy(NLMSG_DATA(nlh), payload);
@@ -116,46 +116,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-/*int c;
-
-    while (1)
-    {
-        int option_index = 0;
-        static struct option long_options[] =
-            {
-                {"src", required_argument, NULL, 0},
-                {"dst", required_argument, NULL, 0},
-                {"sport", required_argument, NULL, 0},
-                {"dport", required_argument, NULL, 0},
-                {NULL, 0, NULL, 0}};
-
-        c = getopt_long(argc, argv, "", long_options, &option_index);
-        if (c == -1)
-            break;
-
-        switch (c)
-        {
-        case 0:
-            printf("long option %s", long_options[option_index].name);
-            if (optarg)
-                printf(" with arg %s", optarg);
-            printf("\n");
-            break;
-
-        case 1:
-            printf("regular argument '%s'\n", optarg);
-            break;
-
-        case '?':
-            printf("unknown option %c\n", optopt);
-            break;
-
-        case ':':
-            printf("missing argument\n");
-            break;
-
-        default:
-            printf("?? getopt returned character code 0%o ??\n", c);
-        }
-    }*/

@@ -54,3 +54,4 @@ dkms.conf
 # This project
 build/
 .vscode
+vgcore.*

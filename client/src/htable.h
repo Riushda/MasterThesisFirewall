@@ -1,37 +1,26 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include "utils.h"
 #include "constant.h"
-#include <string.h>
-
+#include "linked_list.h"
 
 #ifndef HTABLE_H
 #define HTABLE_H
 
-struct pair
+typedef struct h_table
 {
-    unsigned char key[KEY_SIZE];
-    void *value;
-};
+    linked_list_t **table;
+    size_t size;
+} h_table_t;
 
-struct h_table
-{
-    struct pair **pair_table; /* array of pairs */
-    size_t c_size;            /* current size */
-    size_t m_size;            /* max size */
-};
+int init_table(h_table_t *h_table, size_t size);
 
-struct pair *search_pair(unsigned char *key, struct h_table *h_table);
+int insert_hash(h_table_t *h_table, unsigned char *key, int rule_index);
 
-int insert_pair(unsigned char *key, void *value, struct h_table *h_table);
+void remove_hash(h_table_t *h_table, unsigned char *key, int rule_index);
 
-int remove_pair(unsigned char *key, struct h_table *h_table);
+entry_t *search_hash(h_table_t *h_table, unsigned char *key);
 
-int init_table(struct h_table *h_table, size_t m_size);
+void destroy_table(h_table_t *h_table);
 
-int resize_table(struct h_table *h_table, short increase);
-
-void destroy_table(struct h_table *h_table);
-
-void display_table(struct h_table *h_table);
+void print_table(h_table_t *h_table);
 
 #endif

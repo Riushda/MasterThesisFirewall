@@ -1,12 +1,8 @@
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <getopt.h>
-#include "rule.h"
-#include "utils.h"
-#include "netlink.h"
 #include "constant.h"
+#include "utils.h"
+#include "rule.h"
+#include "netlink.h"
 
 #ifndef HANDLERS_H
 #define HANDLERS_H
