@@ -1,14 +1,14 @@
 #include "handlers.h"
 
-int add_rule(int argc, char **argv);
-int remove_rule(int argc, char **argv);
+int add_rule_cmd(int argc, char **argv);
+int remove_rule_cmd(int argc, char **argv);
 
 handler_t handler_functions[] = {
-    {"add", add_rule},
-    {"remove", remove_rule},
+    {"add", add_rule_cmd},
+    {"remove", remove_rule_cmd},
     {NULL, NULL}};
 
-int handle_cmd(char *name, int argc, char **argv)
+int handle_cmd(string_t *name, int argc, char **argv)
 {
     handler_t *tmp;
 
@@ -38,14 +38,14 @@ void add_usage()
     printf("Usage: add --src [IP] --dst [IP] --sp [PORT] --dp [PORT]\n");
 }
 
-int add_rule(int argc, char **argv)
+int add_rule_cmd(int argc, char **argv)
 {
     int opt = 0;
     int long_index;
     uint8_t src = -1, dst = -1, sp = -1, dp = -1;
     int src_bm = 0, dst_bm = 0;
-    struct rule rule;
-    memset(&rule, 0, sizeof(struct rule));
+    rule_t rule;
+    memset(&rule, 0, sizeof(rule_t));
 
     static struct option long_options[] = {
         {"src", required_argument, 0, 'a'},
@@ -90,7 +90,7 @@ int add_rule(int argc, char **argv)
     }
 
     print_rule(rule);
-    if (send_msg(A_RULE, &rule, sizeof(struct rule)))
+    if (send_msg(A_RULE, &rule, sizeof(rule_t)))
     {
         return -1;
     }
@@ -103,14 +103,14 @@ void remove_usage()
     printf("Usage: remove --src [IP] --dst [IP] --sp [PORT] --dp [PORT]\n");
 }
 
-int remove_rule(int argc, char **argv)
+int remove_rule_cmd(int argc, char **argv)
 {
     int opt = 0;
     int long_index;
     uint8_t src = -1, dst = -1, sp = -1, dp = -1;
     int src_bm = 0, dst_bm = 0;
-    struct rule rule;
-    memset(&rule, 0, sizeof(struct rule));
+    rule_t rule;
+    memset(&rule, 0, sizeof(rule_t));
 
     static struct option long_options[] = {
         {"src", required_argument, 0, 'a'},
@@ -155,7 +155,7 @@ int remove_rule(int argc, char **argv)
     }
 
     print_rule(rule);
-    if (send_msg(R_RULE, &rule, sizeof(struct rule)))
+    if (send_msg(R_RULE, &rule, sizeof(rule_t)))
     {
         return -1;
     }

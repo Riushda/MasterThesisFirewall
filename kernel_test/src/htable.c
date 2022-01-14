@@ -1,6 +1,6 @@
 #include "htable.h"
 
-unsigned long hash(unsigned char *str, size_t size)
+unsigned long hash(h_key_t *str, size_t size)
 {
     unsigned long hash;
     int c;
@@ -38,7 +38,7 @@ int init_table(h_table_t *h_table, size_t size)
     return 0;
 }
 
-int insert_hash(h_table_t *h_table, unsigned char *key, int rule_index)
+int insert_hash(h_table_t *h_table, h_key_t *key, short rule_index)
 {
     unsigned long hashIndex;
 
@@ -48,7 +48,7 @@ int insert_hash(h_table_t *h_table, unsigned char *key, int rule_index)
     return 0;
 }
 
-void remove_hash(h_table_t *h_table, unsigned char *key, int rule_index)
+void remove_hash(h_table_t *h_table, h_key_t *key, short rule_index)
 {
     int i;
     unsigned long hashIndex;
@@ -63,12 +63,22 @@ void remove_hash(h_table_t *h_table, unsigned char *key, int rule_index)
     }
 }
 
-entry_t *search_hash(h_table_t *h_table, unsigned char *key)
+vector_t *search_hash(h_table_t *h_table, h_key_t *key)
 {
     unsigned long hashIndex;
+    entry_t *entry;
+    vector_t *vector;
 
+    vector = NULL;
     hashIndex = hash(key, h_table->size);
-    return search_entry(h_table->table[hashIndex], key);
+    entry = search_entry(h_table->table[hashIndex], key);
+
+    if (entry)
+    {
+        vector = entry->vector;
+    }
+
+    return vector;
 }
 
 void destroy_table(h_table_t *h_table)

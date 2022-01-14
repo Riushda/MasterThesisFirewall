@@ -18,7 +18,7 @@ void print_bits(void const *const ptr, size_t const size)
     fflush(stdout);
 }
 
-int remove_white_spaces(char *str)
+int remove_white_spaces(string_t *str)
 {
     int i = 0, j = 0;
     while (str[i])
@@ -32,10 +32,10 @@ int remove_white_spaces(char *str)
     return 0;
 }
 
-int count_args(char *line)
+int count_args(string_t *line)
 {
     int count;
-    char *current;
+    string_t *current;
     int is_new_arg;
 
     current = line;
@@ -65,9 +65,9 @@ int count_args(char *line)
     return count;
 }
 
-void arg_lengths(char *line, int argc, int *lengths)
+void arg_lengths(string_t *line, int argc, int *lengths)
 {
-    char *current;
+    string_t *current;
     int is_new_arg;
     int i;
 
@@ -96,12 +96,12 @@ void arg_lengths(char *line, int argc, int *lengths)
     lengths[argc - 1]--;
 }
 
-void arg_values(char *line, int argc, int *lengths, char **argv)
+void arg_values(string_t *line, int argc, int *lengths, char **argv)
 {
-    char *tmp_line;
-    char *no_space;
+    string_t *tmp_line;
+    string_t *no_space;
 
-    tmp_line = (char *)malloc(strlen(line) + 1);
+    tmp_line = (string_t *)malloc(strlen(line) + 1);
     strcpy(tmp_line, line);
     remove_white_spaces(tmp_line);
 
@@ -115,155 +115,4 @@ void arg_values(char *line, int argc, int *lengths, char **argv)
     }
 
     free(tmp_line);
-}
-
-int bitmask(size_t size)
-{
-    int i;
-    int bitmask;
-
-    if (size > 32)
-        return -1;
-
-    memset(&bitmask, 0, sizeof(int));
-
-    for (i = 0; i < size; i++)
-    {
-        bitmask = (bitmask >> 1);
-        bitmask |= 2147483648;
-    }
-
-    return bitmask;
-}
-
-int is_set_ip(int ip, short offset)
-{
-    int bitmask;
-    int i;
-
-    if (offset > 31)
-        return -1;
-
-    bitmask = 2147483648 >> offset;
-
-    return (ip & bitmask) != 0;
-}
-
-int is_set_v(void *ptr, int index)
-{
-    uint8_t bitmask;
-    uint8_t *current;
-
-    current = (uint8_t *)ptr;
-    bitmask = 1 << (index % 8);
-
-    current += ((int)index / 8);
-    return (*current & bitmask) != 0;
-}
-
-void set_bit_v(void *ptr, int index)
-{
-    uint8_t bitmask;
-    uint8_t *current;
-
-    current = (uint8_t *)ptr;
-    bitmask = 1 << (index % 8);
-
-    current += ((int)index / 8);
-    *current |= bitmask;
-}
-
-void unset_shift_v(void *ptr, int index)
-{
-    uint8_t bitmask;
-    uint8_t *current;
-    uint8_t old_current;
-    int i;
-    int offset;
-
-    offset = (int)(index / 8);
-    if (offset >= VECTOR_SIZE)
-        return;
-
-    current = (uint8_t *)ptr;
-    current += offset;
-    old_current = *current;
-
-    bitmask = 0;
-    for (i = 0; i < 8 - (index % 8); i++)
-        bitmask = (bitmask >> 1) + 128;
-
-    /* First remove the part starting from the index */
-    *current &= (2147483647 ^ bitmask);
-
-    /* Save the part after the index */
-    bitmask = bitmask << 1;
-    bitmask &= old_current;
-
-    /* Shift the part after the index and merge with part before the index */
-    bitmask = bitmask >> 1;
-    *current |= bitmask;
-
-    if (offset >= VECTOR_SIZE - 1)
-        return;
-
-    /* We must be careful with the first bit of the byte because the shift won't preserve it */
-    if ((*(current + 1) & 1) == 1)
-    {
-        *current |= 128;
-    }
-
-    /* Now we also need to shift all the bytes after the current byte */
-    for (i = offset + 1; i < VECTOR_SIZE; i++)
-    {
-        current++;
-        *current = *current >> 1;
-
-        if (i < VECTOR_SIZE - 1 & ((*(current + 1) & 1) == 1))
-            *current |= 128;
-    }
-}
-
-int is_null_v(void *ptr)
-{
-    uint8_t *current;
-    int i;
-    int sum;
-
-    current = (uint8_t *)ptr;
-    sum = 0;
-
-    for (i = 0; i < VECTOR_SIZE; i++)
-    {
-        sum += current[i];
-    }
-
-    return sum == 0;
-}
-
-uint8_t *and_v(uint8_t *vector1, uint8_t *vector2)
-{
-    uint8_t *current1;
-    uint8_t *current2;
-    uint8_t *current3;
-    uint8_t *result;
-    int i;
-
-    result = (uint8_t *)malloc(sizeof(uint8_t) * VECTOR_SIZE);
-
-    if (result)
-    {
-        current1 = vector1;
-        current2 = vector2;
-        current3 = result;
-
-        memset(result, 0, VECTOR_SIZE);
-        for (i = 0; i < VECTOR_SIZE; i++)
-        {
-            *current3 = *current1 & *current2;
-            current3++, current1++, current2++;
-        }
-    }
-
-    return result;
 }

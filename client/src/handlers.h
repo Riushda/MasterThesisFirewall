@@ -7,20 +7,26 @@
 #ifndef HANDLERS_H
 #define HANDLERS_H
 
-enum
+enum ERRORS
 {
     NO_HANDLER = -1,
     HANDLED = 1
+};
+
+enum ACTIONS
+{
+    A_RULE = 0,
+    R_RULE = 1
 };
 
 typedef int (*handler)(int argc, char **argv);
 
 typedef struct
 {
-    const char *name;
+    const string_t *name;
     const handler handler;
 } handler_t;
 
-int handle_cmd(char name[], int argc, char **argv);
+int handle_cmd(string_t *name, int argc, char **argv);
 
 #endif

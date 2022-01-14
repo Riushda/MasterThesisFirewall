@@ -1,8 +1,8 @@
 #include "rule.h"
 
-int parse_not(unsigned char *str_not, uint8_t *not_v)
+int parse_not(string_t *str_not, bool_t *not_v)
 {
-    memset(not_v, 0, sizeof(uint8_t));
+    memset(not_v, 0, sizeof(bool_t));
 
     if (!memcmp(str_not, "!", 1))
     {
@@ -16,21 +16,21 @@ int parse_not(unsigned char *str_not, uint8_t *not_v)
     }
 }
 
-int parse_ip(unsigned char *str_ip, __be32 *ip, int *bitmask)
+int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
 {
     struct in_addr addr;
     char str[strlen(str_ip)];
     char *token;
     const char delimiter[2] = "/";
 
-    memset(ip, 0, sizeof(__be32));
+    memset(ip, 0, sizeof(int));
     strcpy(str, str_ip);
 
     if (strlen(str_ip) == 1) /* 7 is the minimum valid length for an IP */
     {
         if (!memcmp(str, "*", 1))
         {
-            memset(ip, 0, sizeof(ip));
+            memset(ip, 0, sizeof(int));
             return 0;
         }
         else
@@ -48,7 +48,7 @@ int parse_ip(unsigned char *str_ip, __be32 *ip, int *bitmask)
         }
     }
 
-    memcpy(ip, &addr, sizeof(addr));
+    memcpy(ip, &addr, sizeof(struct in_addr));
     *ip = htonl(*ip);
 
     token = strtok(NULL, delimiter);
@@ -66,13 +66,13 @@ int parse_ip(unsigned char *str_ip, __be32 *ip, int *bitmask)
     return 0;
 }
 
-void parse_port(unsigned char *str_port, __be16 *port, uint8_t *not_v)
+void parse_port(string_t *str_port, short *port, bool_t *not_v)
 {
-    uint16_t hport;
+    short hport;
     char *str;
 
     str = str_port;
-    memset(port, 0, sizeof(__be16));
+    memset(port, 0, sizeof(short));
 
     if (parse_not(str, not_v))
     {
@@ -81,16 +81,16 @@ void parse_port(unsigned char *str_port, __be16 *port, uint8_t *not_v)
 
     if (!memcmp(str, "*", 1))
     {
-        memset(port, 0, sizeof(port));
+        memset(port, 0, sizeof(short));
         return;
     }
 
     hport = htons(atoi(str));
 
-    memcpy(port, &hport, sizeof(hport));
+    memcpy(port, &hport, sizeof(short));
 }
 
-void print_rule(struct rule rule)
+void print_rule(rule_t rule)
 {
     struct in_addr addr;
     int src;
@@ -102,7 +102,7 @@ void print_rule(struct rule rule)
     }
 
     src = ntohl(rule.src);
-    memcpy(&addr, &src, sizeof(addr));
+    memcpy(&addr, &src, sizeof(struct in_addr));
     printf("Src: %s/%d\n", inet_ntoa(addr), rule.src_bm);
 
     if (rule.not_dst)
@@ -111,7 +111,7 @@ void print_rule(struct rule rule)
     }
 
     dst = ntohl(rule.dst);
-    memcpy(&addr, &dst, sizeof(addr));
+    memcpy(&addr, &dst, sizeof(struct in_addr));
     printf("Dst: %s/%d\n", inet_ntoa(addr), rule.dst_bm);
 
     if (rule.not_sport)

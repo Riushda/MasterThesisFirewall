@@ -1,12 +1,20 @@
 #include "trie.h"
 
-struct node *init_node(void)
+int init_trie(trie_t *trie)
 {
-    struct node *node;
+    trie->root = init_node();
+    if (!trie->root)
+        return -1;
+    return 0;
+}
+
+node_t *init_node(void)
+{
+    node_t *node;
     int i;
 
     node = NULL;
-    node = (struct node *)malloc(sizeof(struct node));
+    node = (node_t *)malloc(sizeof(node_t));
 
     if (node)
     {
@@ -21,7 +29,7 @@ struct node *init_node(void)
     return node;
 }
 
-void update_vector(struct node *node, int rule_index, void (*update)(void *, int))
+void update_vector(node_t *node, short rule_index, void (*update)(vector_t *, short))
 {
     int i;
 
@@ -36,13 +44,13 @@ void update_vector(struct node *node, int rule_index, void (*update)(void *, int
     }
 }
 
-void insert_node(struct node *root, const int ip, int bitmask, int rule_index)
+int insert_node(trie_t *trie, int ip, bitmask_t bitmask, short rule_index)
 {
     int level;
     int index;
-    struct node *current;
+    node_t *current;
 
-    current = root;
+    current = trie->root;
 
     for (level = 0; level < bitmask; level++)
     {
@@ -51,6 +59,8 @@ void insert_node(struct node *root, const int ip, int bitmask, int rule_index)
         if (!current->children[index])
         {
             current->children[index] = init_node();
+            if (!current->children[index])
+                return -1;
             memcpy(current->children[index]->vector, current->vector, VECTOR_SIZE);
         }
 
@@ -60,15 +70,17 @@ void insert_node(struct node *root, const int ip, int bitmask, int rule_index)
     current->leaf = 1;
 
     update_vector(current, rule_index, set_bit_v);
+
+    return 0;
 }
 
-void remove_node(struct node *root, const int ip, int bitmask, int rule_index)
+void remove_node(trie_t *trie, int ip, bitmask_t bitmask, short rule_index)
 {
     int level;
     int index;
-    struct node *current;
+    node_t *current;
 
-    current = root;
+    current = trie->root;
     for (level = 0; level < bitmask; level++)
     {
         index = is_set_ip(ip, level);
@@ -79,29 +91,23 @@ void remove_node(struct node *root, const int ip, int bitmask, int rule_index)
         current = current->children[index];
     }
 
-    update_vector(root, rule_index, unset_shift_v);
+    update_vector(trie->root, rule_index, unset_shift_v);
 }
 
-uint8_t *search_node(struct node *root, int ip)
+vector_t *search_node(trie_t *trie, int ip)
 {
     int level;
     int index;
-    struct node *current;
-    uint8_t *vector;
+    node_t *current;
+    vector_t *vector;
 
-    current = root;
-    vector = (uint8_t *)malloc(VECTOR_SIZE);
-    if (vector == NULL)
-    {
-        return NULL;
-    }
-
-    memset(vector, 0, VECTOR_SIZE);
+    vector = NULL;
+    current = trie->root;
 
     for (level = 0; level < IP_SIZE; level++)
     {
+        vector = current->vector;
         index = is_set_ip(ip, level);
-        vector = memcpy(vector, current->vector, VECTOR_SIZE);
         if (!current->children[index])
             return vector;
         current = current->children[index];
@@ -110,7 +116,7 @@ uint8_t *search_node(struct node *root, int ip)
     return vector;
 }
 
-void free_trie(struct node *node)
+void destroy_node(node_t *node)
 {
     int i;
 
@@ -118,14 +124,19 @@ void free_trie(struct node *node)
     {
         if (node->children[i])
         {
-            free_trie(node->children[i]);
+            destroy_node(node->children[i]);
         }
     }
 
     free(node);
 }
 
-void print_node(struct node *node, int level)
+void destroy_trie(trie_t *trie)
+{
+    destroy_node(trie->root);
+}
+
+void print_node(node_t *node, int level)
 {
     int i;
 
@@ -148,4 +159,9 @@ void print_node(struct node *node, int level)
             print_node(node->children[i], level + 1);
         }
     }
+}
+
+void print_trie(trie_t *trie, int level)
+{
+    print_node(trie->root, level);
 }
