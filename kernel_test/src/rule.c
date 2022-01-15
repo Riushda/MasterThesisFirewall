@@ -254,7 +254,7 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     if (rule_index != -1 && rule_index < VECTOR_SIZE)
         return is_set_v(rule_struct->actions, rule_index);
 
-    return -1;
+    return 0;
 }
 
 void destroy_rules(rule_struct_t *rule_struct)

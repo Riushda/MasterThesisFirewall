@@ -18,7 +18,7 @@ void print_bits(void const *const ptr, size_t const size)
     fflush(stdout);
 }
 
-int is_set_ip(int ip, short offset)
+bool_t is_set_ip(int ip, short offset)
 {
     int bitmask;
     int i;
@@ -31,7 +31,7 @@ int is_set_ip(int ip, short offset)
     return (ip & bitmask) != 0;
 }
 
-int is_set_v(vector_t *vector, short index)
+bool_t is_set_v(vector_t *vector, short index)
 {
     bitmask_t bitmask;
     vector_t *current;
@@ -106,7 +106,7 @@ void unset_shift_v(vector_t *vector, short index)
     }
 }
 
-int first_match_index(vector_t *vector)
+short first_match_index(vector_t *vector)
 {
     int i;
 
@@ -119,7 +119,7 @@ int first_match_index(vector_t *vector)
     return -1;
 }
 
-int is_null_v(vector_t *vector)
+bool_t is_null_v(vector_t *vector)
 {
     vector_t *current;
     int i;

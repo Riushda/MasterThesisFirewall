@@ -1,5 +1,7 @@
 #include "rule.h"
 
+rule_list_t *rule_list;
+
 int parse_not(string_t *str_not, bool_t *not_v)
 {
     memset(not_v, 0, sizeof(bool_t));
@@ -90,11 +92,23 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
     memcpy(port, &hport, sizeof(short));
 }
 
+void parse_action(string_t *str_action, bool_t *action)
+{
+    if (!strcasecmp(str_action, "allow") || !strcasecmp(str_action, "a") || !strcasecmp(str_action, "1"))
+        *action = 1;
+    else
+        *action = 0;
+}
+
 void print_rule(rule_t rule)
 {
     struct in_addr addr;
     int src;
     int dst;
+
+    fflush(stdout);
+
+    printf("%d | ", rule.index + 1);
 
     if (rule.not_src)
     {
@@ -103,7 +117,7 @@ void print_rule(rule_t rule)
 
     src = ntohl(rule.src);
     memcpy(&addr, &src, sizeof(struct in_addr));
-    printf("Src: %s/%d\n", inet_ntoa(addr), rule.src_bm);
+    printf("--src %s/%d ", inet_ntoa(addr), rule.src_bm);
 
     if (rule.not_dst)
     {
@@ -112,19 +126,143 @@ void print_rule(rule_t rule)
 
     dst = ntohl(rule.dst);
     memcpy(&addr, &dst, sizeof(struct in_addr));
-    printf("Dst: %s/%d\n", inet_ntoa(addr), rule.dst_bm);
+    printf("--dst %s/%d ", inet_ntoa(addr), rule.dst_bm);
 
     if (rule.not_sport)
     {
         printf("!");
     }
 
-    printf("Sport: %d\n", ntohs(rule.sport));
+    printf("--sport %d ", ntohs(rule.sport));
 
     if (rule.not_dport)
     {
         printf("!");
     }
 
-    printf("Dport: %d\n", ntohs(rule.dport));
+    printf("--sport %d ", ntohs(rule.dport));
+
+    if (rule.action)
+        printf("--action ALLOW\n");
+    else
+        printf("--action DENY\n");
+}
+
+void init_rule_list(rule_list_t *rule_list)
+{
+    rule_list->head = NULL;
+    rule_list->index = 0;
+}
+
+void insert_rule(rule_list_t *rule_list, rule_t *rule)
+{
+    rule_t *current;
+    rule_t *previous;
+    short index;
+
+    current = rule_list->head;
+
+    if (!current)
+    {
+        rule_list->head = rule;
+        rule_list->head->next = NULL;
+        rule_list->index++;
+        return;
+    }
+
+    while (current != NULL)
+    {
+        previous = current;
+        current = current->next;
+    }
+
+    previous->next = rule;
+    rule->next = NULL;
+    rule_list->index++;
+}
+
+void remove_rule(rule_list_t *rule_list, short index)
+{
+    rule_t *current;
+    rule_t *previous;
+
+    current = rule_list->head;
+    previous = NULL;
+
+    while (current != NULL)
+    {
+        if (current->index == index)
+        {
+            if (previous)
+            {
+                previous->next = current->next;
+                free(current);
+                current = previous->next;
+            }
+            else
+            {
+                rule_list->head = current->next;
+                free(current);
+                current = rule_list->head;
+            }
+            break;
+        }
+        previous = current;
+        current = current->next;
+    }
+
+    while (current != NULL)
+    {
+        current->index--;
+        current = current->next;
+    }
+
+    rule_list->index--;
+}
+
+rule_t *search_rule(rule_list_t *rule_list, short index)
+{
+    rule_t *current;
+
+    current = rule_list->head;
+
+    while (current != NULL)
+    {
+        if (current->index == index)
+            return current;
+        current = current->next;
+    }
+
+    return NULL;
+}
+
+void destroy_rule_list(rule_list_t *rule_list)
+{
+    rule_t *current;
+    rule_t *next;
+
+    current = rule_list->head;
+    next = NULL;
+
+    while (current != NULL)
+    {
+        next = current->next;
+        free(current);
+        current = next;
+    }
+
+    free(rule_list);
+}
+
+void print_rule_list(rule_list_t *rule_list)
+{
+    rule_t *current;
+
+    current = rule_list->head;
+
+    while (current != NULL)
+    {
+        print_rule(*current);
+        current = current->next;
+    }
 }

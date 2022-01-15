@@ -3,6 +3,8 @@
 #include "utils.h"
 #include "handlers.h"
 
+extern rule_list_t *rule_list;
+
 void INThandler(int);
 
 int main()
@@ -14,10 +16,13 @@ int main()
   int argc;
   char **argv;
 
-  if (open_netlink())
+  rule_list = (rule_list_t *)malloc(sizeof(rule_list_t));
+  memset(rule_list, 0, sizeof(rule_list_t));
+
+  /*if (open_netlink())
   {
     return -1;
-  }
+  }*/
 
   while (1)
   {
@@ -30,6 +35,7 @@ int main()
     int *lengths = (int *)malloc(sizeof(int) * argc);
     if (lengths == NULL)
     {
+      destroy_rule_list(rule_list);
       return -1;
     }
 
@@ -37,11 +43,20 @@ int main()
     arg_lengths(line, argc, lengths);
 
     argv = (char **)malloc(argc * sizeof(char *));
+    if (argv == NULL)
+    {
+      destroy_rule_list(rule_list);
+      free(lengths);
+      return -1;
+    }
     for (int i = 0; i < argc; i++)
     {
       argv[i] = (char *)malloc(lengths[i] + 1);
       if (argv[i] == NULL)
       {
+        destroy_rule_list(rule_list);
+        free(lengths);
+        free(argv);
         return -1;
       }
     }
@@ -70,7 +85,8 @@ void INThandler(int sig)
   c = getchar();
   if (c == 'y' || c == 'Y')
   {
-    close_netlink();
+    //close_netlink();
+    destroy_rule_list(rule_list);
     exit(0);
   }
   else
