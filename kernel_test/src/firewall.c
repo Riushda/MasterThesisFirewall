@@ -76,9 +76,7 @@ static int __init init(void)
 
     /* rule list initialization */
 
-    rule_t rule;
     memset(&rule_struct, 0, sizeof(rule_struct_t));
-    memset(&rule, 0, sizeof(rule_t));
 
     init_rules(&rule_struct);
 
