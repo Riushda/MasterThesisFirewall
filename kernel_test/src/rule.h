@@ -1,5 +1,3 @@
-#include <arpa/inet.h>
-
 #include "constant.h"
 #include "utils.h"
 #include "htable.h"

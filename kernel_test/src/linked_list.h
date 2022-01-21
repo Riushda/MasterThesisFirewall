@@ -27,4 +27,4 @@ entry_t *search_entry(linked_list_t *list, h_key_t *key);
 
 void destroy_list(linked_list_t *list);
 
-void print_list(linked_list_t *list);
+//void print_list(linked_list_t *list);

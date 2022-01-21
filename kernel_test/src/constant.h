@@ -1,6 +1,7 @@
 #ifndef CONSTANT_H
 #define CONSTANT_H
 
+#define NETLINK_FW 17
 #define IP_SIZE 32
 #define VECTOR_SIZE 4
 #define KEY_SIZE 3

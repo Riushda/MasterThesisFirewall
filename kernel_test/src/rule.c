@@ -18,9 +18,9 @@ int parse_not(string_t *str_not, bool_t *not_v)
 
 int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
 {
-    struct in_addr addr;
     char str[strlen(str_ip)];
     char *token;
+    char *running;
     const char delimiter[2] = "/";
 
     memset(ip, 0, sizeof(int));
@@ -39,24 +39,26 @@ int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
         }
     }
 
-    token = strtok(str, delimiter);
+    running = str;
+
+    token = strsep(&running, delimiter);
     if (token)
     {
-        if (!inet_aton(token, &addr))
-        {
-            return -1;
-        }
+        *ip = in_aton(token); // htonl(*ip) alreaday called internally
+    }
+    else{
+        return -1;
     }
 
-    memcpy(ip, &addr, sizeof(struct in_addr));
-    *ip = htonl(*ip);
-
-    token = strtok(NULL, delimiter);
+    token = strsep(&running, delimiter);
     if (token)
     {
-        *bitmask = atoi(token);
-        if (!*bitmask)
+        long temp;
+        int err = kstrtol(token, 10, &temp); // replacement for atoi, convert char* token into long temp
+        if (err==-EINVAL || err==-ERANGE)
             return -1;
+        
+        *bitmask = temp;
     }
     else
     {
@@ -85,12 +87,15 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
         return;
     }
 
-    hport = htons(atoi(str));
+    long temp;
+    int err = kstrtol(str, 10, &temp); // replacement for atoi, convert char* str into long temp
+
+    hport = htons(temp);
 
     memcpy(port, &hport, sizeof(short));
 }
 
-void print_rule(rule_t rule)
+/*void print_rule(rule_t rule)
 {
     struct in_addr addr;
     int src;
@@ -127,23 +132,23 @@ void print_rule(rule_t rule)
     }
 
     printf("Dport: %d\n", ntohs(rule.dport));
-}
+}*/
 
 int init_rules(rule_struct_t *rule_struct)
 {
-    rule_struct->src_trie = (trie_t *)malloc(sizeof(trie_t));
+    rule_struct->src_trie = (trie_t *)kmalloc(sizeof(trie_t), GFP_KERNEL);
     if (init_trie(rule_struct->src_trie))
         return -1;
 
-    rule_struct->dst_trie = (trie_t *)malloc(sizeof(trie_t));
+    rule_struct->dst_trie = (trie_t *)kmalloc(sizeof(trie_t), GFP_KERNEL);
     if (init_trie(rule_struct->dst_trie))
         return -1;
 
-    rule_struct->sport_table = (h_table_t *)malloc(sizeof(h_table_t));
+    rule_struct->sport_table = (h_table_t *)kmalloc(sizeof(h_table_t), GFP_KERNEL);
     if (init_table(rule_struct->sport_table, TABLE_SIZE))
         return -1;
 
-    rule_struct->dport_table = (h_table_t *)malloc(sizeof(h_table_t));
+    rule_struct->dport_table = (h_table_t *)kmalloc(sizeof(h_table_t), GFP_KERNEL);
     if (init_table(rule_struct->dport_table, TABLE_SIZE))
         return -1;
 
@@ -218,7 +223,7 @@ vector_t *match_port(h_table_t *table, short port)
     memset(key, 1, sizeof(bool_t));
     result_not_port = or_v(result_port, search_hash(table, key));
 
-    free(result_port);
+    kfree(result_port);
 
     //print_bits(result_not_port, VECTOR_SIZE);
 
@@ -245,11 +250,11 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
 
     rule_index = first_match_index(result_dport);
 
-    free(result_dst);
-    free(result_sport);
-    free(result_dport);
-    free(match_sport);
-    free(match_dport);
+    kfree(result_dst);
+    kfree(result_sport);
+    kfree(result_dport);
+    kfree(match_sport);
+    kfree(match_dport);
 
     if (rule_index != -1 && rule_index < VECTOR_SIZE)
         return is_set_v(rule_struct->actions, rule_index);
@@ -260,14 +265,14 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
 void destroy_rules(rule_struct_t *rule_struct)
 {
     destroy_trie(rule_struct->src_trie);
-    free(rule_struct->src_trie);
+    kfree(rule_struct->src_trie);
 
     destroy_trie(rule_struct->dst_trie);
-    free(rule_struct->dst_trie);
+    kfree(rule_struct->dst_trie);
 
     destroy_table(rule_struct->sport_table);
-    free(rule_struct->sport_table);
+    kfree(rule_struct->sport_table);
 
     destroy_table(rule_struct->dport_table);
-    free(rule_struct->dport_table);
+    kfree(rule_struct->dport_table);
 }
