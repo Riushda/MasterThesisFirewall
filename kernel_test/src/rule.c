@@ -46,7 +46,8 @@ int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
     {
         *ip = in_aton(token); // htonl(*ip) alreaday called internally
     }
-    else{
+    else
+    {
         return -1;
     }
 
@@ -55,9 +56,9 @@ int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
     {
         long temp;
         int err = kstrtol(token, 10, &temp); // replacement for atoi, convert char* token into long temp
-        if (err==-EINVAL || err==-ERANGE)
+        if (err == -EINVAL || err == -ERANGE)
             return -1;
-        
+
         *bitmask = temp;
     }
     else
@@ -72,6 +73,8 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
 {
     short hport;
     char *str;
+    long temp;
+    int err;
 
     str = str_port;
     memset(port, 0, sizeof(short));
@@ -87,8 +90,7 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
         return;
     }
 
-    long temp;
-    int err = kstrtol(str, 10, &temp); // replacement for atoi, convert char* str into long temp
+    err = kstrtol(str, 10, &temp); // replacement for atoi, convert char* str into long temp
 
     hport = htons(temp);
 
@@ -233,7 +235,6 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     vector_t *result_dport;
     vector_t *match_dport;
     short rule_index;
-    bool_t action;
 
     result_src = search_node(rule_struct->src_trie, rule.src);
     result_dst = and_v(result_src, search_node(rule_struct->dst_trie, rule.dst));
@@ -269,4 +270,39 @@ void destroy_rules(rule_struct_t *rule_struct)
 
     destroy_table(rule_struct->dport_table);
     kfree(rule_struct->dport_table);
+}
+
+void parse_to_rule(struct sk_buff *skb, rule_t *rule)
+{
+    struct iphdr *iph;
+    struct tcphdr *tcph;
+
+    memset(rule, 0, sizeof(rule_t));
+
+    iph = ip_hdr(skb);
+
+    if (iph->protocol == IPPROTO_TCP)
+    {
+        tcph = tcp_hdr(skb);
+        memcpy(&rule->src, &iph->saddr, sizeof(rule->src));
+        memcpy(&rule->dst, &iph->daddr, sizeof(rule->dst));
+        memcpy(&rule->sport, &tcph->source, sizeof(rule->sport));
+        memcpy(&rule->dport, &tcph->dest, sizeof(rule->dport));
+    }
+}
+
+void rule_to_buffer(rule_t *rule, unsigned char *buffer)
+{
+    int offset;
+    offset = 0;
+
+    memset(buffer, 0, sizeof(rule_t));
+
+    memcpy(buffer + offset, &rule->src, sizeof(rule->src));
+    offset += sizeof(rule->src);
+    memcpy(buffer + offset, &rule->dst, sizeof(rule->dst));
+    offset += sizeof(rule->dst);
+    memcpy(buffer + offset, &rule->sport, sizeof(rule->sport));
+    offset += sizeof(rule->sport);
+    memcpy(buffer + offset, &rule->dport, sizeof(rule->dport));
 }
