@@ -14,7 +14,7 @@ void print_bits(void const *const ptr, size_t const size)
             printk(KERN_CONT "%u", byte);
         }
     }
-    printk(KERN_INFO ""); // new line
+    printk(KERN_INFO "\n"); // new line
 }
 
 bool_t is_set_ip(int ip, short offset)

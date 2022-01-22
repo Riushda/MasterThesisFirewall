@@ -28,6 +28,6 @@ vector_t *search_node(trie_t *trie, int ip);
 
 void destroy_trie(trie_t *trie);
 
-//void print_trie(trie_t *trie, int level);
+void print_trie(trie_t *trie, int level);
 
 #endif

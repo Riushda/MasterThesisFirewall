@@ -136,21 +136,21 @@ void destroy_trie(trie_t *trie)
     destroy_node(trie->root);
 }
 
-/*void print_node(node_t *node, int level)
+void print_node(node_t *node, int level)
 {
     int i;
 
-    printf("Vector: ");
+    printk(KERN_INFO "Vector: ");
     print_bits(node->vector, VECTOR_SIZE);
 
     for (i = 0; i < CHILD_NBR; i++)
     {
-        printf("Has child %d: %d\n", i, node->children[i] != NULL);
+        printk(KERN_INFO "Has child %d: %d\n", i, node->children[i] != NULL);
     }
 
-    printf("Leaf: %d\n", node->leaf);
-    printf("Level: %d\n", level);
-    printf("----------\n");
+    printk(KERN_INFO "Leaf: %d\n", node->leaf);
+    printk(KERN_INFO "Level: %d\n", level);
+    printk(KERN_INFO "----------\n");
 
     for (i = 0; i < CHILD_NBR; i++)
     {
@@ -164,4 +164,4 @@ void destroy_trie(trie_t *trie)
 void print_trie(trie_t *trie, int level)
 {
     print_node(trie->root, level);
-}*/
+}

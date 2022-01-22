@@ -146,7 +146,7 @@ void destroy_list(linked_list_t *list)
     }
 }
 
-/*void print_list(linked_list_t *list)
+void print_list(linked_list_t *list)
 {
     entry_t *element;
     char buf[KEY_SIZE + 1];
@@ -158,8 +158,8 @@ void destroy_list(linked_list_t *list)
     {
         memcpy(buf, element->key, KEY_SIZE);
         buf[KEY_SIZE] = '\0';
-        printf("%s:", buf);
+        printk(KERN_CONT "%s:", buf);
         print_bits(element->vector, VECTOR_SIZE);
         element = element->next;
     }
-}*/
+}

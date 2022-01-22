@@ -21,6 +21,6 @@ vector_t *search_hash(h_table_t *h_table, h_key_t *key);
 
 void destroy_table(h_table_t *h_table);
 
-//void print_table(h_table_t *h_table);
+void print_table(h_table_t *h_table);
 
 #endif

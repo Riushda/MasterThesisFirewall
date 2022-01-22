@@ -93,7 +93,7 @@ void destroy_table(h_table_t *h_table)
 
     kfree(h_table->table);
 }
-/*
+
 void print_table(h_table_t *h_table)
 {
     int i;
@@ -103,7 +103,7 @@ void print_table(h_table_t *h_table)
         if (h_table->table[i]->head != NULL)
         {
             print_list(h_table->table[i]);
-            printf("----------\n");
+            printk(KERN_INFO "----------\n");
         }
     }
-}*/
+}

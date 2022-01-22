@@ -1,12 +1,9 @@
 obj-m = firewall.o
 KVERSION = $(shell uname -r)
-firewall-objs := ./src/firewall.o ./src/rule.o ./src/trie.o ./src/htable.o ./src/linked_list.o ./src/utils.o ./src/constant.h
+firewall-objs := src/firewall.o src/netlink.o src/rule.o src/trie.o src/htable.o src/linked_list.o src/utils.o src/constant.h
 
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
-TARGET_EXEC := client.out
-
-BUILD_DIR := ./build
-SRC_DIRS := ./src
+SRC_DIRS := $(PWD)/src
 
 # Find all the C and C++ files we want to compile
 # Note the single quotes around the * expressions. Make will incorrectly expand these otherwise.
@@ -14,7 +11,7 @@ SRCS := $(shell find $(SRC_DIRS) -name '*.c')
 
 # String substitution for every C/C++ file.
 # As an example, hello.cpp turns into ./build/hello.cpp.o
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+OBJS := $(SRCS:%=%.o)
 
 # String substitution (suffix version without %).
 # As an example, ./build/hello.cpp.o turns into ./build/hello.cpp.d
@@ -30,7 +27,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CPPFLAGS := $(INC_FLAGS) -MMD -MP
 
 # Build step for C source
-$(BUILD_DIR)/%.c.o: %.c
+%.c.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
@@ -41,8 +38,6 @@ all:
 	
 clean:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
-	rm -r $(BUILD_DIR)
-	rm $(TARGET_EXEC)
 	-sudo rmmod firewall
 
 test:

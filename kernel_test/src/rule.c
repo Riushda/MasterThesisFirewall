@@ -95,44 +95,38 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
     memcpy(port, &hport, sizeof(short));
 }
 
-/*void print_rule(rule_t rule)
+void print_rule(rule_t rule)
 {
-    struct in_addr addr;
-    int src;
-    int dst;
+    printk(KERN_CONT "rule: ");
 
     if (rule.not_src)
     {
-        printf("!");
+        printk(KERN_CONT "!");
     }
 
-    src = ntohl(rule.src);
-    memcpy(&addr, &src, sizeof(struct in_addr));
-    printf("Src: %s/%d\n", inet_ntoa(addr), rule.src_bm);
+    printk(KERN_CONT "Src: %pI4/%d ", &rule.src, rule.src_bm);
 
     if (rule.not_dst)
     {
-        printf("!");
+        printk(KERN_CONT "!");
     }
 
-    dst = ntohl(rule.dst);
-    memcpy(&addr, &dst, sizeof(struct in_addr));
-    printf("Dst: %s/%d\n", inet_ntoa(addr), rule.dst_bm);
+    printk(KERN_CONT "Dst: %pI4/%d ", &rule.dst, rule.dst_bm);
 
     if (rule.not_sport)
     {
-        printf("!");
+        printk(KERN_CONT "!");
     }
 
-    printf("Sport: %d\n", ntohs(rule.sport));
+    printk(KERN_CONT "Sport: %d ", ntohs(rule.sport));
 
     if (rule.not_dport)
     {
-        printf("!");
+        printk("!");
     }
 
-    printf("Dport: %d\n", ntohs(rule.dport));
-}*/
+    printk(KERN_CONT "Dport: %d\n", ntohs(rule.dport));
+}
 
 int init_rules(rule_struct_t *rule_struct)
 {
