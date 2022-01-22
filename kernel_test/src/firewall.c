@@ -56,32 +56,24 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     
     // create the rule
 
-    rule_t *rule;
+    rule_t rule;
 
-    rule = (rule_t *)kmalloc(sizeof(rule_t), GFP_KERNEL);
-    if (rule == NULL)
-    {
-        return -1;
-    }
+    memset(&rule, 0, sizeof(rule_t));
 
-    memset(rule, 0, sizeof(rule_t));
-
-    parse_to_rule(skb, rule);
-    //print_rule(*rule);
+    parse_to_rule(skb, &rule);
+    //print_rule(rule);
 
     // match the rule
 
-    if (!match_rule(&rule_struct, *rule))
+    /*if (!match_rule(&rule_struct, rule))
     {
         printk(KERN_INFO "firewall: no match!\n");
         return NF_DROP;
-    }
+    }*/
 
     // send buffer to userspace
 
     //netlink_send_msg(buffer, sizeof(rule_t));
-
-    kfree(rule);
 
     return NF_ACCEPT;
 }
