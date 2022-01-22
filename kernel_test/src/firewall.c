@@ -1,6 +1,6 @@
-#include "netlink.h"
+#include "rule.h"
 
-#define DRIVER_AUTHOR "Justin"
+#define DRIVER_AUTHOR "Justin & Dariush"
 #define DRIVER_DESC "Firewall"
 
 struct sock *nl_sock = NULL;
@@ -45,31 +45,27 @@ static void netlink_recv_msg(struct sk_buff *skb)
 
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
-    // fill the buffer 
+    rule_t rule;
+    unsigned char buffer[sizeof(rule_t)];
 
-    unsigned char buffer[sizeof(rule_t)+1];
     if (!skb)
         return NF_ACCEPT;
 
-    if(parse_to_buffer(skb, buffer))
-        return NF_DROP;
-    
     // create the rule
-
-    rule_t rule;
 
     memset(&rule, 0, sizeof(rule_t));
 
     parse_to_rule(skb, &rule);
-    //print_rule(rule);
+    rule_to_buffer(&rule, buffer);
+    print_rule(rule);
 
     // match the rule
 
-    /*if (!match_rule(&rule_struct, rule))
+    if (match_rule(&rule_struct, rule))
     {
         printk(KERN_INFO "firewall: no match!\n");
         return NF_DROP;
-    }*/
+    }
 
     // send buffer to userspace
 
@@ -80,15 +76,16 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {
+    rule_t rule;
+
     /* rule_struct list initialization */
 
     memset(&rule_struct, 0, sizeof(rule_struct_t));
 
     init_rules(&rule_struct);
 
-    // tests functions
+    // insert dummy rule
 
-    rule_t rule;
     memset(&rule, 0, sizeof(rule_t));
 
     parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
@@ -97,24 +94,12 @@ static int __init init(void)
     parse_port("22", &rule.dport, &rule.not_dport);
     rule.index = 2;
     rule.action = 1;
-    //print_rule(rule);
 
     insert_rule(&rule_struct, rule);
-    rule.index = 3;
-    insert_rule(&rule_struct, rule);
-
-    //print_trie(rule_struct.src_trie, 0);
-    //print_table(rule_struct.sport_table);
-
-    rule.dport = ntohs(23);
-
-    printk(KERN_INFO "%d\n", match_rule(&rule_struct, rule));
-
-    remove_rule(&rule_struct, rule);
 
     // hook function initialisation
 
-        struct netlink_kernel_cfg cfg = {
+    struct netlink_kernel_cfg cfg = {
         .input = netlink_recv_msg,
     };
 
@@ -160,46 +145,3 @@ module_exit(cleanup);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
-
-/*
-
-#include "rule.h"
-
-int main()
-{
-    rule_t rule;
-    rule_struct_t rule_struct;
-    memset(&rule_struct, 0, sizeof(rule_struct_t));
-    memset(&rule, 0, sizeof(rule_t));
-
-    parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
-    parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
-    parse_port("22", &rule.sport, &rule.not_sport);
-    parse_port("22", &rule.dport, &rule.not_dport);
-    rule.index = 2;
-    rule.action = 1;
-
-    print_rule(rule);
-
-    init_rules(&rule_struct);
-
-    insert_rule(&rule_struct, rule);
-    //remove_rule(&rule_struct, rule);
-
-    rule.dport = ntohs(23);
-
-    print_trie(rule_struct.src_trie, 0);
-    print_table(rule_struct.sport_table);
-    print_table(rule_struct.dport_table);
-
-    printf("%d\n", match_rule(&rule_struct, rule));
-
-    destroy_rules(&rule_struct);
-
-    vector_t vector[VECTOR_SIZE];
-    memset(vector, 0, VECTOR_SIZE);
-    //print_bits(vector, VECTOR_SIZE);
-    return 0;
-}
-
-*/

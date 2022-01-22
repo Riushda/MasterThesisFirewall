@@ -14,13 +14,12 @@ void print_bits(void const *const ptr, size_t const size)
             printk(KERN_CONT "%u", byte);
         }
     }
-    printk(KERN_INFO "\n"); // new line
+    printk(KERN_CONT "\n"); // new line
 }
 
 bool_t is_set_ip(int ip, short offset)
 {
     int bitmask;
-    int i;
 
     if (offset > 31)
         return -1;
@@ -100,7 +99,7 @@ void unset_shift_v(vector_t *vector, short index)
         element++;
         *element = *element >> 1;
 
-        if (i < VECTOR_SIZE - 1 & ((*(element + 1) & 1) == 1))
+        if ((i < VECTOR_SIZE - 1) & ((*(element + 1) & 1) == 1))
             *element |= 128;
     }
 }

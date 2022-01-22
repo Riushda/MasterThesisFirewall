@@ -33,6 +33,14 @@ void print_rule(rule_t rule);
 
 /* KERNEL */
 
+/* SKB */
+
+void parse_to_rule(struct sk_buff *skb, rule_t *rule);
+
+void rule_to_buffer(rule_t *rule, unsigned char *buffer);
+
+/* RULE STRUCTURE */
+
 typedef struct rule_structure
 {
     trie_t *src_trie;
