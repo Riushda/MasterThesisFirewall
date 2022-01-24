@@ -1,4 +1,6 @@
 #include "rule.h"
+#include <linux/proc_fs.h>
+#include <linux/sched.h>
 
 #define DRIVER_AUTHOR "Justin & Dariush"
 #define DRIVER_DESC "Firewall"
@@ -9,14 +11,12 @@ struct nlmsghdr *nlh;
 static struct nf_hook_ops *nfho = NULL;
 
 rule_struct_t rule_struct;
+int firewall_pid = 0;
 
 static void netlink_send_msg(char *msg, int msg_size)
 {
     struct sk_buff *skb_out;
     int res;
-    int pid;
-
-    pid = nlh->nlmsg_pid;
 
     // create message
     skb_out = nlmsg_new(msg_size, 0);
@@ -30,9 +30,9 @@ static void netlink_send_msg(char *msg, int msg_size)
     NETLINK_CB(skb_out).dst_group = 0;
     strncpy(nlmsg_data(nlh), msg, msg_size);
 
-    printk(KERN_INFO "firewall: Send %s\n", msg);
+    //printk(KERN_INFO "firewall: Send %s\n", msg);
 
-    res = nlmsg_unicast(nl_sock, skb_out, pid);
+    res = nlmsg_unicast(nl_sock, skb_out, firewall_pid);
     if (res < 0)
         printk(KERN_INFO "firewall: error while sending skb to user\n");
 }
@@ -57,11 +57,11 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     parse_to_rule(skb, &rule);
     rule_to_buffer(&rule, buffer);
-    print_rule(rule);
+    //print_rule(rule);
 
     // match the rule
 
-    if (match_rule(&rule_struct, rule))
+    if (match_rule(&rule_struct, rule)) // actually !match_rule but if drop too much it crashes
     {
         printk(KERN_INFO "firewall: no match!\n");
         return NF_DROP;
@@ -69,13 +69,34 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     // send buffer to userspace
 
-    //netlink_send_msg(buffer, sizeof(rule_t));
+    netlink_send_msg(buffer, sizeof(rule_t));
 
     return NF_ACCEPT;
 }
 
 static int __init init(void)
 {
+    // search for firewall process
+
+    struct task_struct *task;
+
+    for_each_process(task) {
+
+       // compare your process name with each of the task struct process name 
+
+        if ( (strcmp( task->comm,"client.out") == 0 ) ) {
+
+              // if matched that is your user process PID      
+              firewall_pid = task->pid;
+              printk(KERN_INFO "firewall pid : %d\n", firewall_pid);
+        }
+    }
+
+    if(!firewall_pid){
+        printk(KERN_INFO "firewall process not found !");
+        //return -1; // will throw operation not permitted
+    }
+
     rule_t rule;
 
     /* rule_struct list initialization */
@@ -105,7 +126,7 @@ static int __init init(void)
 
     printk(KERN_INFO "firewall: init module\n");
 
-    nl_sock = netlink_kernel_create(&init_net, NETLINK_FW, &cfg);
+    nl_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, &cfg); // NETLINK_FW
     if (!nl_sock)
     {
         printk(KERN_ALERT "firewall: error creating socket.\n");

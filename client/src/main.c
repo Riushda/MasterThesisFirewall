@@ -1,11 +1,22 @@
 #include <signal.h>
+#include <pthread.h>
 #include "netlink.h"
 #include "utils.h"
 #include "handlers.h"
 
 extern rule_list_t *rule_list;
+static volatile int keepRunning = 1;
 
 void INThandler(int);
+
+void *netlink_process()
+{
+    int err = receive_msg(&keepRunning);
+    if(err && keepRunning){ // if netlink thread crashed and main not done
+      INThandler(SIGINT);
+    }
+    return NULL;
+}
 
 int main()
 {
@@ -19,18 +30,22 @@ int main()
   rule_list = (rule_list_t *)malloc(sizeof(rule_list_t));
   memset(rule_list, 0, sizeof(rule_list_t));
 
-  /*if (open_netlink())
+  pthread_t netlink_thread;
+  int err = pthread_create(&netlink_thread, NULL, netlink_process, NULL);
+  if (err != 0)
   {
-    return -1;
-  }*/
+      return -1;
+  }
 
-  while (1)
+  while (keepRunning)
   {
     fgets(line, 100, fp);
+
     argc = count_args(line);
 
-    if (argc <= 0)
+    if (argc <= 0 || !keepRunning){
       continue;
+    }
 
     int *lengths = (int *)malloc(sizeof(int) * argc);
     if (lengths == NULL)
@@ -72,6 +87,16 @@ int main()
     free(argv);
   }
 
+  err = pthread_join(netlink_thread, NULL);
+  if (err != 0)
+  {
+      return -1;
+  }
+
+  destroy_rule_list(rule_list);
+
+  printf("main closing gracefully\n");
+
   return 0;
 }
 
@@ -85,9 +110,9 @@ void INThandler(int sig)
   c = getchar();
   if (c == 'y' || c == 'Y')
   {
-    //close_netlink();
-    destroy_rule_list(rule_list);
-    exit(0);
+    keepRunning = 0;
+    dest_addr.nl_pid = getpid();
+    sendmsg(sock_fd, NULL, 0);
   }
   else
     signal(SIGINT, INThandler);
