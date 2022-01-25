@@ -9,4 +9,16 @@ typedef unsigned char proto_t;
 typedef unsigned char bitmask_t;
 typedef unsigned char string_t;
 
+enum ERRORS
+{
+    NO_HANDLER = -1,
+    HANDLED = 1
+};
+
+enum ACTIONS
+{
+    A_RULE = 0,
+    R_RULE = 1
+};
+
 #endif

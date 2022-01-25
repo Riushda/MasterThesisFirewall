@@ -7,18 +7,6 @@
 #ifndef HANDLERS_H
 #define HANDLERS_H
 
-enum ERRORS
-{
-    NO_HANDLER = -1,
-    HANDLED = 1
-};
-
-enum ACTIONS
-{
-    A_RULE = 0,
-    R_RULE = 1
-};
-
 typedef int (*handler)(int argc, char **argv);
 
 typedef struct

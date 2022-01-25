@@ -39,8 +39,32 @@ static void netlink_send_msg(char *msg, int msg_size)
 
 static void netlink_recv_msg(struct sk_buff *skb)
 {
+    char *msg;
+    bool_t action;
+    rule_t rule;
+    memset(&rule, 0, sizeof(rule_t));
+
     nlh = (struct nlmsghdr *)skb->data;
-    printk(KERN_INFO "firewall: msg received %s\n", (char *)NLMSG_DATA(nlh));
+    msg = (char *)NLMSG_DATA(nlh);
+
+    memcpy(&action, msg, sizeof(bool_t));
+    memcpy(&rule, msg+1, sizeof(rule_t));
+    rule.src = (int) ntohl((uint32_t) rule.src);
+    rule.dst = (int) ntohl((uint32_t) rule.dst);
+
+    print_rule(rule);
+
+    switch (action)
+        {
+        case ADD:
+            insert_rule(&rule_struct, rule);
+            break;
+        case REMOVE:
+            remove_rule(&rule_struct, rule);
+            break;
+        default:
+            printk(KERN_INFO "action not know\n");
+        }
 }
 
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
@@ -76,6 +100,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {
+    rule_t rule;
+    
     // search for firewall process
 
     struct task_struct *task;
@@ -96,8 +122,6 @@ static int __init init(void)
         printk(KERN_INFO "firewall process not found !");
         //return -1; // will throw operation not permitted
     }
-
-    rule_t rule;
 
     /* rule_struct list initialization */
 
@@ -126,7 +150,7 @@ static int __init init(void)
 
     printk(KERN_INFO "firewall: init module\n");
 
-    nl_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, &cfg); // NETLINK_FW
+    nl_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, &cfg); // was NETLINK_FW
     if (!nl_sock)
     {
         printk(KERN_ALERT "firewall: error creating socket.\n");

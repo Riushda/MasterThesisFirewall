@@ -1,4 +1,5 @@
 #include "netlink.h"
+#include <inttypes.h>
 
 struct nlmsghdr *nlh;
 struct msghdr msg;
@@ -59,13 +60,13 @@ int receive_msg(volatile int *keeprunning){
     int nready;
     struct timeval tv = {2, 0};
 
-    char command[200];
+    char decision[200];
 
     struct nlmsghdr *nl_msghdr = (struct nlmsghdr*) malloc(NLMSG_SPACE(256));
 
     while (*keeprunning) {
         memset(nl_msghdr, 0, NLMSG_SPACE(256));
-        memset(command, 0, 200);
+        memset(decision, 0, 200);
 
         iov.iov_base = (void*) nl_msghdr;
         iov.iov_len = NLMSG_SPACE(256);
@@ -92,11 +93,11 @@ int receive_msg(volatile int *keeprunning){
         recvmsg(sock_fd, &msg, 0);
 
         char *kernel_msg = (char*)NLMSG_DATA(nl_msghdr);
-        printf("Kernel message: %s\n", kernel_msg); 
+        //printf("Kernel message: %s\n", kernel_msg); 
 
-        memcpy(command, take_decision(kernel_msg), strlen(kernel_msg));
+        memcpy(decision, take_decision(kernel_msg), strlen(kernel_msg));
         
-        send_msg(command);
+        //send_msg(*decision, (void *) decision+1);
     }
     
     free(nl_msghdr);
@@ -108,7 +109,7 @@ int receive_msg(volatile int *keeprunning){
     return 0;
 }
 
-int set_payload(uint8_t code, void *data, short data_len)
+int set_payload(uint8_t code, void *data)
 {
     int offset;
 
@@ -119,19 +120,16 @@ int set_payload(uint8_t code, void *data, short data_len)
     memcpy(payload + offset, &code, sizeof(code));
     offset += sizeof(code);
 
-    memcpy(payload + offset, &data_len, sizeof(data_len));
-    offset += sizeof(data_len);
-
-    memcpy(payload + offset, data, data_len);
-    offset += sizeof(data);
+    memcpy(payload + offset, data, sizeof(rule_t));
+    offset += sizeof(rule_t);
 
     return offset;
 }
 
-int send_msg(char *data)
+int send_msg(uint8_t code, void *data)
 {
-    //int msg_len = set_payload(code, data, data_len);
-    strcpy(NLMSG_DATA(nlh), data);
+    int msg_len = set_payload(code, data);
+    memcpy(NLMSG_DATA(nlh), payload, msg_len);
 
     memset(&iov, 0, sizeof(iov));
     iov.iov_base = (void *)nlh;
