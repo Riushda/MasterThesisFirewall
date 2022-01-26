@@ -52,7 +52,7 @@ static void netlink_recv_msg(struct sk_buff *skb)
     rule.src = (int) ntohl((uint32_t) rule.src);
     rule.dst = (int) ntohl((uint32_t) rule.dst);
 
-    print_rule(rule);
+    //print_rule(rule);
 
     switch (action)
         {
@@ -63,14 +63,27 @@ static void netlink_recv_msg(struct sk_buff *skb)
             remove_rule(&rule_struct, rule);
             break;
         default:
-            printk(KERN_INFO "action not know\n");
+            msg = msg;
+            //printk(KERN_INFO "action not know\n");
         }
 }
 
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
     rule_t rule;
-    unsigned char buffer[sizeof(rule_t)];
+    
+    struct tcphdr *tcph;
+
+    char *data;
+    uint8_t application_header;
+
+    int offset; 
+    uint8_t msg_len;
+    uint16_t topic_len;
+    uint8_t payload_len;
+
+    uint8_t topic_len_short;
+    int buffer_len;
 
     if (!skb)
         return NF_ACCEPT;
@@ -80,7 +93,6 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     memset(&rule, 0, sizeof(rule_t));
 
     parse_to_rule(skb, &rule);
-    rule_to_buffer(&rule, buffer);
     //print_rule(rule);
 
     // match the rule
@@ -91,9 +103,68 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         return NF_DROP;
     }
 
-    // send buffer to userspace
+    /*
 
-    netlink_send_msg(buffer, sizeof(rule_t));
+    MQTT layer 
+    Remark : msg_len is the length of the remaining fields (not counting itself)
+    ________________________________________________________________________________________
+    |        |         |           |                   |                                    |
+    | header | msg_len | topic_len |      topic        |              payload               |                                   
+    | 1 byte | 1 byte  |  2 bytes  | topic_len byte(s) |  (msg_len - 2 - topic_len) byte(s) |                                                            
+    |________|_________|___________|___________________|____________________________________|
+
+    */
+
+    tcph = tcp_hdr(skb);
+
+    data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
+
+    application_header = *(data);
+
+    if(application_header==MQTT_PROTOCOL){
+        msg_len = *(data+1);
+
+        memcpy(&topic_len, data+2, 2);
+        topic_len = ntohs(topic_len);
+
+        offset = 4;
+
+        char topic[topic_len+1];
+        memset(topic, 0, topic_len+1);
+        memcpy(topic, data+offset, topic_len);
+
+        offset += topic_len;
+
+        payload_len = msg_len - 2 - topic_len; 
+        char payload[payload_len+1];
+        memset(payload, 0, payload_len+1);
+        memcpy(payload, data+offset, payload_len);
+
+        printk(KERN_INFO "topic : %s\n", topic);
+        printk(KERN_INFO "payload : %s\n", payload);
+
+        // concatenate informations
+
+        topic_len_short = (uint8_t) topic_len;
+        
+        buffer_len = 12 + 1 + topic_len + 1 + payload_len;
+        unsigned char buffer[buffer_len];
+        memset(buffer, 0, buffer_len);
+
+        offset = rule_to_buffer(&rule, buffer); // will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
+
+        memcpy(buffer + offset, &topic_len_short, 1);
+        offset += 1;
+        memcpy(buffer + offset, topic, topic_len);
+        offset += topic_len;
+        memcpy(buffer + offset, &payload_len, 1);
+        offset += 1;
+        memcpy(buffer + offset, payload, payload_len);
+
+        // send buffer to userspace
+
+        //netlink_send_msg(buffer, buffer_len);
+    }
 
     return NF_ACCEPT;
 }

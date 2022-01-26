@@ -291,12 +291,10 @@ void parse_to_rule(struct sk_buff *skb, rule_t *rule)
     }
 }
 
-void rule_to_buffer(rule_t *rule, unsigned char *buffer)
+int rule_to_buffer(rule_t *rule, unsigned char *buffer)
 {
     int offset;
     offset = 0;
-
-    memset(buffer, 0, sizeof(rule_t));
 
     memcpy(buffer + offset, &rule->src, sizeof(rule->src));
     offset += sizeof(rule->src);
@@ -305,4 +303,7 @@ void rule_to_buffer(rule_t *rule, unsigned char *buffer)
     memcpy(buffer + offset, &rule->sport, sizeof(rule->sport));
     offset += sizeof(rule->sport);
     memcpy(buffer + offset, &rule->dport, sizeof(rule->dport));
+    offset += sizeof(rule->dport);
+
+    return offset;
 }

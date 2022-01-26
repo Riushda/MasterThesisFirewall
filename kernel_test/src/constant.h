@@ -9,6 +9,7 @@
 #define TABLE_SIZE 1024
 #define ADD 0
 #define REMOVE 1
+#define MQTT_PROTOCOL 48
 
 typedef unsigned char vector_t;
 typedef unsigned char h_key_t;

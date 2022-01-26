@@ -37,7 +37,7 @@ void print_rule(rule_t rule);
 
 void parse_to_rule(struct sk_buff *skb, rule_t *rule);
 
-void rule_to_buffer(rule_t *rule, unsigned char *buffer);
+int rule_to_buffer(rule_t *rule, unsigned char *buffer);
 
 /* RULE STRUCTURE */
 
