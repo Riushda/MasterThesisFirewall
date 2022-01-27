@@ -14,7 +14,7 @@ node_t *init_node(void)
     int i;
 
     node = NULL;
-    node = (node_t *)malloc(sizeof(node_t));
+    node = (node_t *)kmalloc(sizeof(node_t), GFP_KERNEL);
 
     if (node)
     {
@@ -48,28 +48,28 @@ int insert_node(trie_t *trie, int ip, bitmask_t bitmask, short rule_index)
 {
     int level;
     int index;
-    node_t *current;
+    node_t *element;
 
-    current = trie->root;
+    element = trie->root;
 
     for (level = 0; level < bitmask; level++)
     {
         index = is_set_ip(ip, level);
 
-        if (!current->children[index])
+        if (!element->children[index])
         {
-            current->children[index] = init_node();
-            if (!current->children[index])
+            element->children[index] = init_node();
+            if (!element->children[index])
                 return -1;
-            memcpy(current->children[index]->vector, current->vector, VECTOR_SIZE);
+            memcpy(element->children[index]->vector, element->vector, VECTOR_SIZE);
         }
 
-        current = current->children[index];
+        element = element->children[index];
     }
 
-    current->leaf = 1;
+    element->leaf = 1;
 
-    update_vector(current, rule_index, set_bit_v);
+    update_vector(element, rule_index, set_bit_v);
 
     return 0;
 }
@@ -78,17 +78,17 @@ void remove_node(trie_t *trie, int ip, bitmask_t bitmask, short rule_index)
 {
     int level;
     int index;
-    node_t *current;
+    node_t *element;
 
-    current = trie->root;
+    element = trie->root;
     for (level = 0; level < bitmask; level++)
     {
         index = is_set_ip(ip, level);
 
-        if (!current->children[index])
-            current->children[index] = init_node();
+        if (!element->children[index])
+            element->children[index] = init_node();
 
-        current = current->children[index];
+        element = element->children[index];
     }
 
     update_vector(trie->root, rule_index, unset_shift_v);
@@ -98,19 +98,19 @@ vector_t *search_node(trie_t *trie, int ip)
 {
     int level;
     int index;
-    node_t *current;
+    node_t *element;
     vector_t *vector;
 
     vector = NULL;
-    current = trie->root;
+    element = trie->root;
 
     for (level = 0; level < IP_SIZE; level++)
     {
-        vector = current->vector;
+        vector = element->vector;
         index = is_set_ip(ip, level);
-        if (!current->children[index])
+        if (!element->children[index])
             return vector;
-        current = current->children[index];
+        element = element->children[index];
     }
 
     return vector;
@@ -128,7 +128,7 @@ void destroy_node(node_t *node)
         }
     }
 
-    free(node);
+    kfree(node);
 }
 
 void destroy_trie(trie_t *trie)
@@ -140,17 +140,17 @@ void print_node(node_t *node, int level)
 {
     int i;
 
-    printf("Vector: ");
+    printk(KERN_INFO "Vector: ");
     print_bits(node->vector, VECTOR_SIZE);
 
     for (i = 0; i < CHILD_NBR; i++)
     {
-        printf("Has child %d: %d\n", i, node->children[i] != NULL);
+        printk(KERN_INFO "Has child %d: %d\n", i, node->children[i] != NULL);
     }
 
-    printf("Leaf: %d\n", node->leaf);
-    printf("Level: %d\n", level);
-    printf("----------\n");
+    printk(KERN_INFO "Leaf: %d\n", node->leaf);
+    printk(KERN_INFO "Level: %d\n", level);
+    printk(KERN_INFO "----------\n");
 
     for (i = 0; i < CHILD_NBR; i++)
     {

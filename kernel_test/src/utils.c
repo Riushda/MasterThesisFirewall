@@ -11,15 +11,17 @@ void print_bits(void const *const ptr, size_t const size)
         for (j = 7; j >= 0; j--)
         {
             byte = (b[i] >> j) & 1;
-            printk(KERN_CONT "%u", byte);
+            printf("%u", byte);
         }
     }
-    printk(KERN_CONT "\n"); // new line
+    printf("\n");
+    fflush(stdout);
 }
 
 bool_t is_set_ip(int ip, short offset)
 {
     int bitmask;
+    int i;
 
     if (offset > 31)
         return -1;
@@ -32,32 +34,32 @@ bool_t is_set_ip(int ip, short offset)
 bool_t is_set_v(vector_t *vector, short index)
 {
     bitmask_t bitmask;
-    vector_t *element;
+    vector_t *current;
 
-    element = vector;
+    current = vector;
     bitmask = 1 << (index % 8);
 
-    element += ((int)index / 8);
-    return (*element & bitmask) != 0;
+    current += ((int)index / 8);
+    return (*current & bitmask) != 0;
 }
 
 void set_bit_v(vector_t *vector, short index)
 {
     bitmask_t bitmask;
-    vector_t *element;
+    vector_t *current;
 
-    element = vector;
+    current = vector;
     bitmask = 1 << (index % 8);
 
-    element += ((int)index / 8);
-    *element |= bitmask;
+    current += ((int)index / 8);
+    *current |= bitmask;
 }
 
 void unset_shift_v(vector_t *vector, short index)
 {
     bitmask_t bitmask;
-    vector_t *element;
-    vector_t old_element;
+    vector_t *current;
+    vector_t old_current;
     int i;
     int offset;
 
@@ -65,42 +67,42 @@ void unset_shift_v(vector_t *vector, short index)
     if (offset >= VECTOR_SIZE)
         return;
 
-    element = vector;
-    element += offset;
-    old_element = *element;
+    current = vector;
+    current += offset;
+    old_current = *current;
 
     bitmask = 0;
     for (i = 0; i < 8 - (index % 8); i++)
         bitmask = (bitmask >> 1) + 128;
 
     /* First remove the part starting from the index */
-    *element &= (2147483647 ^ bitmask);
+    *current &= (2147483647 ^ bitmask);
 
     /* Save the part after the index */
     bitmask = bitmask << 1;
-    bitmask &= old_element;
+    bitmask &= old_current;
 
     /* Shift the part after the index and merge with part before the index */
     bitmask = bitmask >> 1;
-    *element |= bitmask;
+    *current |= bitmask;
 
     if (offset >= VECTOR_SIZE - 1)
         return;
 
     /* We must be careful with the first bit of the byte because the shift won't preserve it */
-    if ((*(element + 1) & 1) == 1)
+    if ((*(current + 1) & 1) == 1)
     {
-        *element |= 128;
+        *current |= 128;
     }
 
-    /* Now we also need to shift all the bytes after the element byte */
+    /* Now we also need to shift all the bytes after the current byte */
     for (i = offset + 1; i < VECTOR_SIZE; i++)
     {
-        element++;
-        *element = *element >> 1;
+        current++;
+        *current = *current >> 1;
 
-        if ((i < VECTOR_SIZE - 1) & ((*(element + 1) & 1) == 1))
-            *element |= 128;
+        if (i < VECTOR_SIZE - 1 & ((*(current + 1) & 1) == 1))
+            *current |= 128;
     }
 }
 
@@ -119,16 +121,16 @@ short first_match_index(vector_t *vector)
 
 bool_t is_null_v(vector_t *vector)
 {
-    vector_t *element;
+    vector_t *current;
     int i;
     int sum;
 
-    element = vector;
+    current = vector;
     sum = 0;
 
     for (i = 0; i < VECTOR_SIZE; i++)
     {
-        sum += element[i];
+        sum += current[i];
     }
 
     return sum == 0;
@@ -136,13 +138,13 @@ bool_t is_null_v(vector_t *vector)
 
 vector_t *and_v(vector_t *vector1, vector_t *vector2)
 {
-    vector_t *element1;
-    vector_t *element2;
-    vector_t *element3;
+    vector_t *current1;
+    vector_t *current2;
+    vector_t *current3;
     vector_t *result;
     int i;
 
-    result = (vector_t *)kmalloc(VECTOR_SIZE, GFP_KERNEL);
+    result = (vector_t *)malloc(VECTOR_SIZE);
 
     if (result)
     {
@@ -151,14 +153,14 @@ vector_t *and_v(vector_t *vector1, vector_t *vector2)
         if (!vector1 | !vector2)
             return result;
 
-        element1 = vector1;
-        element2 = vector2;
-        element3 = result;
+        current1 = vector1;
+        current2 = vector2;
+        current3 = result;
 
         for (i = 0; i < VECTOR_SIZE; i++)
         {
-            *element3 = *element1 & *element2;
-            element3++, element1++, element2++;
+            *current3 = *current1 & *current2;
+            current3++, current1++, current2++;
         }
     }
 
@@ -167,13 +169,13 @@ vector_t *and_v(vector_t *vector1, vector_t *vector2)
 
 vector_t *or_v(vector_t *vector1, vector_t *vector2)
 {
-    vector_t *element1;
-    vector_t *element2;
-    vector_t *element3;
+    vector_t *current1;
+    vector_t *current2;
+    vector_t *current3;
     vector_t *result;
     int i;
 
-    result = (vector_t *)kmalloc(VECTOR_SIZE, GFP_KERNEL);
+    result = (vector_t *)malloc(VECTOR_SIZE);
 
     if (result)
     {
@@ -193,14 +195,14 @@ vector_t *or_v(vector_t *vector1, vector_t *vector2)
             return result;
         }
 
-        element1 = vector1;
-        element2 = vector2;
-        element3 = result;
+        current1 = vector1;
+        current2 = vector2;
+        current3 = result;
 
         for (i = 0; i < VECTOR_SIZE; i++)
         {
-            *element3 = *element1 | *element2;
-            element3++, element1++, element2++;
+            *current3 = *current1 | *current2;
+            current3++, current1++, current2++;
         }
     }
 

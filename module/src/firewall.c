@@ -1,20 +1,8 @@
-#include <net/sock.h>
-#include <linux/module.h>
-#include <linux/netlink.h>
-#include <linux/skbuff.h>
-#include <linux/kernel.h>
-#include <linux/netfilter.h>
-#include <linux/netfilter_ipv4.h>
-#include <linux/ip.h>
-#include <linux/tcp.h>
-#include <linux/udp.h>
-#include <linux/inet.h>
-#include "rule.h"
-#include "htable.h"
-#include "utils.h"
-#include "constant.h"
+#include "protocol.h"
+#include <linux/proc_fs.h>
+#include <linux/sched.h>
 
-#define DRIVER_AUTHOR "Justin"
+#define DRIVER_AUTHOR "Justin & Dariush"
 #define DRIVER_DESC "Firewall"
 
 struct sock *nl_sock = NULL;
@@ -22,15 +10,15 @@ struct nlmsghdr *nlh;
 
 static struct nf_hook_ops *nfho = NULL;
 
-struct item *table[TABLE_SIZE];
+rule_struct_t rule_struct;
+int firewall_pid = 0;
+
+// TODO : parsing of this in context_rule.c + install gdb for debug in kernel
 
 static void netlink_send_msg(char *msg, int msg_size)
 {
     struct sk_buff *skb_out;
     int res;
-    int pid;
-
-    pid = nlh->nlmsg_pid;
 
     // create message
     skb_out = nlmsg_new(msg_size, 0);
@@ -44,35 +32,120 @@ static void netlink_send_msg(char *msg, int msg_size)
     NETLINK_CB(skb_out).dst_group = 0;
     strncpy(nlmsg_data(nlh), msg, msg_size);
 
-    printk(KERN_INFO "firewall: Send %s\n", msg);
+    //printk(KERN_INFO "firewall: Send %s\n", msg);
 
-    res = nlmsg_unicast(nl_sock, skb_out, pid);
+    res = nlmsg_unicast(nl_sock, skb_out, firewall_pid);
     if (res < 0)
         printk(KERN_INFO "firewall: error while sending skb to user\n");
 }
 
 static void netlink_recv_msg(struct sk_buff *skb)
 {
+    char *msg;
+    bool_t action;
+    rule_t rule;
+    memset(&rule, 0, sizeof(rule_t));
+
     nlh = (struct nlmsghdr *)skb->data;
-    printk(KERN_INFO "firewall: msg received %s\n", (char *)NLMSG_DATA(nlh));
+    msg = (char *)NLMSG_DATA(nlh);
+
+    memcpy(&action, msg, sizeof(bool_t));
+    memcpy(&rule, msg+1, sizeof(rule_t));
+    rule.src = (int) ntohl((uint32_t) rule.src);
+    rule.dst = (int) ntohl((uint32_t) rule.dst);
+
+    //print_rule(rule);
+
+    switch (action)
+        {
+        case ADD:
+            insert_rule(&rule_struct, rule);
+            break;
+        case REMOVE:
+            remove_rule(&rule_struct, rule);
+            break;
+        default:
+            msg = msg;
+            //printk(KERN_INFO "action not know\n");
+        }
 }
 
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
-    unsigned char buffer[RULE_SIZE];
+    rule_t rule;
+    
+    struct iphdr *iph;
+    struct tcphdr *tcph;
+    struct udphdr *udph;
+
+    char *data;
+    uint16_t port;
+    unsigned char buffer[MAX_PACKET_SIZE];
+   
+    int buffer_len;
 
     if (!skb)
         return NF_ACCEPT;
 
-    if(parse_to_buffer(skb, buffer))
-        return NF_DROP;
+    // create the rule
 
-    printk(KERN_INFO "%s\n", buffer);
-    
-    if (search_item(buffer, table, TABLE_SIZE) != NULL)
+    memset(&rule, 0, sizeof(rule_t));
+
+    parse_to_rule(skb, &rule);
+    //print_rule(rule);
+
+    // match the rule
+
+    if (match_rule(&rule_struct, rule)) // actually !match_rule but if drop too much it crashes
     {
-        printk(KERN_INFO "firewall: match!\n");
+        printk(KERN_INFO "firewall: no match!\n");
         return NF_DROP;
+    }
+
+    // packet parsing
+
+    // if no ip layer => accept, if ip layer check if ICMP or other ip important protocol then accept
+
+    iph = ip_hdr(skb);
+
+    if(iph->protocol == IPPROTO_TCP){
+
+        tcph = tcp_hdr(skb);
+
+        data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
+
+        port = ntohs(tcph->dest);
+
+    }
+    else if(iph->protocol == IPPROTO_UDP){
+
+        // the udp code has not been tested
+
+        udph = udp_hdr(skb);
+
+        //data = (char *)((unsigned char *)iph + sizeof(*iph));
+        data = (char *)((unsigned char *)udph + sizeof(*udph));
+
+        port = ntohs(udph->dest);
+
+    }
+    else{
+        printk(KERN_INFO "Unknown ip/transport layer protocol\n");
+        return NF_ACCEPT; // other ip/transport layer protocol
+    }
+
+    memset(buffer, 0, buffer_len);
+
+    rule_to_buffer(&rule, buffer); // length will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
+
+    buffer_len = parse_packet(data, port, buffer);
+
+    if(buffer_len){
+        buffer_len = 0; // for compilation
+
+        // send buffer to userspace
+
+        //netlink_send_msg(buffer, buffer_len);
     }
 
     return NF_ACCEPT;
@@ -80,13 +153,57 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {
+    rule_t rule;
+    
+    // search for firewall process
+
+    struct task_struct *task;
+
+    for_each_process(task) {
+
+       // compare your process name with each of the task struct process name 
+
+        if ( (strcmp( task->comm,"client.out") == 0 ) ) {
+
+              // if matched that is your user process PID      
+              firewall_pid = task->pid;
+              printk(KERN_INFO "firewall pid : %d\n", firewall_pid);
+        }
+    }
+
+    if(!firewall_pid){
+        printk(KERN_INFO "firewall process not found !");
+        //return -1; // will throw operation not permitted
+    }
+
+    /* rule_struct list initialization */
+
+    memset(&rule_struct, 0, sizeof(rule_struct_t));
+
+    init_rules(&rule_struct);
+
+    // insert dummy rule
+
+    memset(&rule, 0, sizeof(rule_t));
+
+    parse_ip("192.168.1.104/24", &rule.src, &rule.src_bm);
+    parse_ip("192.168.1.230/24", &rule.dst, &rule.dst_bm);
+    parse_port("450", &rule.sport, &rule.not_sport);
+    parse_port("450", &rule.dport, &rule.not_dport);
+    rule.index = 2;
+    rule.action = 1;
+
+    insert_rule(&rule_struct, rule);
+
+    // hook function initialisation
+
     struct netlink_kernel_cfg cfg = {
         .input = netlink_recv_msg,
     };
 
     printk(KERN_INFO "firewall: init module\n");
 
-    nl_sock = netlink_kernel_create(&init_net, NETLINK_FW, &cfg);
+    nl_sock = netlink_kernel_create(&init_net, NETLINK_USERSOCK, &cfg); // was NETLINK_FW
     if (!nl_sock)
     {
         printk(KERN_ALERT "firewall: error creating socket.\n");
@@ -115,7 +232,9 @@ static void __exit cleanup(void)
     nf_unregister_net_hook(&init_net, nfho);
     kfree(nfho);
 
-    free_table(table, TABLE_SIZE);
+    printk(KERN_INFO "Before destroy_rules\n");
+
+    destroy_rules(&rule_struct);
 }
 
 module_init(init);

@@ -1,6 +1,6 @@
 #include "htable.h"
 
-unsigned long hash(unsigned char *str, size_t size)
+unsigned long hash(h_key_t *str, size_t size)
 {
     unsigned long hash;
     int c;
@@ -8,82 +8,102 @@ unsigned long hash(unsigned char *str, size_t size)
     hash = 5381;
     while ((c = *str++))
         hash = ((hash << 5) + hash) + c;
-        
+
     return hash % size;
 }
 
-struct item *search_item(unsigned char *key, struct item *table[], size_t size)
+int init_table(h_table_t *h_table, size_t size)
 {
-    unsigned long hashIndex;
-
-    hashIndex = hash(key, size);
-    while (table[hashIndex] != NULL)
-    {
-        if (!memcmp(table[hashIndex]->key, key, sizeof(table[hashIndex]->key)))
-            return table[hashIndex];
-
-        ++hashIndex;
-        hashIndex %= size;
-    }
-
-    return NULL;
-}
-
-int insert_item(unsigned char *key, struct item *table[], size_t size)
-{
-    struct item *item;
-    unsigned long hashIndex;
-
-    item = (struct item *)kmalloc(sizeof(struct item), GFP_KERNEL);
-    if (item == NULL)
-    {
-        return -1;
-    }
-
-    memset(item->key, 0, sizeof(item->key));
-    memcpy(item->key, key, sizeof(item->key));
-
-    hashIndex = hash(key, size);
-
-    while (table[hashIndex] != NULL)
-    {
-        ++hashIndex;
-        hashIndex %= size;
-    }
-
-    table[hashIndex] = item;
-
-    return 0;
-}
-
-void free_item(unsigned char *key, struct item *table[], size_t size)
-{
-    unsigned long hashIndex;
-
-    hashIndex = hash(key, size);
-    while (table[hashIndex] != NULL)
-    {
-        if (!memcmp(table[hashIndex]->key, key, sizeof(table[hashIndex]->key)))
-        {
-            kfree(table[hashIndex]);
-            table[hashIndex] = NULL;
-        }
-        ++hashIndex;
-        hashIndex %= size;
-    }
-}
-
-void free_table(struct item *table[], size_t size)
-{
+    linked_list_t **table;
     int i;
+
+    h_table->table = (linked_list_t **)kmalloc(size * sizeof(linked_list_t *), GFP_KERNEL);
+    table = h_table->table;
+    if (!table)
+        return -1;
 
     i = 0;
     while (i < size)
     {
-        if (table[i] != NULL)
-        {
-            kfree(table[i]);
-        }
+        table[i] = (linked_list_t *)kmalloc(sizeof(linked_list_t), GFP_KERNEL);
+        if (!table[i])
+            return -1;
+        memset(table[i], 0, sizeof(linked_list_t));
+        init_list(table[i]);
         i++;
+    }
+
+    h_table->size = size;
+
+    return 0;
+}
+
+int insert_hash(h_table_t *h_table, h_key_t *key, short rule_index)
+{
+    unsigned long hashIndex;
+
+    hashIndex = hash(key, h_table->size);
+    if (insert_entry(h_table->table[hashIndex], key, rule_index))
+        return -1;
+    return 0;
+}
+
+void remove_hash(h_table_t *h_table, h_key_t *key, short rule_index)
+{
+    int i;
+    unsigned long hashIndex;
+
+    hashIndex = hash(key, h_table->size);
+    for (i = 0; i < h_table->size; i++)
+    {
+        if (i == hashIndex)
+            remove_entry(h_table->table[i], key, rule_index);
+        else
+            update_entry(h_table->table[i], rule_index);
+    }
+}
+
+vector_t *search_hash(h_table_t *h_table, h_key_t *key)
+{
+    unsigned long hashIndex;
+    entry_t *entry;
+    vector_t *vector;
+
+    vector = NULL;
+    hashIndex = hash(key, h_table->size);
+    entry = search_entry(h_table->table[hashIndex], key);
+
+    if (entry)
+    {
+        vector = entry->vector;
+    }
+
+    return vector;
+}
+
+void destroy_table(h_table_t *h_table)
+{
+    int i;
+
+    for (i = 0; i < h_table->size; i++)
+    {
+        destroy_list(h_table->table[i]);
+        kfree(h_table->table[i]);
+    }
+
+    kfree(h_table->table);
+}
+
+void print_table(h_table_t *h_table)
+{
+    int i;
+
+    for (i = 0; i < h_table->size; i++)
+    {
+        if (h_table->table[i]->head != NULL)
+        {
+            print_list(h_table->table[i]);
+            printk(KERN_INFO "----------\n");
+        }
     }
 }

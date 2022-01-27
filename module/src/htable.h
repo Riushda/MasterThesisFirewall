@@ -1,22 +1,26 @@
-#include <linux/slab.h>
 #include "constant.h"
+#include "utils.h"
+#include "linked_list.h"
 
 #ifndef HTABLE_H
 #define HTABLE_H
 
-struct item
+typedef struct h_table
 {
-    unsigned char key[RULE_SIZE];
-};
+    linked_list_t **table;
+    size_t size;
+} h_table_t;
 
-unsigned long hash(unsigned char *str, size_t size);
+int init_table(h_table_t *h_table, size_t size);
 
-struct item *search_item(unsigned char *key, struct item *table[], size_t size);
+int insert_hash(h_table_t *h_table, h_key_t *key, short rule_index);
 
-int insert_item(unsigned char *key, struct item *table[], size_t size);
+void remove_hash(h_table_t *h_table, h_key_t *key, short rule_index);
 
-void free_item(unsigned char *key, struct item *table[], size_t size);
+vector_t *search_hash(h_table_t *h_table, h_key_t *key);
 
-void free_table(struct item *table[], size_t size);
+void destroy_table(h_table_t *h_table);
+
+void print_table(h_table_t *h_table);
 
 #endif
