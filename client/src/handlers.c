@@ -105,11 +105,10 @@ int add_rule_cmd(int argc, char **argv)
 
     insert_rule(rule_list, rule);
 
-    /*if (send_msg(A_RULE, &rule, sizeof(rule_t)))
+    if (send_msg(A_RULE, rule))
     {
         return -1;
-    }*/
-
+    }
     return 0;
 }
 
@@ -152,10 +151,10 @@ int remove_rule_cmd(int argc, char **argv)
 
     rule = search_rule(rule_list, index);
 
-    /*if (send_msg(R_RULE, &rule, sizeof(rule_t)))
+    if (send_msg(R_RULE, rule))
     {
         return -1;
-    }*/
+    }
 
     remove_rule(rule_list, index);
 

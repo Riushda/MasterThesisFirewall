@@ -1,5 +1,3 @@
-#include <arpa/inet.h>
-
 #include "constant.h"
 #include "utils.h"
 #include "htable.h"
@@ -7,6 +5,8 @@
 
 #ifndef RULE_H
 #define RULE_H
+#define ADD 0
+#define REMOVE 1
 
 typedef struct rule
 {
@@ -34,6 +34,14 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v);
 void print_rule(rule_t rule);
 
 /* KERNEL */
+
+/* SKB */
+
+void parse_to_rule(struct sk_buff *skb, rule_t *rule);
+
+int rule_to_buffer(rule_t *rule, unsigned char *buffer);
+
+/* RULE STRUCTURE */
 
 typedef struct rule_structure
 {

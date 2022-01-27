@@ -10,7 +10,7 @@ entry_t *init_entry(h_key_t *key, short rule_index)
     entry_t *entry;
 
     entry = NULL;
-    entry = (entry_t *)malloc(sizeof(entry_t));
+    entry = (entry_t *)kmalloc(sizeof(entry_t), GFP_KERNEL);
 
     if (entry)
     {
@@ -25,13 +25,13 @@ entry_t *init_entry(h_key_t *key, short rule_index)
 
 int insert_entry(linked_list_t *list, h_key_t *key, short rule_index)
 {
-    entry_t *current;
+    entry_t *element;
     entry_t *previous;
 
-    current = list->head;
+    element = list->head;
     previous = NULL;
 
-    if (!current)
+    if (!element)
     {
         list->head = init_entry(key, rule_index);
         if (list->head)
@@ -39,92 +39,92 @@ int insert_entry(linked_list_t *list, h_key_t *key, short rule_index)
         return -1;
     }
 
-    while (current != NULL)
+    while (element != NULL)
     {
-        if (!memcmp(current->key, key, KEY_SIZE))
+        if (!memcmp(element->key, key, KEY_SIZE))
         {
-            set_bit_v(current->vector, rule_index);
+            set_bit_v(element->vector, rule_index);
             return 0;
         }
-        previous = current;
-        current = current->next;
+        previous = element;
+        element = element->next;
     }
 
-    current = init_entry(key, rule_index);
-    if (!current)
+    element = init_entry(key, rule_index);
+    if (!element)
         return -1;
     if (previous)
     {
-        previous->next = current;
+        previous->next = element;
     }
     return 0;
 }
 
 void update_entry(linked_list_t *list, short rule_index)
 {
-    entry_t *current;
-    current = list->head;
+    entry_t *element;
+    element = list->head;
 
-    while (current != NULL)
+    while (element != NULL)
     {
-        unset_shift_v(current->vector, rule_index);
-        current = current->next;
+        unset_shift_v(element->vector, rule_index);
+        element = element->next;
     }
 }
 
 void remove_entry(linked_list_t *list, h_key_t *key, short rule_index)
 {
-    entry_t *current;
+    entry_t *element;
     entry_t *previous;
 
-    current = list->head;
+    element = list->head;
     previous = NULL;
 
-    while (current != NULL)
+    while (element != NULL)
     {
-        if (!memcmp(current->key, key, KEY_SIZE))
+        if (!memcmp(element->key, key, KEY_SIZE))
         {
-            unset_shift_v(current->vector, rule_index);
-            if (is_null_v(current->vector))
+            unset_shift_v(element->vector, rule_index);
+            if (is_null_v(element->vector))
             {
                 if (previous)
                 {
-                    previous->next = current->next;
-                    free(current);
-                    current = previous->next;
+                    previous->next = element->next;
+                    kfree(element);
+                    element = previous->next;
                 }
                 else
                 {
-                    list->head = current->next;
-                    free(current);
-                    current = list->head;
+                    list->head = element->next;
+                    kfree(element);
+                    element = list->head;
                 }
                 continue;
             }
         }
         else
         {
-            unset_shift_v(current->vector, rule_index);
+            unset_shift_v(element->vector, rule_index);
         }
 
-        previous = current;
-        current = current->next;
+        previous = element;
+        element = element->next;
     }
 }
 
 entry_t *search_entry(linked_list_t *list, h_key_t *key)
 {
-    entry_t *current;
+    entry_t *element;
 
-    current = list->head;
+    element = list->head;
 
-    while (current != NULL)
+    while (element != NULL)
     {
-        if (!memcmp(current->key, key, KEY_SIZE))
+        if (!memcmp(element->key, key, KEY_SIZE))
         {
-            return current;
+            return element;
         }
-        current = current->next;
+        element = element->next;
     }
 
     return NULL;
@@ -132,34 +132,34 @@ entry_t *search_entry(linked_list_t *list, h_key_t *key)
 
 void destroy_list(linked_list_t *list)
 {
-    entry_t *current;
+    entry_t *element;
     entry_t *next;
 
-    current = list->head;
+    element = list->head;
     next = NULL;
 
-    while (current != NULL)
+    while (element != NULL)
     {
-        next = current->next;
-        free(current);
-        current = next;
+        next = element->next;
+        kfree(element);
+        element = next;
     }
 }
 
 void print_list(linked_list_t *list)
 {
-    entry_t *current;
+    entry_t *element;
     char buf[KEY_SIZE + 1];
 
-    current = list->head;
+    element = list->head;
     memset(buf, 0, KEY_SIZE);
 
-    while (current != NULL)
+    while (element != NULL)
     {
-        memcpy(buf, current->key, KEY_SIZE);
+        memcpy(buf, element->key, KEY_SIZE);
         buf[KEY_SIZE] = '\0';
-        printf("%s:", buf);
-        print_bits(current->vector, VECTOR_SIZE);
-        current = current->next;
+        printk(KERN_CONT "%s:", buf);
+        print_bits(element->vector, VECTOR_SIZE);
+        element = element->next;
     }
 }

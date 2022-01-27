@@ -17,7 +17,7 @@ int init_table(h_table_t *h_table, size_t size)
     linked_list_t **table;
     int i;
 
-    h_table->table = (linked_list_t **)malloc(size * sizeof(linked_list_t *));
+    h_table->table = (linked_list_t **)kmalloc(size * sizeof(linked_list_t *), GFP_KERNEL);
     table = h_table->table;
     if (!table)
         return -1;
@@ -25,7 +25,7 @@ int init_table(h_table_t *h_table, size_t size)
     i = 0;
     while (i < size)
     {
-        table[i] = (linked_list_t *)malloc(sizeof(linked_list_t));
+        table[i] = (linked_list_t *)kmalloc(sizeof(linked_list_t), GFP_KERNEL);
         if (!table[i])
             return -1;
         memset(table[i], 0, sizeof(linked_list_t));
@@ -88,10 +88,10 @@ void destroy_table(h_table_t *h_table)
     for (i = 0; i < h_table->size; i++)
     {
         destroy_list(h_table->table[i]);
-        free(h_table->table[i]);
+        kfree(h_table->table[i]);
     }
 
-    free(h_table->table);
+    kfree(h_table->table);
 }
 
 void print_table(h_table_t *h_table)
@@ -103,7 +103,7 @@ void print_table(h_table_t *h_table)
         if (h_table->table[i]->head != NULL)
         {
             print_list(h_table->table[i]);
-            printf("----------\n");
+            printk(KERN_INFO "----------\n");
         }
     }
 }

@@ -32,7 +32,7 @@ int remove_white_spaces(string_t *str)
     return 0;
 }
 
-int count_args(string_t *line)
+int count_args(string_t *line) // do not work for "a  " => count 2 instead of 1
 {
     int count;
     string_t *current;
@@ -40,7 +40,7 @@ int count_args(string_t *line)
 
     current = line;
     count = 0;
-
+    
     if (*current == '\n')
         return 0;
 

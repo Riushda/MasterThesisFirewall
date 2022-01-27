@@ -66,6 +66,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     if(parse_to_buffer(skb, buffer))
         return NF_DROP;
+
+    printk(KERN_INFO "%s\n", buffer);
     
     if (search_item(buffer, table, TABLE_SIZE) != NULL)
     {

@@ -1,6 +1,15 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/netlink.h>
+#include <linux/skbuff.h>
+#include <linux/netfilter.h>
+#include <linux/netfilter_ipv4.h>
+#include <linux/ip.h>
+#include <linux/tcp.h>
+#include <linux/udp.h>
+#include <linux/inet.h>
+#include <linux/slab.h>
+#include <linux/string.h>
 
 #include "constant.h"
 
