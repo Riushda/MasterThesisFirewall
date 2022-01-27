@@ -104,6 +104,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     // packet parsing
 
+    // if no ip layer => accept, if ip layer check if ICMP or other ip important protocol then accept
+
     iph = ip_hdr(skb);
 
     if(iph->protocol == IPPROTO_TCP){
@@ -128,8 +130,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     }
     else{
-        printk(KERN_INFO "Unknown transport layer protocol\n");
-        return NF_DROP;
+        printk(KERN_INFO "Unknown ip/transport layer protocol\n");
+        return NF_ACCEPT; // other ip/transport layer protocol
     }
 
     memset(buffer, 0, buffer_len);
@@ -184,10 +186,10 @@ static int __init init(void)
 
     memset(&rule, 0, sizeof(rule_t));
 
-    parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
-    parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
-    parse_port("22", &rule.sport, &rule.not_sport);
-    parse_port("22", &rule.dport, &rule.not_dport);
+    parse_ip("192.168.1.104/24", &rule.src, &rule.src_bm);
+    parse_ip("192.168.1.230/24", &rule.dst, &rule.dst_bm);
+    parse_port("450", &rule.sport, &rule.not_sport);
+    parse_port("450", &rule.dport, &rule.not_dport);
     rule.index = 2;
     rule.action = 1;
 
