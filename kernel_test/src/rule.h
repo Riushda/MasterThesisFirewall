@@ -5,6 +5,8 @@
 
 #ifndef RULE_H
 #define RULE_H
+#define ADD 0
+#define REMOVE 1
 
 typedef struct rule
 {

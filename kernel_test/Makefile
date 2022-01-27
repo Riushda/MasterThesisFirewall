@@ -1,6 +1,6 @@
 obj-m = firewall.o
 KVERSION = $(shell uname -r)
-firewall-objs := src/firewall.o src/rule.o src/trie.o src/htable.o src/linked_list.o src/utils.o src/constant.h
+firewall-objs := src/firewall.o src/protocol.o src/rule.o src/trie.o src/htable.o src/linked_list.o src/utils.o src/constant.h
 
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
 SRC_DIRS := $(PWD)/src

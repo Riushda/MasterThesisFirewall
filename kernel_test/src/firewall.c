@@ -1,4 +1,4 @@
-#include "rule.h"
+#include "protocol.h"
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
 
@@ -12,6 +12,8 @@ static struct nf_hook_ops *nfho = NULL;
 
 rule_struct_t rule_struct;
 int firewall_pid = 0;
+
+// TODO : parsing of this in context_rule.c + install gdb for debug in kernel
 
 static void netlink_send_msg(char *msg, int msg_size)
 {
@@ -72,17 +74,14 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 {
     rule_t rule;
     
+    struct iphdr *iph;
     struct tcphdr *tcph;
+    struct udphdr *udph;
 
     char *data;
-    uint8_t application_header;
-
-    int offset; 
-    uint8_t msg_len;
-    uint16_t topic_len;
-    uint8_t payload_len;
-
-    uint8_t topic_len_short;
+    uint16_t port;
+    unsigned char buffer[MAX_PACKET_SIZE];
+   
     int buffer_len;
 
     if (!skb)
@@ -103,63 +102,43 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         return NF_DROP;
     }
 
-    /*
+    // packet parsing
 
-    MQTT layer 
-    Remark : msg_len is the length of the remaining fields (not counting itself)
-    ________________________________________________________________________________________
-    |        |         |           |                   |                                    |
-    | header | msg_len | topic_len |      topic        |              payload               |                                   
-    | 1 byte | 1 byte  |  2 bytes  | topic_len byte(s) |  (msg_len - 2 - topic_len) byte(s) |                                                            
-    |________|_________|___________|___________________|____________________________________|
+    iph = ip_hdr(skb);
 
-    */
+    if(iph->protocol == IPPROTO_TCP){
 
-    tcph = tcp_hdr(skb);
+        tcph = tcp_hdr(skb);
 
-    data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
+        data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
 
-    application_header = *(data);
+        port = ntohs(tcph->dest);
 
-    if(application_header==MQTT_PROTOCOL){
-        msg_len = *(data+1);
+    }
+    else if(iph->protocol == IPPROTO_UDP){
 
-        memcpy(&topic_len, data+2, 2);
-        topic_len = ntohs(topic_len);
+        // the udp code has not been tested
 
-        offset = 4;
+        udph = udp_hdr(skb);
 
-        char topic[topic_len+1];
-        memset(topic, 0, topic_len+1);
-        memcpy(topic, data+offset, topic_len);
+        data = (char *)((unsigned char *)iph + sizeof(*iph));
 
-        offset += topic_len;
+        port = ntohs(udph->dest);
 
-        payload_len = msg_len - 2 - topic_len; 
-        char payload[payload_len+1];
-        memset(payload, 0, payload_len+1);
-        memcpy(payload, data+offset, payload_len);
+    }
+    else{
+        printk(KERN_INFO "Unknown transport layer protocol\n");
+        return NF_DROP;
+    }
 
-        printk(KERN_INFO "topic : %s\n", topic);
-        printk(KERN_INFO "payload : %s\n", payload);
+    memset(buffer, 0, buffer_len);
 
-        // concatenate informations
+    rule_to_buffer(&rule, buffer); // length will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
 
-        topic_len_short = (uint8_t) topic_len;
-        
-        buffer_len = 12 + 1 + topic_len + 1 + payload_len;
-        unsigned char buffer[buffer_len];
-        memset(buffer, 0, buffer_len);
+    buffer_len = parse_packet(data, port, buffer);
 
-        offset = rule_to_buffer(&rule, buffer); // will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
-
-        memcpy(buffer + offset, &topic_len_short, 1);
-        offset += 1;
-        memcpy(buffer + offset, topic, topic_len);
-        offset += topic_len;
-        memcpy(buffer + offset, &payload_len, 1);
-        offset += 1;
-        memcpy(buffer + offset, payload, payload_len);
+    if(buffer_len){
+        buffer_len = 0; // for compilation
 
         // send buffer to userspace
 
