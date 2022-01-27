@@ -121,7 +121,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
         udph = udp_hdr(skb);
 
-        data = (char *)((unsigned char *)iph + sizeof(*iph));
+        //data = (char *)((unsigned char *)iph + sizeof(*iph));
+        data = (char *)((unsigned char *)udph + sizeof(*udph));
 
         port = ntohs(udph->dest);
 
