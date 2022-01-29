@@ -8,6 +8,9 @@
 #define CHILD_NBR 2
 #define TABLE_SIZE 1024
 
+/* netlink_recv_msg first byte */
+enum code{PID_INFO=0, ADD=1, REMOVE=2};
+
 typedef unsigned char vector_t;
 typedef unsigned char h_key_t;
 typedef unsigned char bool_t;

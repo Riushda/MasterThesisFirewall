@@ -13,7 +13,13 @@ static struct nf_hook_ops *nfho = NULL;
 rule_struct_t rule_struct;
 int firewall_pid = 0;
 
-// TODO : parsing of this in context_rule.c + install gdb for debug in kernel
+/* 
+    TODO : - install gdb for debug in kernel
+           - add context in rule.c 
+           - keep track of connections 
+           - detect encryption in firewall.c
+           - test context.c with check_time
+ */
 
 static void netlink_send_msg(char *msg, int msg_size)
 {
@@ -42,26 +48,28 @@ static void netlink_send_msg(char *msg, int msg_size)
 static void netlink_recv_msg(struct sk_buff *skb)
 {
     char *msg;
-    bool_t action;
+    bool_t code;
     rule_t rule;
     memset(&rule, 0, sizeof(rule_t));
 
     nlh = (struct nlmsghdr *)skb->data;
     msg = (char *)NLMSG_DATA(nlh);
 
-    memcpy(&action, msg, sizeof(bool_t));
-    memcpy(&rule, msg+1, sizeof(rule_t));
-    rule.src = (int) ntohl((uint32_t) rule.src);
-    rule.dst = (int) ntohl((uint32_t) rule.dst);
+    memcpy(&code, msg, sizeof(bool_t));
 
-    //print_rule(rule);
-
-    switch (action)
+    switch (code)
         {
+        case PID_INFO:
+            memcpy(&firewall_pid, msg+1, sizeof(int));
+            break;
         case ADD:
+            memcpy(&rule, msg+1, sizeof(rule_t));
+            //print_rule(rule);
             insert_rule(&rule_struct, rule);
             break;
         case REMOVE:
+            memcpy(&rule, msg+1, sizeof(rule_t));
+            //print_rule(rule);
             remove_rule(&rule_struct, rule);
             break;
         default:
@@ -70,6 +78,7 @@ static void netlink_recv_msg(struct sk_buff *skb)
         }
 }
 
+/* do not hook packet without layer 3, having only layer 1 and 2 */
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
     rule_t rule;
@@ -140,7 +149,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     buffer_len = parse_packet(data, port, buffer);
 
-    if(buffer_len){
+    if(buffer_len && firewall_pid){ 
         buffer_len = 0; // for compilation
 
         // send buffer to userspace
@@ -155,8 +164,8 @@ static int __init init(void)
 {
     rule_t rule;
     
-    // search for firewall process
-
+    // search for firewall process (TO BE REMOVED)
+    /*
     struct task_struct *task;
 
     for_each_process(task) {
@@ -175,6 +184,7 @@ static int __init init(void)
         printk(KERN_INFO "firewall process not found !");
         //return -1; // will throw operation not permitted
     }
+    */
 
     /* rule_struct list initialization */
 

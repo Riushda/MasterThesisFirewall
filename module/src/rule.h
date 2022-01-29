@@ -2,11 +2,10 @@
 #include "utils.h"
 #include "htable.h"
 #include "trie.h"
+#include "context.h"
 
 #ifndef RULE_H
 #define RULE_H
-#define ADD 0
-#define REMOVE 1
 
 typedef struct rule
 {
@@ -23,6 +22,7 @@ typedef struct rule
     proto_t proto;
     bool_t action;
     short index;
+    context_t *context;
 } rule_t;
 
 /* USER */

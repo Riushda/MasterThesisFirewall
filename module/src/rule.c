@@ -44,7 +44,7 @@ int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
     token = strsep(&running, delimiter);
     if (token)
     {
-        *ip = in_aton(token); // htonl(*ip) alreaday called internally
+        *ip = in_aton(token); // htonl(*ip) already called internally
     }
     else
     {
@@ -99,6 +99,8 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
 
 void print_rule(rule_t rule)
 {
+    int ip_src = (int) ntohl((uint32_t) rule.src);
+    int ip_dst = (int) ntohl((uint32_t) rule.dst);
     printk(KERN_CONT "rule: ");
 
     if (rule.not_src)
@@ -106,14 +108,14 @@ void print_rule(rule_t rule)
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Src: %pI4/%d ", &rule.src, rule.src_bm);
+    printk(KERN_CONT "Src: %pI4/%d ", &ip_src, rule.src_bm);
 
     if (rule.not_dst)
     {
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Dst: %pI4/%d ", &rule.dst, rule.dst_bm);
+    printk(KERN_CONT "Dst: %pI4/%d ", &ip_dst, rule.dst_bm);
 
     if (rule.not_sport)
     {
