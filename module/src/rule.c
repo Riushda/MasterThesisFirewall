@@ -174,7 +174,7 @@ int insert_rule(rule_struct_t *rule_struct, rule_t rule)
     if (insert_hash(rule_struct->dport_table, key, rule.index))
         return -1;
 
-    if (rule.index)
+    if (rule.action)
         set_bit_v(rule_struct->actions, rule.index);
 
     return 0;
@@ -210,10 +210,10 @@ vector_t *match_port(h_table_t *table, short port)
     vector_t *result_not_port;
 
     memset(key, 0, KEY_SIZE);
-    memset(key, 2, sizeof(bool_t));
+    //memset(key, 2, sizeof(bool_t)); => don't remember why we do this but removing it fix * matching for port
     result_any = search_hash(table, key);
 
-    memset(key, 0, sizeof(bool_t));
+    //memset(key, 0, sizeof(bool_t)); => don't remember why we do this
     memcpy(key + sizeof(bool_t), &port, sizeof(short));
     result_port = or_v(result_any, search_hash(table, key));
 
@@ -253,9 +253,11 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     kfree(match_dport);
 
     if (rule_index != -1 && rule_index < VECTOR_SIZE){
-        int temp = is_set_v(rule_struct->actions, rule_index);
-        printk(KERN_INFO "MATCHED : %d\n", temp);
-        return temp;
+        bool_t temp = is_set_v(rule_struct->actions, rule_index);
+        int match;
+        memset(&match, 0, sizeof(int));
+        memcpy(&match, &temp, sizeof(bool_t));
+        return match;
     }
 
     return 0;
@@ -274,26 +276,6 @@ void destroy_rules(rule_struct_t *rule_struct)
 
     destroy_table(rule_struct->dport_table);
     kfree(rule_struct->dport_table);
-}
-
-void parse_to_rule(struct sk_buff *skb, rule_t *rule)
-{
-    struct iphdr *iph;
-    struct tcphdr *tcph;
-
-    memset(rule, 0, sizeof(rule_t));
-
-    iph = ip_hdr(skb);
-    memcpy(&rule->src, &iph->saddr, sizeof(rule->src));
-    memcpy(&rule->dst, &iph->daddr, sizeof(rule->dst));
-
-    if (iph->protocol == IPPROTO_TCP)
-    {
-        tcph = tcp_hdr(skb);
-
-        memcpy(&rule->sport, &tcph->source, sizeof(rule->sport));
-        memcpy(&rule->dport, &tcph->dest, sizeof(rule->dport));
-    }
 }
 
 int rule_to_buffer(rule_t *rule, unsigned char *buffer)

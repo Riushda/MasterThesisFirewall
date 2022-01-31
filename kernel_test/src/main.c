@@ -9,7 +9,7 @@ int main()
 
     parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
     parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
-    parse_port("22", &rule.sport, &rule.not_sport);
+    parse_port("*", &rule.sport, &rule.not_sport);
     parse_port("22", &rule.dport, &rule.not_dport);
     rule.index = 2;
     rule.action = 1;
@@ -21,13 +21,21 @@ int main()
     insert_rule(&rule_struct, rule);
     //remove_rule(&rule_struct, rule);
 
-    rule.dport = ntohs(23);
+    //rule.dport = ntohs(23);
+
+    rule_t rule2;
+    memset(&rule2, 0, sizeof(rule_t));
+
+    parse_ip("127.0.0.1/24", &rule2.src, &rule2.src_bm);
+    parse_ip("127.0.0.1/24", &rule2.dst, &rule2.dst_bm);
+    parse_port("22", &rule2.sport, &rule2.not_sport);
+    parse_port("22", &rule2.dport, &rule2.not_dport);
 
     /*print_trie(rule_struct.src_trie, 0);
     print_table(rule_struct.sport_table);
     print_table(rule_struct.dport_table);*/
 
-    printf("%d\n", match_rule(&rule_struct, rule));
+    printf("%d\n", match_rule(&rule_struct, rule2));
 
     destroy_rules(&rule_struct);
 

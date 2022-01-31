@@ -208,10 +208,10 @@ vector_t *match_port(h_table_t *table, short port)
     vector_t *result_not_port;
 
     memset(key, 0, KEY_SIZE);
-    memset(key, 2, sizeof(bool_t));
+    //memset(key, 2, sizeof(bool_t)); => don't remember why we do this but removing it fix * matching for port
     result_any = search_hash(table, key);
 
-    memset(key, 0, sizeof(bool_t));
+    //memset(key, 0, sizeof(bool_t)); => don't remember why we do this
     memcpy(key + sizeof(bool_t), &port, sizeof(short));
     result_port = or_v(result_any, search_hash(table, key));
 
@@ -251,8 +251,10 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     free(match_sport);
     free(match_dport);
 
-    if (rule_index != -1 && rule_index < VECTOR_SIZE)
+    if (rule_index != -1 && rule_index < VECTOR_SIZE){
+        printf("MATCH\n");
         return is_set_v(rule_struct->actions, rule_index);
+    }
 
     return 0;
 }
