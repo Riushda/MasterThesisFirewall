@@ -17,8 +17,9 @@ enum ERRORS
 
 enum ACTIONS
 {
-    A_RULE = 0,
-    R_RULE = 1
+    PID_INFO = 0,
+    A_RULE = 1,
+    R_RULE = 2
 };
 
 #endif

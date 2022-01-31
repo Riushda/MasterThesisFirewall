@@ -99,8 +99,6 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
 
 void print_rule(rule_t rule)
 {
-    int ip_src = (int) ntohl((uint32_t) rule.src);
-    int ip_dst = (int) ntohl((uint32_t) rule.dst);
     printk(KERN_CONT "rule: ");
 
     if (rule.not_src)
@@ -108,21 +106,21 @@ void print_rule(rule_t rule)
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Src: %pI4/%d ", &ip_src, rule.src_bm);
+    printk(KERN_CONT "Src: %pI4/%d ", &rule.src, rule.src_bm);
 
     if (rule.not_dst)
     {
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Dst: %pI4/%d ", &ip_dst, rule.dst_bm);
+    printk(KERN_CONT "Dst: %pI4/%d ", &rule.dst, rule.dst_bm);
 
     if (rule.not_sport)
     {
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Sport: %d ", ntohs(rule.sport));
+    printk(KERN_CONT "Sport: %d ", ntohs(rule.sport)); 
 
     if (rule.not_dport)
     {
@@ -157,6 +155,7 @@ int init_rules(rule_struct_t *rule_struct)
 int insert_rule(rule_struct_t *rule_struct, rule_t rule)
 {
     h_key_t key[KEY_SIZE];
+    print_rule(rule);
 
     if (insert_node(rule_struct->src_trie, rule.src, rule.src_bm, rule.index))
         return -1;
@@ -253,8 +252,11 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     kfree(match_sport);
     kfree(match_dport);
 
-    if (rule_index != -1 && rule_index < VECTOR_SIZE)
-        return is_set_v(rule_struct->actions, rule_index);
+    if (rule_index != -1 && rule_index < VECTOR_SIZE){
+        int temp = is_set_v(rule_struct->actions, rule_index);
+        printk(KERN_INFO "MATCHED : %d\n", temp);
+        return temp;
+    }
 
     return 0;
 }
@@ -282,12 +284,13 @@ void parse_to_rule(struct sk_buff *skb, rule_t *rule)
     memset(rule, 0, sizeof(rule_t));
 
     iph = ip_hdr(skb);
+    memcpy(&rule->src, &iph->saddr, sizeof(rule->src));
+    memcpy(&rule->dst, &iph->daddr, sizeof(rule->dst));
 
     if (iph->protocol == IPPROTO_TCP)
     {
         tcph = tcp_hdr(skb);
-        memcpy(&rule->src, &iph->saddr, sizeof(rule->src));
-        memcpy(&rule->dst, &iph->daddr, sizeof(rule->dst));
+
         memcpy(&rule->sport, &tcph->source, sizeof(rule->sport));
         memcpy(&rule->dport, &tcph->dest, sizeof(rule->dport));
     }

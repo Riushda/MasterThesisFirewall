@@ -57,15 +57,18 @@ int receive_msg(volatile int *keeprunning){
     }
 
     fd_set rset;
-    int nready;
-    struct timeval tv = {2, 0};
 
     char decision[200];
+
+    int max_fd = sock_fd + 1;
+
+    FD_ZERO(&rset);
+    FD_SET(sock_fd, &rset);
 
     struct nlmsghdr *nl_msghdr = (struct nlmsghdr*) malloc(NLMSG_SPACE(256));
 
     while (*keeprunning) {
-        memset(nl_msghdr, 0, NLMSG_SPACE(256));
+        /*memset(nl_msghdr, 0, NLMSG_SPACE(256));
         memset(decision, 0, 200);
 
         iov.iov_base = (void*) nl_msghdr;
@@ -74,20 +77,18 @@ int receive_msg(volatile int *keeprunning){
         msg.msg_name = (void*) &src_addr;
         msg.msg_namelen = sizeof(src_addr);
         msg.msg_iov = &iov;
-        msg.msg_iovlen = 1;
+        msg.msg_iovlen = 1;*/
 
-        FD_SET(sock_fd, &rset);
+        struct timeval tv = {2, 0};
 
-        int max_fd = sock_fd + 1;
-
-        nready = select(max_fd, &rset, NULL, NULL, &tv);
+        int nready = select(max_fd, &rset, NULL, NULL, &tv);
         if (nready == -1)
         {
             free(nl_msghdr);
             return -1;
         }
 
-        if (!FD_ISSET(sock_fd, &rset) || !keeprunning)
+        if (!FD_ISSET(sock_fd, &rset) || !keeprunning) 
             continue;
 
         recvmsg(sock_fd, &msg, 0);
@@ -139,9 +140,9 @@ int send_msg(uint8_t code, void *data)
     if (!sendmsg(sock_fd, &msg, 0))
     {
         printf("sendmsg(): %s\n", strerror(errno));
-        close(sock_fd);
         return -1;
     }
+    printf("message sent\n");
 
     return 0;
 }

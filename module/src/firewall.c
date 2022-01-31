@@ -16,9 +16,9 @@ int firewall_pid = 0;
 /* 
     TODO : - install gdb for debug in kernel
            - add context in rule.c 
-           - keep track of connections 
-           - detect encryption in firewall.c
+           - detect encryption in firewall.c (keep track of connections?)
            - test context.c with check_time
+           - test match rule
  */
 
 static void netlink_send_msg(char *msg, int msg_size)
@@ -47,6 +47,7 @@ static void netlink_send_msg(char *msg, int msg_size)
 
 static void netlink_recv_msg(struct sk_buff *skb)
 {
+    printk(KERN_INFO "there is a msg\n");
     char *msg;
     bool_t code;
     rule_t rule;
@@ -60,21 +61,26 @@ static void netlink_recv_msg(struct sk_buff *skb)
     switch (code)
         {
         case PID_INFO:
+            printk(KERN_INFO "PID_INFO\n");
             memcpy(&firewall_pid, msg+1, sizeof(int));
             break;
         case ADD:
+            printk(KERN_INFO "ADD\n");
             memcpy(&rule, msg+1, sizeof(rule_t));
-            //print_rule(rule);
+            rule.src=htonl(rule.src);
+            rule.dst=htonl(rule.dst);
             insert_rule(&rule_struct, rule);
             break;
         case REMOVE:
+            printk(KERN_INFO "REMOVE\n");
             memcpy(&rule, msg+1, sizeof(rule_t));
-            //print_rule(rule);
+            rule.src=htonl(rule.src);
+            rule.dst=htonl(rule.dst);
             remove_rule(&rule_struct, rule);
             break;
         default:
             msg = msg;
-            //printk(KERN_INFO "action not know\n");
+            printk(KERN_INFO "action not know\n");
         }
 }
 
@@ -107,6 +113,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     if (match_rule(&rule_struct, rule)) // actually !match_rule but if drop too much it crashes
     {
+        print_rule(rule);
         printk(KERN_INFO "firewall: no match!\n");
         return NF_DROP;
     }
@@ -123,7 +130,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
         data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
 
-        port = ntohs(tcph->dest);
+        port = tcph->dest; // ntohs(tcph->dest)
 
     }
     else if(iph->protocol == IPPROTO_UDP){
@@ -135,7 +142,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         //data = (char *)((unsigned char *)iph + sizeof(*iph));
         data = (char *)((unsigned char *)udph + sizeof(*udph));
 
-        port = ntohs(udph->dest);
+        port = udph->dest; // ntohs(udph->dest)
 
     }
     else{
@@ -149,23 +156,27 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     buffer_len = parse_packet(data, port, buffer);
 
-    if(buffer_len && firewall_pid){ 
+    if(buffer_len>0){ // if allowed publish message 
         buffer_len = 0; // for compilation
 
         // send buffer to userspace
 
         //netlink_send_msg(buffer, buffer_len);
     }
+    else if(buffer_len<0){ // if forbidden publish message
+        return NF_DROP;
+    }
+    // if buffer_len==0, then not a publish message accept it
 
     return NF_ACCEPT;
 }
 
 static int __init init(void)
 {
-    rule_t rule;
+    //rule_t rule;
     
     // search for firewall process (TO BE REMOVED)
-    /*
+    
     struct task_struct *task;
 
     for_each_process(task) {
@@ -184,8 +195,7 @@ static int __init init(void)
         printk(KERN_INFO "firewall process not found !");
         //return -1; // will throw operation not permitted
     }
-    */
-
+    
     /* rule_struct list initialization */
 
     memset(&rule_struct, 0, sizeof(rule_struct_t));
@@ -194,16 +204,16 @@ static int __init init(void)
 
     // insert dummy rule
 
-    memset(&rule, 0, sizeof(rule_t));
+    /*memset(&rule, 0, sizeof(rule_t));
 
     parse_ip("192.168.1.104/24", &rule.src, &rule.src_bm);
     parse_ip("192.168.1.230/24", &rule.dst, &rule.dst_bm);
     parse_port("450", &rule.sport, &rule.not_sport);
-    parse_port("450", &rule.dport, &rule.not_dport);
+    parse_port("451", &rule.dport, &rule.not_dport);
     rule.index = 2;
     rule.action = 1;
 
-    insert_rule(&rule_struct, rule);
+    insert_rule(&rule_struct, rule);*/
 
     // hook function initialisation
 

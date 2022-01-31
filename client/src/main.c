@@ -29,7 +29,7 @@ int main()
 
   rule_list = (rule_list_t *)malloc(sizeof(rule_list_t));
   memset(rule_list, 0, sizeof(rule_list_t));
-
+  
   pthread_t netlink_thread;
   int err = pthread_create(&netlink_thread, NULL, netlink_process, NULL);
   if (err != 0)
@@ -111,8 +111,6 @@ void INThandler(int sig)
   if (c == 'y' || c == 'Y')
   {
     keepRunning = 0;
-    dest_addr.nl_pid = getpid();
-    sendmsg(sock_fd, NULL, 0);
   }
   else
     signal(SIGINT, INThandler);
