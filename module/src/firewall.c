@@ -171,6 +171,14 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {   
+    daily_time_t now;
+
+    memset(&now, 0, sizeof(daily_time_t));
+
+	set_current_time(&now.hour, &now.minute);
+
+    printk(KERN_INFO "time %d:%d\n", now.hour, now.minute);
+
     // search for firewall process (TO BE REMOVED)
     
     struct task_struct *task;

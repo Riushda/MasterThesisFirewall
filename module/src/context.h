@@ -1,4 +1,5 @@
 #include <linux/time.h>
+#include <linux/ktime.h>
 
 typedef struct daily_time
 {
@@ -19,6 +20,8 @@ typedef struct context
 	void *constraint;
 	struct context *next;
 } context_t;
+
+void set_current_time(uint16_t *hour, uint16_t *minute);
 
 int time_check(time_constraint_t *time_c);
 

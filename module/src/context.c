@@ -2,19 +2,30 @@
 // doc https://www.tutorialspoint.com/c_standard_library/time_h.htm
 // https://man7.org/linux/man-pages/man0/time.h.0p.html
 
+void set_current_time(uint16_t *hour, uint16_t *minute){
+	struct timespec curr_tm;
+	memset(&curr_tm, 0, sizeof(curr_tm));
+
+	getnstimeofday(&curr_tm);
+
+	*hour = (uint16_t) (curr_tm.tv_sec / 3600) % 24;
+	*minute = (uint16_t) ((curr_tm.tv_sec % (24*3600)) - (*hour*3600))/60;
+
+	/*printk("TIME: %.2lu:%.2lu:%.2lu:%.6lu \r\n",
+                   (curr_tm.tv_sec / 3600) % (24),
+                   (curr_tm.tv_sec / 60) % (60),
+                   curr_tm.tv_sec % 60,
+                   curr_tm.tv_nsec / 1000);*/
+}
+
 int time_check(time_constraint_t *time_c){
-	struct tm *tm_struct;	
-	time64_t totalsecs; // useless be a required argument
+		
 	daily_time_t now;
 	time_constraint_t *element = time_c;
-
-	memset(tm_struct, 0, sizeof(struct tm));
+	
 	memset(&now, 0, sizeof(daily_time_t));
 
-	time64_to_tm(totalsecs, 0, tm_struct);
-
-	now.minute = (uint16_t) tm_struct->tm_min;
-	now.hour = (uint16_t) tm_struct->tm_hour;
+	set_current_time(&now.hour, &now.minute);
 
 	while(element!=NULL){
 		if(inside(element->start, now, element->end)){
