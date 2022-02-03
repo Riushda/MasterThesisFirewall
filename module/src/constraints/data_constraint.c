@@ -187,6 +187,79 @@ int buffer_to_data_constraint(data_constraint_t *data_c, char *msg){
 	return 0;
 }
 
+data_t* set_and_get_next_data_t(data_t *data){
+
+	if(data==NULL){
+
+		data = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
+		if(data==NULL)
+			return NULL;
+
+		memset(data, 0, sizeof(data_t));
+		
+		return data;
+	}
+
+	data_t *element = data;
+	while(element->next!=NULL){
+		element = element->next;
+	}
+
+	element->next = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
+	if(element==NULL)
+		return NULL;
+
+	memset(element->next, 0, sizeof(data_t));
+	element = element->next;
+
+	return element;
+}
+
+int add_int_data_t(data_t *data, int int_value){
+	data_t *current_data = set_and_get_next_data_t(data);
+	if(current_data==NULL)
+		return -1;
+
+	(data->value_t).int_value = int_value;
+	data->next = NULL;
+
+	return 0;
+}
+
+int add_str_data_t(data_t *data, uint8_t str_len, char *str){
+	data_t *current_data = set_and_get_next_data_t(data);
+	if(current_data==NULL)
+		return -1;
+		
+	string_value_t *str_value = &((current_data->value_t).str_value);
+
+	str_value->str_len = str_len;
+
+	str_value->str = (char *)kmalloc(str_value->str_len, GFP_KERNEL);
+	if(str_value->str==NULL){
+		destroy_data_t(data, STRING_TYPE);
+		return -1;
+	}
+	memset(str_value->str, 0, str_value->str_len);
+	memcpy(str_value->str, str, str_value->str_len);
+	
+	return 0;
+}
+
+int add_int_range_data_t(data_t *data, int start, int end){
+	data_t *current_data = set_and_get_next_data_t(data);
+	if(current_data==NULL)
+		return -1;
+	
+	interval_t *int_range = &((data->value_t).int_range);
+	
+	int_range->start = start;
+
+	int_range->end = end;
+	
+	return 0;
+}
+
 void print_data_t(data_t *data, uint8_t type){
 	int i = 0;
 	data_t *element = data;
