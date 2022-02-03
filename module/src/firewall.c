@@ -178,13 +178,14 @@ static int __init init(void)
 {   
     // test data_constraint
 
-    char *msg;
-    
+    /*char *msg;
 
+    // TODO : fill msg
+    
     data_constraint_t *data_c;
     buffer_to_data_constraint(data_c, msg);
 
-    print_data_constraint(data_c);
+    print_data_constraint(data_c); */
     
     /* rule_struct list initialization */
 
