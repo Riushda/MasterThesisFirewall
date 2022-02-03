@@ -6,11 +6,12 @@ void print_time_constraint(time_constraint_t time_c){
 
 void create_time_constraint(time_constraint_t *time_c, uint16_t hour_start, uint16_t min_start, uint16_t hour_end, uint16_t min_end){
 	daily_time_t start;
+	daily_time_t end;
+	
 	memset(&start, 0, sizeof(daily_time_t));
 	start.hour = hour_start;
 	start.minute = min_start;
 
-	daily_time_t end;
 	memset(&end, 0, sizeof(daily_time_t));
 	end.hour = hour_end;
 	end.minute = min_end;

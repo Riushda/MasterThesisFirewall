@@ -96,6 +96,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     unsigned char buffer[MAX_PACKET_SIZE];
    
     int buffer_len;
+    uint8_t mask = 32;
 
     if (!skb)
         return NF_ACCEPT;
@@ -103,8 +104,6 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     memset(&rule, 0, sizeof(rule_t));
 
     // packet parsing
-
-    uint8_t mask = 32;
 
     iph = ip_hdr(skb);
     memcpy(&rule.src, &iph->saddr, sizeof(rule.src));
@@ -177,46 +176,15 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {   
-    // get time 
+    // test data_constraint
 
-    daily_time_t now;
-
-    memset(&now, 0, sizeof(daily_time_t));
-
-	set_current_time(&now.hour, &now.minute);
-
-    printk(KERN_INFO "time %d:%d\n", now.hour, now.minute);
-
-    // check if time constraint functions work
-
-    time_constraint_t time_c;
-    memset(&time_c, 0, sizeof(time_constraint_t));
-    create_time_constraint(&time_c, 20, 30, 21, 30);
-    print_time_constraint(time_c);
-
-    int result = time_check(&time_c);
-    printk(KERN_INFO "time_check : %d\n", result);
-
-    // search for firewall process (TO BE REMOVED)
+    char *msg;
     
-    struct task_struct *task;
 
-    for_each_process(task) {
+    data_constraint_t *data_c;
+    buffer_to_data_constraint(data_c, msg);
 
-       // compare your process name with each of the task struct process name 
-
-        if ( (strcmp( task->comm,"client.out") == 0 ) ) {
-
-              // if matched that is your user process PID      
-              firewall_pid = task->pid;
-              printk(KERN_INFO "firewall pid : %d\n", firewall_pid);
-        }
-    }
-
-    if(!firewall_pid){
-        printk(KERN_INFO "firewall process not found !");
-        //return -1; // will throw operation not permitted
-    }
+    print_data_constraint(data_c);
     
     /* rule_struct list initialization */
 

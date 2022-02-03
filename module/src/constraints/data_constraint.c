@@ -1,18 +1,135 @@
 #include "data_constraint.h"
 
-int create_data_t(data_t *data, char *buffer){
+void destroy_data_t(data_t *data, uint8_t type){
 
+	string_value_t *str_value;
+
+	data_t *element = data;
+	data_t *previous = element;
+	while(element!=NULL){
+		switch (type)
+		{
+			case STRING_TYPE: 
+
+				str_value = &((element->value_t).str_value);
+
+				if(str_value->str!=NULL)
+					kfree(str_value->str);
+
+				break;
+			default:
+				printk(KERN_INFO "data type without kmalloc\n");
+		}
+
+		element = element->next;
+
+		kfree(previous);
+
+		previous = element;
+	}
 }
 
-int destroy_data_t(data_t *data){
+int buffer_to_data_t(data_t *data, uint8_t type, char *buffer){
+	string_value_t *str_value;
+	interval_t *int_range;
+	data_t *element;
+	int i;
 
+	uint8_t n_value = (uint8_t) *buffer;
+
+	data = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
+	if(data==NULL)
+		return -1;
+
+	memset(data, 0, sizeof(data_t));
+
+	element = data;
+	
+	for(i=0; i<n_value; i++){
+
+		switch (type)
+		{
+			case INT_TYPE:
+			
+				(element->value_t).int_value = *buffer;
+
+				buffer += sizeof(int);
+
+				break;
+			case STRING_TYPE:
+
+				str_value = &((element->value_t).str_value);
+
+				str_value->str_len = (uint8_t) *buffer;
+				buffer += sizeof(uint8_t);
+
+				str_value->str = (char *)kmalloc(str_value->str_len, GFP_KERNEL);
+				if(str_value->str==NULL){
+					destroy_data_t(data, type);
+					return -1;
+				}
+				memset(str_value->str, 0, str_value->str_len);
+				memcpy(str_value->str, buffer, str_value->str_len);
+
+				buffer += str_value->str_len;
+
+				break;
+			case INT_RANGE:
+
+				int_range = &((element->value_t).int_range);
+				
+				memcpy(&(int_range->start), buffer, sizeof(int));
+
+				buffer += sizeof(int);
+
+				memcpy(&(int_range->end), buffer, sizeof(int));
+
+				buffer += sizeof(int);
+				
+				break;
+			default:
+				printk(KERN_INFO "data type not know\n");
+				destroy_data_t(data, type);
+				return -1;
+		}
+
+		if(i<n_value-1){
+			element->next = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
+			if(element==NULL)
+				return -1;
+
+			memset(element, 0, sizeof(data_t));
+		}
+
+		element = element->next;
+	}
+
+	return 0;
 }
 
-int destroy_data_constraint(data_constraint_t *data_c){
+void destroy_data_constraint(data_constraint_t *data_c){
 
+	data_constraint_t *element = data_c;
+	data_constraint_t *previous = element;
+	while(element!=NULL){
+		
+		if(element->field!=NULL)
+			kfree(element->field);
+
+		destroy_data_t(element->data, element->type);
+
+		element = element->next;
+
+		kfree(previous);
+
+		previous = element;
+	}
 }
 
-int create_data_constraint(data_constraint_t *data_c, char *msg){
+int buffer_to_data_constraint(data_constraint_t *data_c, char *msg){
+	int err;
+	int i;
+	data_constraint_t *element;
 	char *buffer = msg;
 
 	uint8_t n_constraint = (uint8_t) *buffer;
@@ -24,48 +141,89 @@ int create_data_constraint(data_constraint_t *data_c, char *msg){
 
 	memset(data_c, 0, sizeof(data_constraint_t));
 
-	data_constraint_t *current = data_c;
-	for(int i=0; i<n_constraint; i++){
+	element = data_c;
+	for(i=0; i<n_constraint; i++){
 
-		current->type = (uint8_t) *buffer;
-		buffer += 1;
+		element->type = (uint8_t) *buffer;
+		buffer += sizeof(uint8_t);
 
-		current->field = (uint8_t) *buffer;
-		buffer += 1;
+		element->field_len = (uint8_t) *buffer;
+		buffer += sizeof(uint8_t);
 
-		current->field = (char *)kmalloc(data_c->field_len, GFP_KERNEL);
-		if(current->field==NULL){
+		element->field = (char *)kmalloc(element->field_len, GFP_KERNEL);
+		if(element->field==NULL){
 			destroy_data_constraint(data_c);
 			return -1;
 		}
 		
-		memset(current->field, 0, current->field_len);
-		memcpy(current->field, buffer, current->field_len);
+		memset(element->field, 0, element->field_len);
+		memcpy(element->field, buffer, element->field_len);
 
-		buffer += field_len;
+		buffer += element->field_len;
 
-		field->data = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
-		if(field->data==NULL){
+		element->data = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
+		if(element->data==NULL){
 			destroy_data_constraint(data_c);
 			return -1;
 		}
 
-		int err = create_data_t(&field->data, buffer);
+		err = buffer_to_data_t(element->data, element->type, buffer);
 		if(err){
 			destroy_data_constraint(data_c);
 			return -1;
 		}
 
-
 		if(i<n_constraint-1){
-			current->next = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);
-			if(current==NULL)
+			element->next = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);
+			if(element==NULL)
 				return -1;
 
-			memset(current, 0, sizeof(data_constraint_t));
+			memset(element, 0, sizeof(data_constraint_t));
 		}
+
+		element = element->next;
 	}
 
 	return 0;
 }
 
+void print_data_t(data_t *data, uint8_t type){
+	int i = 0;
+	data_t *element = data;
+	while(element!=NULL){
+		printk(KERN_CONT "	data %d : ", i);
+		switch (type)
+		{
+			case INT_TYPE:
+				printk(KERN_INFO "%d\n", element->value_t.int_value);
+				break;
+			case STRING_TYPE:
+				printk(KERN_INFO "%s\n", element->value_t.str_value.str);
+				break;
+			case INT_RANGE:
+				printk(KERN_INFO "%d-%d\n", element->value_t.int_range.start, element->value_t.int_range.end);
+				break;
+			default:
+				printk(KERN_INFO "unkown\n");
+		}
+
+		element = element->next;
+		i += 1;
+	}
+}
+
+void print_data_constraint(data_constraint_t *data_c){
+	int i = 0;
+	data_constraint_t *element = data_c;
+	while(element!=NULL){
+		printk(KERN_INFO "data_constraint %d :\n", i);
+		printk(KERN_INFO "	type : %d\n", element->type);
+		printk(KERN_INFO "	field_len : %d\n", element->field_len);
+		printk(KERN_INFO "	field : %s\n", element->field);
+
+		print_data_t(element->data, element->type);
+
+		element = element->next;
+		i += 1;
+	}
+}
