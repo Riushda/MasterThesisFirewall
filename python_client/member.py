@@ -26,35 +26,6 @@ class Member():
         return buffer
 
 
-def create_member(ip, port):
-
-    member = Member()
-
-    split = ip.split("/")
-    if(len(split) > 2):
-        raise ValueError
-
-    bitmask = 32
-    if(len(split) > 1):
-        bitmask = int(split[1])
-
-    if(split[0] != "*"):
-        member.ip = int(ipaddress.IPv4Address(
-            split[0]))
-        member.bitmask = bitmask  # .to_bytes(1, 'big')
-    else:
-        member.bitmask = 0
-
-    if(port != "*"):
-        if(port[0][0] == "-"):
-            member.port = int(port[1:])
-            member.n_port = 1
-        else:
-            member.port = int(port)
-
-    return member
-
-
 def parse_member(name, str_ip, str_port, type):
 
     ip = 0
@@ -63,19 +34,16 @@ def parse_member(name, str_ip, str_port, type):
     n_port = 0
 
     if(name == "/"):
-        print("Error: This name is reserved, please enter another.")
-        return None
+        return "Error: This name is reserved, please enter another."
 
     split = str_ip.split("/")
     if(len(split) > 2):
-        print("Error: Incorrect ip format, correct format is IP[/BITMASK].")
-        return None
+        return "Error: Incorrect ip format, correct format is IP[/BITMASK]."
 
     if(len(split) > 1):
         bitmask = int(split[1])
         if(bitmask > 32):
-            print("Error: Bitmask max value is 32.")
-            return None
+            return "Error: Bitmask max value is 32."
 
     if(split[0] != "*"):
         ip = int(ipaddress.IPv4Address(split[0]))
@@ -90,7 +58,6 @@ def parse_member(name, str_ip, str_port, type):
             port = int(str_port)
 
     if(port > 65535):
-        print("Error: Port max value is 65535.")
-        return None
+        return "Error: Port max value is 65535."
 
     return Member(name, ip, bitmask, port, n_port, type)
