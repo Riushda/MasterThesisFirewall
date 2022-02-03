@@ -6,7 +6,7 @@ int parse_packet(char * packet, uint16_t port, char *buffer){
 		return parse_mqtt(packet, buffer);
 	}
 
-	return 0;
+	return -1;
 }
 
 /*

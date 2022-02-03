@@ -1,8 +1,8 @@
-#include "constant.h"
-#include "utils.h"
+#include "../utils/constant.h"
+#include "../utils/utils.h"
+#include "../context/context.h"
 #include "htable.h"
 #include "trie.h"
-#include "context.h"
 
 #ifndef RULE_H
 #define RULE_H
@@ -22,7 +22,7 @@ typedef struct rule
     proto_t proto;
     bool_t action;
     short index;
-    context_t *context;
+    data_constraint_t *constraints;
 } rule_t;
 
 /* USER */

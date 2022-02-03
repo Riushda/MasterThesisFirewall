@@ -1,4 +1,4 @@
-#include "protocol.h"
+#include "protocol/protocol.h"
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
 
@@ -15,8 +15,8 @@ int firewall_pid = 0;
 
 /* 
     TODO : - install gdb for debug in kernel
-           - add context in rule.c 
            - detect encryption in firewall.c (keep track of connections?)
+           - add context in rule.c
            - test context.c with check_time
  */
 
@@ -148,7 +148,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     buffer_len = parse_packet(data, port, buffer);
 
-    if(buffer_len){ // if publish message 
+    if(buffer_len>0){ // if publish message 
 
         print_rule(rule);
         
@@ -163,6 +163,12 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
         //netlink_send_msg(buffer, buffer_len);
     }
+    else if(!buffer_len){ // tcp/udp packet but not related to known iot protocol
+        buffer_len = 0; // for compilation
+    }
+    else if(buffer_len==-2){ // tcp/udp packet related to known iot protocol but not a publish
+        buffer_len = -2; // for compilation
+    }
 
     // if buffer_len==0, then not a publish message so accept it
 
@@ -171,6 +177,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {   
+    // get time 
+
     daily_time_t now;
 
     memset(&now, 0, sizeof(daily_time_t));
@@ -178,6 +186,16 @@ static int __init init(void)
 	set_current_time(&now.hour, &now.minute);
 
     printk(KERN_INFO "time %d:%d\n", now.hour, now.minute);
+
+    // check if time constraint functions work
+
+    time_constraint_t time_c;
+    memset(&time_c, 0, sizeof(time_constraint_t));
+    create_time_constraint(&time_c, 20, 30, 21, 30);
+    print_time_constraint(time_c);
+
+    int result = time_check(&time_c);
+    printk(KERN_INFO "time_check : %d\n", result);
 
     // search for firewall process (TO BE REMOVED)
     

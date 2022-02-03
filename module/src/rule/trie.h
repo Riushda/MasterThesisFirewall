@@ -1,5 +1,5 @@
-#include "constant.h"
-#include "utils.h"
+#include "../utils/constant.h"
+#include "../utils/utils.h"
 
 #ifndef TRIE_H
 #define TRIE_H
