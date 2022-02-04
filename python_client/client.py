@@ -1,47 +1,92 @@
-import typer
+import argparse
 import Pyro4
-from typing import List
 
 from constant import *
 
-app = typer.Typer()
 daemon = Pyro4.Proxy("PYRONAME:handlers")
+parser = argparse.ArgumentParser()
+
+parser.add_argument("command", type=str, choices=[
+                    "member", "relation", "rule", "show"])
+
+parser.add_argument("--action", type=str,
+                    choices=[e.value for e in ACTION], default=ACTION.ADD.value)
 
 
-@app.command()
-def member(name: str, str_ip: str = "*", str_port: str = "*", type: M_TYPE = M_TYPE.PUB.value, action: ACTION = ACTION.ADD.value):
+# Parameters related to members
 
-    if(action.value == ACTION.ADD.value):
-        print(daemon.add_member(name, str_ip, str_port, type))
-    elif(action.value == ACTION.REMOVE.value):
-        print(daemon.remove_member(name, type))
+parser.add_argument("--name", type=str,
+                    help="name of the member", default="dev")
 
+parser.add_argument("--ip", type=str,
+                    help="ip with optional bitmask", default="*")
 
-@app.command()
-def relation(context: List[str], pub: str, sub: str, broker: str = "/", index: int = 0, policy: POLICY = POLICY.ALLOW.value, action: ACTION = ACTION.ADD.value):
+parser.add_argument("--port", type=str,
+                    help="port", default="*")
 
-    if(action.value == ACTION.ADD.value):
-        print(daemon.add_relation(pub, sub, broker, policy.value, context))
-    elif(action.value == ACTION.REMOVE.value):
-        print(daemon.remove_relation(index))
+parser.add_argument("--type", type=str, choices=[e.value for e in M_TYPE],
+                    help="type of device", default=M_TYPE.PUB.value)
 
+# Parameters related to relations and rules
 
-@app.command()
-def rule(src: str = "*", sport: str = "*", dst: str = "*", dport: str = "*", index: int = 0, policy: POLICY = POLICY.ALLOW.value, action: ACTION = ACTION.ADD.value):
+parser.add_argument("--policy", type=str, choices=[e.value for e in POLICY],
+                    help="policy to adopt", default=POLICY.ALLOW.value)
 
-    if(action.value == ACTION.ADD.value):
-        print(daemon.add_rule(src, sport, dst, dport, policy.value))
-    elif(action.value == ACTION.REMOVE.value):
-        print(daemon.remove_rule(index))
+# Parameters related to relations
 
+parser.add_argument("--pub", type=str,
+                    help="a publisher", default="dev")
 
-@app.command()
-def show(table: T_TYPE = T_TYPE.RELATIONS.value):
-    if(table.value == T_TYPE.RULES.value):
-        print(daemon.show_rules())
-    elif(table.value == T_TYPE.RELATIONS.value):
-        print(daemon.show_relations())
+parser.add_argument("--sub", type=str,
+                    help="a subscriber", default="dev")
 
+parser.add_argument("--broker", type=str,
+                    help="a broker", default="dev")
 
-if __name__ == "__main__":
-    app()
+parser.add_argument("--constraint", action='append',
+                    help='a constraint on the context', default=[])
+
+# Parameters related to rules
+
+parser.add_argument("--src", type=str,
+                    help="ip with optional bitmask", default="*")
+
+parser.add_argument("--dst", type=str,
+                    help="ip with optional bitmask", default="*")
+
+parser.add_argument("--sport", type=str,
+                    help="source port", default="*")
+
+parser.add_argument("--dport", type=str,
+                    help="destination port", default="*")
+
+# Parameters related to show
+
+parser.add_argument("--table", type=str, choices=[e.value for e in T_TYPE],
+                    help="table to display", default="relations")
+
+args = parser.parse_args()
+
+match args.command:
+    case COMMAND.MEMBER.value:
+        match args.action:
+            case ACTION.ADD.value:
+                print(daemon.add_member(args.name, args.ip, args.port, args.type))
+            case ACTION.REMOVE.value:
+                print(daemon.remove_member(args.name, args.type))
+    case COMMAND.RELATION.value:
+        match args.action:
+            case ACTION.ADD.value:
+                print(daemon.add_relation(args.pub, args.sub,
+                      args.broker, args.policy, args.constraint))
+            case ACTION.REMOVE.value:
+                print(daemon.remove_relation(args.index))
+    case COMMAND.RULE.value:
+        match args.action:
+            case ACTION.ADD.value:
+                print(daemon.add_rule(args.src, args.sport,
+                      args.dst, args.dport, args.policy))
+            case ACTION.REMOVE.value:
+                print(daemon.remove_rule(args.index))
+    case COMMAND.SHOW.value:
+        print(daemon.show(args.table))

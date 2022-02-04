@@ -4,6 +4,9 @@ from constant import *
 
 class Relation():
     def __init__(self, first: Rule, second: Rule = None, context: list = []):
+        self.has_broker = 0
+        if(second):
+            self.has_broker = 1
         self.first = first
         self.second = second
         self.context = context
@@ -21,7 +24,10 @@ class Relation():
                 s_constraints.append(x)
 
         buffer = bytearray()
+
+        buffer += self.has_broker.to_bytes(1, 'little')
         buffer += self.first.to_bytes()
+
         if(self.second):
             buffer += self.second.to_bytes()
         buffer += len(s_constraints).to_bytes(1, 'little')

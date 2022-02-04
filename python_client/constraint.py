@@ -77,9 +77,6 @@ def parse_context(context):
 
     constraint_list = []
 
-    if(context[0] == CONSTRAINT.NO_CONTEXT.value):
-        return constraint_list
-
     for c in context:
 
         split = c.split("/")

@@ -1,6 +1,7 @@
 import Pyro4
 import signal
 import sys
+import os
 
 from constant import *
 from netlink import Netlink
@@ -91,6 +92,8 @@ class Handlers(object):
         except KeyError:
             return "Error: This member does not exist."
 
+        new_relation = None
+
         if(broker_member):
             first_rule = Rule(
                 pub_member, broker_member, self.current_index, policy)
@@ -105,7 +108,6 @@ class Handlers(object):
             new_relation = Relation(
                 first_rule, second_rule, context=constraints)
             self.relations.append(new_relation)
-            print(new_relation.to_bytes())
         else:
             first_rule = Rule(
                 pub_member, sub_member, self.current_index, policy)
@@ -113,7 +115,8 @@ class Handlers(object):
             self.rules.append(first_rule)
             new_relation = Relation(first_rule, context=constraints)
             self.relations.append(new_relation)
-            print(new_relation.to_bytes())
+
+        netlink.send_msg(CODE.ADD_RELATION.value, new_relation.to_bytes())
 
         return "Relation added!"
 
@@ -125,6 +128,8 @@ class Handlers(object):
             found_relation = self.relations[index]
         except IndexError:
             return "This relation does not exist."
+
+        has_broker = found_relation.has_broker
 
         rule_index = found_relation.first.index
 
@@ -142,6 +147,12 @@ class Handlers(object):
 
         del self.relations[index]
 
+        if(has_broker == 1):
+            netlink.send_msg(CODE.RM_RELATION.value, has_broker.to_bytes(1, 'little') + (rule_index).to_bytes(
+                2, 'little') + (rule_index + 1).to_bytes(2, 'little'))
+        else:
+            netlink.send_msg(CODE.RM_RELATION.value, has_broker.to_bytes(1, 'little') +
+                             (rule_index).to_bytes(2, 'little'))
         return "Relation removed!"
 
     def add_rule(self, src, sport, dst, dport, policy):
@@ -160,6 +171,10 @@ class Handlers(object):
         self.current_index += 1
         self.rules.append(new_rule)
 
+        new_relation = Relation(new_rule)
+
+        netlink.send_msg(CODE.ADD_RELATION.value, new_relation.to_bytes())
+
         return "Rule added!"
 
     def remove_rule(self, index):
@@ -172,25 +187,29 @@ class Handlers(object):
         for x in range(index, len(self.rules)):
             self.rules[x].index -= 1
 
+        has_broker = 0
+
+        netlink.send_msg(CODE.RM_RELATION.value, has_broker.to_bytes(1, 'little') +
+                         index.to_bytes(2, 'little'))
         return "Rule deleted!"
 
-    def show_rules(self):
-        result = ""
-
-        for x in range(0, len(self.rules)):
-            result += f"{self.rules[x].index} | {self.rules[x]}\n"
-
-        return result
-
-    def show_relations(self):
+    def show(self, table):
 
         result = ""
 
-        for x in range(0, len(self.relations)):
-            result += f"{x} | {self.relations[x]}\n"
+        if(table == T_TYPE.RELATIONS.value):
+            for x in range(0, len(self.relations)):
+                result += f"{x} | {self.relations[x]}\n"
+
+        elif(table == T_TYPE.RULES.value):
+            for x in range(0, len(self.rules)):
+                result += f"{self.rules[x].index} | {self.rules[x]}\n"
 
         return result
 
+
+pid = os.getpid().to_bytes(4, 'little')
+netlink.send_msg(CODE.PID.value, pid)
 
 daemon = Pyro4.Daemon()
 ns = Pyro4.locateNS()

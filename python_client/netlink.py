@@ -12,9 +12,10 @@ class Netlink():
     def close(self):
         self.sock.close()
 
-    def send_msg(self, data):
+    def send_msg(self, code, data):
         try:
-            self.sock.send(data)
+            print(code.to_bytes(1, 'little') + data)
+            self.sock.send(code.to_bytes(1, 'little') + data)
         except(socket.error):
             print("Error while sending")
 

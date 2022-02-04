@@ -8,14 +8,19 @@ class ACTION(Enum):
     REMOVE = "rm"
 
 
+class COMMAND(Enum):
+    MEMBER = "member"
+    RELATION = "relation"
+    RULE = "rule"
+    SHOW = "show"
+
+
 class CODE(Enum):
-    C_PID = 0
-    ADD_RULE = 1
-    RM_RULE = 2
+    PID = 0
+    ADD_RELATION = 1
+    RM_RELATION = 2
     ENABLE_RULE = 3
     DISABLE_RULE = 4
-    ADD_RELATION = 5
-    ADD_BROKER_RELATION = 6
 
 
 class CONSTRAINT(Enum):
@@ -25,14 +30,17 @@ class CONSTRAINT(Enum):
     STR = "str"
     TIME = "time"
 
+
 class I_CONSTRAINT(Enum):
     SUBJECT = 0
     INT = 1
     STR = 2
     TIME = 3
 
+
 class D_CONSTRAINT(Enum):
     TIME = 3
+
 
 class M_TYPE(Enum):
     BROKER = "broker"

@@ -29,11 +29,12 @@ python client.py {COMMAND}
 
 # Command examples
 
-python client.py member A --type pub
-python client.py member B --type sub
-python client.py member C --type broker
+python client.py member --name A --type pub
+python client.py member --name B --type sub
+python client.py member --name C --type broker
 
-python client.py relation / A B --broker C
+python client.py relation --pub A --sub B --broker C
+python client.py relation --pub A --sub B --broker C --constraint subject/allo --constraint time/20:00-22:00 --constraint str/name/papacito/usul
 
 python client.py show
 
