@@ -6,6 +6,10 @@ struct msghdr msg;
 struct iovec iov;
 unsigned char payload[MAX_PAYLOAD];
 
+struct sockaddr_nl src_addr;
+struct sockaddr_nl dest_addr;
+int sock_fd;
+
 int open_netlink()
 {
     sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_USERSOCK); // NETLINK_FW 

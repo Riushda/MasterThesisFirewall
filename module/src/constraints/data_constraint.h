@@ -52,9 +52,9 @@ int data_constraint_to_buffer(data_constraint_t *data_c, char *msg);
 
 int add_int_data_t(data_t *data, int int_value);
 
-int add_str_data_t(data_t *data, int int_value);
+int add_str_data_t(data_t *data, uint8_t str_len, char *str);
 
-int add_int_range_data_t(data_t *data, int int_value);
+int add_int_range_data_t(data_t *data, int start, int end);
 
 int add_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data);
 

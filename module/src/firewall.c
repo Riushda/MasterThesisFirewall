@@ -1,4 +1,5 @@
 #include "protocol/protocol.h"
+#include "constraints/time_constraint.h"
 #include <linux/proc_fs.h>
 #include <linux/sched.h>
 
@@ -53,6 +54,9 @@ static void netlink_recv_msg(struct sk_buff *skb)
 
     nlh = (struct nlmsghdr *)skb->data;
     msg = (char *)NLMSG_DATA(nlh);
+    
+    printk(KERN_INFO "skb->data : %s\n", (char *) skb->data);
+    printk(KERN_INFO "msg : %s\n", msg);
 
     memcpy(&code, msg, sizeof(bool_t));
 
@@ -176,6 +180,12 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
 static int __init init(void)
 {   
+
+    uint16_t hour;
+    uint16_t minute;
+    set_current_time(&hour, &minute);
+    printk(KERN_INFO "time : %d:%d\n", hour, minute);
+
     // test data_constraint
 
     /*char *msg;

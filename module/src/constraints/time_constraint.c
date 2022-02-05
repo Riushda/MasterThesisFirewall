@@ -21,10 +21,10 @@ void create_time_constraint(time_constraint_t *time_c, uint16_t hour_start, uint
 }
 
 void set_current_time(uint16_t *hour, uint16_t *minute){
-	struct timespec curr_tm;
+	struct timespec64 curr_tm;
 	memset(&curr_tm, 0, sizeof(curr_tm));
 
-	getnstimeofday(&curr_tm);
+	ktime_get_real_ts64(&curr_tm);
 
 	*hour = (uint16_t) (curr_tm.tv_sec / 3600) % 24;
 	*minute = (uint16_t) (curr_tm.tv_sec/60 % (24*60)) - (*hour*60);

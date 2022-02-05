@@ -14,10 +14,6 @@
 #ifndef NETLINK_H
 #define NETLINK_H
 
-struct sockaddr_nl src_addr;
-struct sockaddr_nl dest_addr;
-int sock_fd;
-
 int open_netlink();
 
 int receive_msg(volatile int *keeprunning);

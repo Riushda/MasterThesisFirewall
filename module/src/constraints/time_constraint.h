@@ -1,5 +1,5 @@
-#include <linux/time.h>
 #include <linux/ktime.h>
+#include <linux/timekeeping.h>
 
 typedef struct daily_time
 {
