@@ -32,6 +32,9 @@ parser.add_argument("--type", type=str, choices=[e.value for e in M_TYPE],
 parser.add_argument("--policy", type=str, choices=[e.value for e in POLICY],
                     help="policy to adopt", default=POLICY.ALLOW.value)
 
+parser.add_argument("--index", type=int,
+                    help="index to remove", default=0)
+
 # Parameters related to relations
 
 parser.add_argument("--pub", type=str,

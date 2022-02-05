@@ -2,6 +2,8 @@ import Pyro4
 import signal
 import sys
 import os
+import schedule
+import threading
 
 from constant import *
 from netlink import Netlink
@@ -9,12 +11,17 @@ from member import Member, parse_member
 from relation import Relation
 from rule import Rule
 from constraint import parse_context
+from scheduleThread import ScheduleThread, schedule_job
 
 netlink = Netlink()
+s_mutex = threading.Lock()
+schedule_tread = ScheduleThread(s_mutex, schedule)
+schedule_tread.start()
 
 
 def signal_handler(sig, frame):
     print('You pressed Ctrl+C!')
+    schedule_tread.stop()
     netlink.close()
     sys.exit(0)
 
@@ -116,7 +123,8 @@ class Handlers(object):
             new_relation = Relation(first_rule, context=constraints)
             self.relations.append(new_relation)
 
-        netlink.send_msg(CODE.ADD_RELATION.value, new_relation.to_bytes())
+        new_relation.add_jobs(netlink, schedule, schedule_job)
+        new_relation.add_to_kernel(netlink)
 
         return "Relation added!"
 
@@ -128,8 +136,6 @@ class Handlers(object):
             found_relation = self.relations[index]
         except IndexError:
             return "This relation does not exist."
-
-        has_broker = found_relation.has_broker
 
         rule_index = found_relation.first.index
 
@@ -145,14 +151,11 @@ class Handlers(object):
         for x in range(rule_index, len(self.rules)):
             self.rules[x].index -= offset
 
+        found_relation.cancel_jobs(schedule)
+        found_relation.rm_from_kernel(netlink)
+
         del self.relations[index]
 
-        if(has_broker == 1):
-            netlink.send_msg(CODE.RM_RELATION.value, has_broker.to_bytes(1, 'little') + (rule_index).to_bytes(
-                2, 'little') + (rule_index + 1).to_bytes(2, 'little'))
-        else:
-            netlink.send_msg(CODE.RM_RELATION.value, has_broker.to_bytes(1, 'little') +
-                             (rule_index).to_bytes(2, 'little'))
         return "Relation removed!"
 
     def add_rule(self, src, sport, dst, dport, policy):
