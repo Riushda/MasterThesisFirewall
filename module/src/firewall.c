@@ -196,6 +196,17 @@ static int __init init(void)
     buffer_to_data_constraint(data_c, msg);
 
     print_data_constraint(data_c); */
+
+    data_constraint_t *data_c;
+    data_t *data;
+
+    add_int_data_t(data, 5);
+
+    //destroy_data_t(data, INT_TYPE);
+
+    /*add_data_constraint(data_c, INT_TYPE, 5, "test", data);
+
+    print_data_constraint(data_c);*/
     
     /* rule_struct list initialization */
 

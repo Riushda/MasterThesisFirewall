@@ -58,4 +58,6 @@ int add_int_range_data_t(data_t *data, int start, int end);
 
 int add_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data);
 
+void print_data_t(data_t *data, uint8_t type);
+
 void print_data_constraint(data_constraint_t *data_c);

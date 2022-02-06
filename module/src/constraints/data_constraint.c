@@ -187,6 +187,11 @@ int buffer_to_data_constraint(data_constraint_t *data_c, char *msg){
 	return 0;
 }
 
+int data_constraint_to_buffer(data_constraint_t *data_c, char *msg){
+	// TODO
+	return 0;
+}
+
 data_t* set_and_get_next_data_t(data_t *data){
 
 	if(data==NULL){
@@ -216,7 +221,9 @@ data_t* set_and_get_next_data_t(data_t *data){
 }
 
 int add_int_data_t(data_t *data, int int_value){
+	printk(KERN_INFO "before current\n");
 	data_t *current_data = set_and_get_next_data_t(data);
+	printk(KERN_INFO "after current\n");
 	if(current_data==NULL)
 		return -1;
 
@@ -258,6 +265,50 @@ int add_int_range_data_t(data_t *data, int start, int end){
 	int_range->end = end;
 	
 	return 0;
+}
+
+int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+	data_c = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);
+	if(data_c==NULL)
+		return -1;
+
+	memset(data_c, 0, sizeof(data_constraint_t));
+
+	data_c->type = type;
+	data_c->field_len = field_len;
+	
+	data_c->field = (char *)kmalloc(data_c->field_len, GFP_KERNEL);
+	if(data_c->field==NULL){
+		kfree(data_c);
+		return -1;
+	}
+
+	data_c->data = data;
+
+	return 0;
+}
+
+int add_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+	int err;
+
+	if(data_c==NULL){
+		err = set_data_constraint(data_c, type, field_len, field, data);
+		return err;
+	}
+
+	data_constraint_t *element = data_c;
+	while(element->next!=NULL){
+		element = element->next;
+	}
+
+	element->next = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);
+	if(element==NULL)
+		return -1;
+
+	memset(element->next, 0, sizeof(data_constraint_t));
+	element = element->next;
+
+	return set_data_constraint(element, type, field_len, field, data);
 }
 
 void print_data_t(data_t *data, uint8_t type){

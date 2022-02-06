@@ -1,4 +1,5 @@
 #include "rule.h"
+#include "data_constraint.h"
 
 int main()
 {
@@ -14,7 +15,7 @@ int main()
     rule.index = 2;
     rule.action = 1;
 
-    print_rule(rule);
+    //print_rule(rule);
 
     init_rules(&rule_struct);
 
@@ -35,12 +36,46 @@ int main()
     print_table(rule_struct.sport_table);
     print_table(rule_struct.dport_table);*/
 
-    printf("%d\n", match_rule(&rule_struct, rule2));
+    //printf("%d\n", match_rule(&rule_struct, rule2));
 
     destroy_rules(&rule_struct);
 
     vector_t vector[VECTOR_SIZE];
     memset(vector, 0, VECTOR_SIZE);
     //print_bits(vector, VECTOR_SIZE);
+
+    // data_constraint tests
+
+    data_constraint_t *data_c = NULL;
+    data_t *data_1 = NULL;
+    data_t *data_2 = NULL;
+    data_t *data_3 = NULL;
+
+    add_int_data_t(&data_1, 5);
+    add_int_data_t(&data_1, 10);
+    add_int_data_t(&data_1, 15);
+
+    add_str_data_t(&data_2, 6, "pizza");
+    add_str_data_t(&data_2, 6, "de la");
+    add_str_data_t(&data_2, 5, "mama");
+
+    add_int_range_data_t(&data_3, 5, 10);
+    add_int_range_data_t(&data_3, 10, 15);
+    add_int_range_data_t(&data_3, 15, 20);
+
+    add_data_constraint(&data_c, INT_TYPE, 6, "test1", data_1);
+    add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2);
+    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3);
+
+    print_data_constraint(data_c);
+
+    destroy_data_constraint(data_c);
+
+    //destroy_data_t(data, INT_TYPE);
+
+    /*add_data_constraint(data_c, INT_TYPE, 5, "test", data);
+
+    print_data_constraint(data_c);*/
+
     return 0;
 }
