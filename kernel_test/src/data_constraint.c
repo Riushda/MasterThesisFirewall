@@ -2,21 +2,21 @@
 
 /* convert buffer to struct functions */
 
-int buffer_to_data_t(data_t *data, uint8_t type, char *buffer){
-	string_value_t *str_value;
-	interval_t *int_range;
+int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
 	data_t *element;
 	int i;
 
+	int int_value;
+	uint8_t str_len;
+	int start;
+	int end;
+
+	char *buffer = buf;
+	int offset = 0;
+
 	uint8_t n_value = (uint8_t) *buffer;
-
-	data = (data_t *)malloc(sizeof(data_t));
-	if(data==NULL)
-		return -1;
-
-	memset(data, 0, sizeof(data_t));
-
-	element = data;
+	buffer += sizeof(uint8_t);
+	offset += sizeof(uint8_t);
 	
 	for(i=0; i<n_value; i++){
 
@@ -24,118 +24,88 @@ int buffer_to_data_t(data_t *data, uint8_t type, char *buffer){
 		{
 			case INT_TYPE:
 			
-				element->value.int_value = *buffer;
+				memset(&int_value, 0, sizeof(int));
+				memcpy(&int_value, buffer, sizeof(int));
 
+				add_int_data_t(data, int_value);
 				buffer += sizeof(int);
+				offset += sizeof(int);
 
 				break;
 			case STRING_TYPE:
-
-				str_value = &(element->value.str_value);
-
-				str_value->str_len = (uint8_t) *buffer;
+				str_len = (uint8_t) *buffer;
 				buffer += sizeof(uint8_t);
+				offset += sizeof(uint8_t);
 
-				str_value->str = (char *)malloc(str_value->str_len);
-				if(str_value->str==NULL){
-					destroy_data_t(data, type);
-					return -1;
-				}
-				memset(str_value->str, 0, str_value->str_len);
-				memcpy(str_value->str, buffer, str_value->str_len);
-
-				buffer += str_value->str_len;
+				add_str_data_t(data, str_len, buffer);
+				buffer += str_len;
+				offset += str_len;
 
 				break;
 			case INT_RANGE_TYPE:
-
-				int_range = &(element->value.int_range);
-				
-				memcpy(&(int_range->start), buffer, sizeof(int));
+				memset(&start, 0, sizeof(int));
+				memcpy(&start, buffer, sizeof(int));
 
 				buffer += sizeof(int);
+				offset += sizeof(int);
 
-				memcpy(&(int_range->end), buffer, sizeof(int));
+				memset(&end, 0, sizeof(int));
+				memcpy(&end, buffer, sizeof(int));
 
 				buffer += sizeof(int);
+				offset += sizeof(int);
+
+				add_int_range_data_t(data, start, end);
 				
 				break;
 			default:
-				printf( "data type not know\n");
-				destroy_data_t(data, type);
+				// data type not known
+				destroy_data_t(*data, type);
 				return -1;
 		}
-
-		if(i<n_value-1){
-			element->next = (data_t *)malloc(sizeof(data_t));
-			if(element==NULL)
-				return -1;
-
-			memset(element, 0, sizeof(data_t));
-		}
-
-		element = element->next;
 	}
 
-	return 0;
+	return offset;
 }
 
-int buffer_to_data_constraint(data_constraint_t *data_c, char *msg){
-	int err;
+int buffer_to_data_constraint(char *buf, data_constraint_t **data_c){
+	int offset;
 	int i;
-	data_constraint_t *element;
-	char *buffer = msg;
+	char field[100];
+
+	uint8_t type;
+	uint8_t field_len;
+
+	char *buffer = buf;
 
 	uint8_t n_constraint = (uint8_t) *buffer;
-	buffer += 1;
+	buffer += sizeof(uint8_t);
 
-	data_c = (data_constraint_t *)malloc(sizeof(data_constraint_t));
-	if(data_c==NULL)
-		return -1;
-
-	memset(data_c, 0, sizeof(data_constraint_t));
-
-	element = data_c;
 	for(i=0; i<n_constraint; i++){
 
-		element->type = (uint8_t) *buffer;
+		type = (uint8_t) *buffer;
 		buffer += sizeof(uint8_t);
 
-		element->field_len = (uint8_t) *buffer;
+		field_len = (uint8_t) *buffer;
 		buffer += sizeof(uint8_t);
-
-		element->field = (char *)malloc(element->field_len);
-		if(element->field==NULL){
-			destroy_data_constraint(data_c);
-			return -1;
-		}
 		
-		memset(element->field, 0, element->field_len);
-		memcpy(element->field, buffer, element->field_len);
+		memset(field, 0, field_len);
+		memcpy(field, buffer, field_len);
 
-		buffer += element->field_len;
+		buffer += field_len;
 
-		element->data = (data_t *)malloc(sizeof(data_t));
-		if(element->data==NULL){
-			destroy_data_constraint(data_c);
+		data_t *data = NULL;
+
+		offset = buffer_to_data_t(buffer, type, &data);
+		if(offset<0){
+			free(data);
+			destroy_data_constraint(*data_c);
 			return -1;
 		}
 
-		err = buffer_to_data_t(element->data, element->type, buffer);
-		if(err){
-			destroy_data_constraint(data_c);
-			return -1;
-		}
+		buffer += offset;
 
-		if(i<n_constraint-1){
-			element->next = (data_constraint_t *)malloc(sizeof(data_constraint_t));
-			if(element==NULL)
-				return -1;
-
-			memset(element, 0, sizeof(data_constraint_t));
-		}
-
-		element = element->next;
+		add_data_constraint(data_c, type, field_len, field, data);
 	}
 
 	return 0;
@@ -143,13 +113,93 @@ int buffer_to_data_constraint(data_constraint_t *data_c, char *msg){
 
 /* convert struct to buffer functions */
 
-int data_t_to_buffer(data_t *data, uint8_t type, char *buffer){
-	// TODO
-	return 0;
+int data_t_to_buffer(data_t *data, uint8_t type, char **buf){
+
+	char *buffer = *buf;
+	int offset = 0;
+	data_t *element = data;
+
+	uint8_t n_value = 0;
+
+	while(element!=NULL){
+		n_value += 1;
+		element = element->next;
+	}
+
+	memcpy(buffer, &n_value, sizeof(uint8_t));
+	buffer += sizeof(uint8_t);
+	offset += sizeof(uint8_t);
+
+	element = data;
+	while(element!=NULL){
+
+		switch (type)
+		{
+			case INT_TYPE:
+				memcpy(buffer, &(element->value.int_value), sizeof(uint8_t));
+				buffer += sizeof(int);
+				offset += sizeof(int);
+
+				break;
+			case STRING_TYPE:
+				memcpy(buffer, &((element->value).str_value.str_len), sizeof(uint8_t));
+				buffer += sizeof(uint8_t);
+				offset += sizeof(uint8_t);
+
+				memcpy(buffer, (element->value).str_value.str, (element->value).str_value.str_len);
+				buffer += (element->value).str_value.str_len;
+				offset += (element->value).str_value.str_len;
+
+				break;
+			case INT_RANGE_TYPE:
+				memcpy(buffer, &((element->value).int_range.start), sizeof(int));
+				buffer += sizeof(int);
+				memcpy(buffer, &((element->value).int_range.end), sizeof(int));
+				buffer += sizeof(int);
+				offset += sizeof(int)*2;
+		}
+
+		element = element->next;
+	}
+	
+	return offset;
 }
 
-int data_constraint_to_buffer(data_constraint_t *data_c, char *msg){
-	// TODO
+// destination buffer considered as already initialized (buf[1024] for instance)
+int data_constraint_to_buffer(data_constraint_t *data_c, char **buf){
+	char *buffer = *buf;
+	int offset;
+	data_constraint_t *element = data_c;
+
+	uint8_t n_constraint = 0;
+
+	while(element!=NULL){
+		n_constraint += 1;
+		element = element->next;
+	}
+
+	memcpy(buffer, &n_constraint, sizeof(uint8_t));
+	buffer += sizeof(uint8_t);
+
+	element = data_c;
+	while(element!=NULL){
+
+		memcpy(buffer, &(element->type), sizeof(uint8_t));
+		buffer += sizeof(uint8_t);
+
+		memcpy(buffer, &(element->field_len), sizeof(uint8_t));
+		buffer += sizeof(uint8_t);
+
+		memcpy(buffer, element->field, element->field_len);
+		buffer += data_c->field_len;
+
+		offset = data_t_to_buffer(element->data, element->type, &buffer);
+
+		buffer += offset;
+
+		element = element->next;
+	}
+	
 	return 0;
 }
 
@@ -197,25 +247,35 @@ int set_and_get_next_data_t(data_t **data, uint8_t type, data_t **target){
 
 int add_int_data_t(data_t **data, int int_value){
 	int err;
-	data_t **target;
-	
-	err = set_and_get_next_data_t(data, INT_TYPE, target);
-	if(err)
+	data_t **target = (data_t **)malloc(sizeof(data_t *));
+	if(target==NULL)
 		return -1;
+
+	err = set_and_get_next_data_t(data, INT_TYPE, target);
+	if(err){
+		free(target);
+		return -1;
+	}
 
 	(*target)->value.int_value = int_value; 
 	(*target)->next = NULL;
+
+	free(target);
 
 	return 0;
 }
 
 int add_str_data_t(data_t **data, uint8_t str_len, char *str){
 	int err;
-	data_t **target;
+	data_t **target = (data_t **)malloc(sizeof(data_t *));
+	if(target==NULL)
+		return -1;
 
 	err = set_and_get_next_data_t(data, STRING_TYPE, target);
-	if(err)
+	if(err){
+		free(target);
 		return -1;
+	}
 		
 	string_value_t *str_value = &((*target)->value.str_value);
 
@@ -223,28 +283,37 @@ int add_str_data_t(data_t **data, uint8_t str_len, char *str){
 
 	str_value->str = (char *)malloc(str_value->str_len);
 	if(str_value->str==NULL){
+		free(target);
 		destroy_data_t(*target, STRING_TYPE);
 		return -1;
 	}
 	memset(str_value->str, 0, str_value->str_len);
 	memcpy(str_value->str, str, str_value->str_len);
+
+	free(target);
 	
 	return 0;
 }
 
 int add_int_range_data_t(data_t **data, int start, int end){
 	int err;
-	data_t **target;
+	data_t **target = (data_t **)malloc(sizeof(data_t *));
+	if(target==NULL)
+		return -1;
 
 	err = set_and_get_next_data_t(data, INT_RANGE_TYPE, target);
-	if(err)
+	if(err){
+		free(target);
 		return -1;
+	}
 	
 	interval_t *int_range = &((*target)->value.int_range);
 	
 	int_range->start = start;
 
 	int_range->end = end;
+
+	free(target);
 	
 	return 0;
 }

@@ -45,15 +45,15 @@ typedef struct data_constraint
 
 /* convert buffer to struct functions */
 
-int buffer_to_data_t(data_t *data, uint8_t type, char *buffer);
+int buffer_to_data_t(char *buf, uint8_t type, data_t **data);
 
-int buffer_to_data_constraint(data_constraint_t *data_c, char *msg);
+int buffer_to_data_constraint(char *buf, data_constraint_t **data_c);
 
 /* convert struct to buffer functions */
 
-int data_t_to_buffer(data_t *data, uint8_t type, char *buffer);
+int data_t_to_buffer(data_t *data, uint8_t type, char **buf);
 
-int data_constraint_to_buffer(data_constraint_t *data_c, char *msg);
+int data_constraint_to_buffer(data_constraint_t *data_c, char **buf);
 
 /* add struct functions */
 

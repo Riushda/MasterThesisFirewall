@@ -46,6 +46,10 @@ int main()
 
     // data_constraint tests
 
+    char buffer[1024];
+    memset(buffer, 0, 1024);
+    char *buf = buffer;
+
     data_constraint_t *data_c = NULL;
     data_t *data_1 = NULL;
     data_t *data_2 = NULL;
@@ -67,9 +71,16 @@ int main()
     add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2);
     add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3);
 
+    data_constraint_to_buffer(data_c, &buf);
+
+    data_constraint_t *data_c_2 = NULL;
+    buffer_to_data_constraint(buf, &data_c_2);
+
     print_data_constraint(data_c);
+    print_data_constraint(data_c_2);
 
     destroy_data_constraint(data_c);
+    destroy_data_constraint(data_c_2);
 
     //destroy_data_t(data, INT_TYPE);
 
