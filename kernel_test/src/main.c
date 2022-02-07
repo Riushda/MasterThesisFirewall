@@ -1,5 +1,4 @@
-#include "rule.h"
-#include "data_constraint.h"
+#include "abstract_packet.h"
 
 int main()
 {
@@ -40,13 +39,13 @@ int main()
 
     destroy_rules(&rule_struct);
 
-    vector_t vector[VECTOR_SIZE];
-    memset(vector, 0, VECTOR_SIZE);
+    //vector_t vector[VECTOR_SIZE];
+    //memset(vector, 0, VECTOR_SIZE);
     //print_bits(vector, VECTOR_SIZE);
 
     // data_constraint tests
 
-    char buffer[1024];
+    /*char buffer[1024];
     memset(buffer, 0, 1024);
     char *buf = buffer;
 
@@ -67,9 +66,9 @@ int main()
     add_int_range_data_t(&data_3, 10, 15);
     add_int_range_data_t(&data_3, 15, 20);
 
-    add_data_constraint(&data_c, INT_TYPE, 6, "test1", data_1);
-    add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2);
-    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3);
+    add_data_constraint(&data_c, INT_TYPE, 6, "test1", data_1, 0);
+    add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2, 0);
+    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3, 0);
 
     data_constraint_to_buffer(data_c, &buf);
 
@@ -80,13 +79,21 @@ int main()
     print_data_constraint(data_c_2);
 
     destroy_data_constraint(data_c);
-    destroy_data_constraint(data_c_2);
+    destroy_data_constraint(data_c_2);*/
 
-    //destroy_data_t(data, INT_TYPE);
+    // abstract_packet tests
 
-    /*add_data_constraint(data_c, INT_TYPE, 5, "test", data);
+    payload_t *payload = NULL;
+    data_t *data = NULL;
 
-    print_data_constraint(data_c);*/
+    add_str_data_t(&data, 7, "friend");
+
+    create_payload(&payload, STRING_TYPE, 6, "hello", data);
+    print_payload(payload);
+
+    print_payload(payload);
+
+    destroy_payload(payload);
 
     return 0;
 }

@@ -1,9 +1,8 @@
 #include <arpa/inet.h>
 
-#include "constant.h"
-#include "utils.h"
 #include "htable.h"
 #include "trie.h"
+#include "data_constraint.h"
 
 #ifndef RULE_H
 #define RULE_H
@@ -35,18 +34,27 @@ void print_rule(rule_t rule);
 
 /* KERNEL */
 
+/* SKB */
+
+int rule_to_buffer(rule_t *rule, unsigned char *buffer);
+
+/* RULE STRUCTURE */
+
 typedef struct rule_structure
 {
     trie_t *src_trie;
     trie_t *dst_trie;
     h_table_t *sport_table;
     h_table_t *dport_table;
+    data_constraint_t *data_c;
     vector_t actions[VECTOR_SIZE];
 } rule_struct_t;
 
 int init_rules(rule_struct_t *rule_struct);
 
 int insert_rule(rule_struct_t *rule_struct, rule_t rule);
+
+int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *buf);
 
 int remove_rule(rule_struct_t *rule_struct, rule_t rule);
 

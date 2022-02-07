@@ -190,7 +190,7 @@ int data_constraint_to_buffer(data_constraint_t *data_c, char **buf){
 		buffer += sizeof(uint8_t);
 
 		memcpy(buffer, element->field, element->field_len);
-		buffer += data_c->field_len;
+		buffer += element->field_len;
 
 		offset = data_t_to_buffer(element->data, element->type, &buffer);
 

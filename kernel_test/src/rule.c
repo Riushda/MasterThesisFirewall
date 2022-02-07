@@ -147,6 +147,8 @@ int init_rules(rule_struct_t *rule_struct)
     if (init_table(rule_struct->dport_table, TABLE_SIZE))
         return -1;
 
+    rule_struct->data_c = NULL; // will be malloc during first insert
+
     memset(rule_struct->actions, 0, VECTOR_SIZE);
     return 0;
 }
@@ -172,8 +174,19 @@ int insert_rule(rule_struct_t *rule_struct, rule_t rule)
     if (insert_hash(rule_struct->dport_table, key, rule.index))
         return -1;
 
-    if (rule.index)
+    if (rule.action)
         set_bit_v(rule_struct->actions, rule.index);
+
+    return 0;
+}
+
+int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *buf)
+{
+    if(insert_rule(rule_struct, rule))
+        return -1;
+    
+    if(buffer_to_data_constraint(buf, rule.index, &(rule_struct->data_c)))
+        return -1;
 
     return 0;
 }
@@ -234,7 +247,6 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     vector_t *result_dport;
     vector_t *match_dport;
     short rule_index;
-    bool_t action;
 
     result_src = search_node(rule_struct->src_trie, rule.src);
     result_dst = and_v(result_src, search_node(rule_struct->dst_trie, rule.dst));
@@ -252,8 +264,11 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     free(match_dport);
 
     if (rule_index != -1 && rule_index < VECTOR_SIZE){
-        printf("MATCH\n");
-        return is_set_v(rule_struct->actions, rule_index);
+        bool_t temp = is_set_v(rule_struct->actions, rule_index);
+        int match;
+        memset(&match, 0, sizeof(int));
+        memcpy(&match, &temp, sizeof(bool_t));
+        return match;
     }
 
     return 0;
@@ -272,4 +287,21 @@ void destroy_rules(rule_struct_t *rule_struct)
 
     destroy_table(rule_struct->dport_table);
     free(rule_struct->dport_table);
+}
+
+int rule_to_buffer(rule_t *rule, unsigned char *buffer)
+{
+    int offset;
+    offset = 0;
+
+    memcpy(buffer + offset, &rule->src, sizeof(rule->src));
+    offset += sizeof(rule->src);
+    memcpy(buffer + offset, &rule->dst, sizeof(rule->dst));
+    offset += sizeof(rule->dst);
+    memcpy(buffer + offset, &rule->sport, sizeof(rule->sport));
+    offset += sizeof(rule->sport);
+    memcpy(buffer + offset, &rule->dport, sizeof(rule->dport));
+    offset += sizeof(rule->dport);
+
+    return offset;
 }

@@ -68,7 +68,7 @@ int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
 	return offset;
 }
 
-int buffer_to_data_constraint(char *buf, data_constraint_t **data_c){
+int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **data_c){
 	int offset;
 	int i;
 	char field[100];
@@ -98,14 +98,13 @@ int buffer_to_data_constraint(char *buf, data_constraint_t **data_c){
 
 		offset = buffer_to_data_t(buffer, type, &data);
 		if(offset<0){
-			free(data);
 			destroy_data_constraint(*data_c);
 			return -1;
 		}
 
 		buffer += offset;
 
-		add_data_constraint(data_c, type, field_len, field, data);
+		add_data_constraint(data_c, type, field_len, field, data, index);
 	}
 
 	return 0;
@@ -191,7 +190,7 @@ int data_constraint_to_buffer(data_constraint_t *data_c, char **buf){
 		buffer += sizeof(uint8_t);
 
 		memcpy(buffer, element->field, element->field_len);
-		buffer += data_c->field_len;
+		buffer += element->field_len;
 
 		offset = data_t_to_buffer(element->data, element->type, &buffer);
 
@@ -318,7 +317,7 @@ int add_int_range_data_t(data_t **data, int start, int end){
 	return 0;
 }
 
-int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data, uint16_t index){
 
 	memset(data_c, 0, sizeof(data_constraint_t));
 
@@ -336,12 +335,15 @@ int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_l
 
 	data_c->data = data;
 
+	memset(data_c->vector, 0, VECTOR_SIZE);
+	set_bit_v(data_c->vector, index);
+
 	data_c->next = NULL;
 
 	return 0;
 }
 
-int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data, uint16_t index){
 	int err;
 
 	if(*data_c==NULL){
@@ -349,8 +351,18 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 		if(*data_c==NULL)
 			return -1;
 		
-		return set_data_constraint(*data_c, type, field_len, field, data);
+		return set_data_constraint(*data_c, type, field_len, field, data, index);
 	}
+
+	vector_t match = match_data_constraint(element, type, field_len, field, data);
+
+	if(!match){ // verify that it works to put char in if
+		set_bit_v(element->vector, index);
+		destroy_data_t(data);
+		return 0;
+	}
+
+	// if no existing constraint match, then add a new one
 
 	data_constraint_t *element = *data_c;
 	while(element->next!=NULL){
@@ -363,7 +375,48 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 
 	memset(element->next, 0, sizeof(data_constraint_t));
 
-	return set_data_constraint(element->next, type, field_len, field, data);
+	return set_data_constraint(element->next, type, field_len, field, data, index);
+}
+
+/* search for matching struct functions */
+
+int match_data_t(data_t *src, data_t *dst){
+
+	data_constraint_t *element = data_c;
+	while(element->next!=NULL){
+
+	
+
+		if(!condition)
+			return element->vector;
+
+		element = element->next;
+	}
+
+	return 0;
+}
+
+vector_t match_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+
+	int condition;
+
+	data_constraint_t *element = data_c;
+	while(element->next!=NULL){
+
+		condition = data_c->type!=type;
+		if(!condition){
+			condition += data_c->field_len!=field_len;
+			condition += memcmp(data_c->field, field, field_len);
+			condition += match_data_t(element->data, data);
+		}
+
+		if(!condition)
+			return element->vector;
+
+		element = element->next;
+	}
+
+	return 0;
 }
 
 /* struct destroy functions */
