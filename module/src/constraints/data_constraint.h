@@ -14,21 +14,23 @@ typedef struct string_value
 	char *str;
 } string_value_t;
 
-typedef struct data
+typedef union value 
 {
-	union value 
-	{
-		int int_value;
-		string_value_t str_value;
-		interval_t int_range; 
-	} value_t;
+	int int_value;
+	string_value_t str_value;
+	interval_t int_range; 
+} value_t;
+
+typedef struct data
+{	
+	value_t value;
 	struct data *next;
 } data_t;
 
 enum data_type { 
 	INT_TYPE = 0, 
 	STRING_TYPE = 1, 
-	INT_RANGE = 2 
+	INT_RANGE_TYPE = 2 
 };
 
 typedef struct data_constraint
@@ -40,23 +42,35 @@ typedef struct data_constraint
 	struct data_constraint *next;
 } data_constraint_t;
 
-void destroy_data_t(data_t *data, uint8_t type);
+/* convert buffer to struct functions */
 
-int buffer_to_data_t(data_t *data, uint8_t type, char *buffer);
+int buffer_to_data_t(char *buf, uint8_t type, data_t **data);
+
+int buffer_to_data_constraint(char *buf, data_constraint_t **data_c);
+
+/* convert struct to buffer functions */
+
+int data_t_to_buffer(data_t *data, uint8_t type, char **buf);
+
+int data_constraint_to_buffer(data_constraint_t *data_c, char **buf);
+
+/* add struct functions */
+
+int add_int_data_t(data_t **data, int int_value);
+
+int add_str_data_t(data_t **data, uint8_t str_len, char *str);
+
+int add_int_range_data_t(data_t **data, int start, int end);
+
+int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data);
+
+/* struct destroy functions */
+
+void destroy_data_t(data_t *data, uint8_t type);
 
 void destroy_data_constraint(data_constraint_t *data_c);
 
-int buffer_to_data_constraint(data_constraint_t *data_c, char *msg);
-
-int data_constraint_to_buffer(data_constraint_t *data_c, char *msg);
-
-int add_int_data_t(data_t *data, int int_value);
-
-int add_str_data_t(data_t *data, uint8_t str_len, char *str);
-
-int add_int_range_data_t(data_t *data, int start, int end);
-
-int add_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data);
+/* print functions */
 
 void print_data_t(data_t *data, uint8_t type);
 
