@@ -71,7 +71,7 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 
 /* search for matching struct functions */
 
-vector_t match_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data);
+data_constraint_t *match_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data);
 
 /* struct destroy functions */
 

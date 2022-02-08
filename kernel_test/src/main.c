@@ -1,4 +1,4 @@
-#include "abstract_packet.h"
+#include "rule.h"
 
 int main()
 {
@@ -14,34 +14,45 @@ int main()
     rule.index = 2;
     rule.action = 1;
 
-    //print_rule(rule);
+    char buffer[1024];
+    memset(buffer, 0, 1024);
+    char *buf = buffer;
+
+    data_constraint_t *data_c = NULL;
+    data_t *data_1 = NULL;
+    add_str_data_t(&data_1, 7, "friend");
+    add_data_constraint(&data_c, STRING_TYPE, 6, "hello", data_1, 1);
+    data_constraint_to_buffer(data_c, &buf);
 
     init_rules(&rule_struct);
 
-    insert_rule(&rule_struct, rule);
-    //remove_rule(&rule_struct, rule);
+    insert_rule_and_constraint(&rule_struct, rule, buf);
 
-    //rule.dport = ntohs(23);
+    abstract_packet_t packet;
+    memset(&packet, 0, sizeof(abstract_packet_t));
 
-    rule_t rule2;
-    memset(&rule2, 0, sizeof(rule_t));
+    parse_ip("127.0.0.1/24", &packet.src, &packet.src_bm);
+    parse_ip("127.0.0.1/24", &packet.dst, &packet.dst_bm);
+    parse_port("22", &packet.sport, NULL);
+    parse_port("22", &packet.dport, NULL);
 
-    parse_ip("127.0.0.1/24", &rule2.src, &rule2.src_bm);
-    parse_ip("127.0.0.1/24", &rule2.dst, &rule2.dst_bm);
-    parse_port("22", &rule2.sport, &rule2.not_sport);
-    parse_port("22", &rule2.dport, &rule2.not_dport);
+    payload_t payload;
+    data_t *data_2 = NULL;
 
-    /*print_trie(rule_struct.src_trie, 0);
-    print_table(rule_struct.sport_table);
-    print_table(rule_struct.dport_table);*/
+    add_str_data_t(&data_2, 7, "friend");
 
-    //printf("%d\n", match_rule(&rule_struct, rule2));
+    create_payload(&payload, STRING_TYPE, 6, "hello", data_2);
+
+    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, &payload);
+
+    print_abstract_packet(&packet);
+
+    printf("IP MATCHED : %d\n", match_rule(&rule_struct, &packet));
+    printf("CONSTRAINT MATCHED : %d\n", match_constraint(&rule_struct, &packet));
 
     destroy_rules(&rule_struct);
-
-    //vector_t vector[VECTOR_SIZE];
-    //memset(vector, 0, VECTOR_SIZE);
-    //print_bits(vector, VECTOR_SIZE);
+    destroy_abstract_packet(&packet);
+    destroy_data_constraint(data_c);
 
     // data_constraint tests
 
@@ -53,6 +64,7 @@ int main()
     data_t *data_1 = NULL;
     data_t *data_2 = NULL;
     data_t *data_3 = NULL;
+    data_t *data_4 = NULL;
 
     add_int_data_t(&data_1, 5);
     add_int_data_t(&data_1, 10);
@@ -66,34 +78,25 @@ int main()
     add_int_range_data_t(&data_3, 10, 15);
     add_int_range_data_t(&data_3, 15, 20);
 
-    add_data_constraint(&data_c, INT_TYPE, 6, "test1", data_1, 0);
-    add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2, 0);
-    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3, 0);
+    //add_int_data_t(&data_4, 15);
+    //add_str_data_t(&data_4, 5, "mama");
+    add_int_range_data_t(&data_4, 15, 20);
+
+    add_data_constraint(&data_c, INT_TYPE, 6, "test1", data_1, 1);
+    add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2, 1);
+    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3, 1);
+    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_4, 2);
 
     data_constraint_to_buffer(data_c, &buf);
 
     data_constraint_t *data_c_2 = NULL;
-    buffer_to_data_constraint(buf, &data_c_2);
+    buffer_to_data_constraint(buf, 2, &data_c_2);
 
     print_data_constraint(data_c);
-    print_data_constraint(data_c_2);
+    //print_data_constraint(data_c_2);
 
     destroy_data_constraint(data_c);
-    destroy_data_constraint(data_c_2);*/
-
-    // abstract_packet tests
-
-    payload_t *payload = NULL;
-    data_t *data = NULL;
-
-    add_str_data_t(&data, 7, "friend");
-
-    create_payload(&payload, STRING_TYPE, 6, "hello", data);
-    print_payload(payload);
-
-    print_payload(payload);
-
-    destroy_payload(payload);
+    destroy_data_constraint(data_c_2); */
 
     return 0;
 }

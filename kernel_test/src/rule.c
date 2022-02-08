@@ -2,18 +2,23 @@
 
 int parse_not(string_t *str_not, bool_t *not_v)
 {
-    memset(not_v, 0, sizeof(bool_t));
+    if(not_v!=NULL){ /// can be NULL with abstract packet
 
-    if (!memcmp(str_not, "!", 1))
-    {
-        *not_v = 1;
-        return 1;
+        memset(not_v, 0, sizeof(bool_t));
+
+        if (!memcmp(str_not, "!", 1))
+        {
+            *not_v = 1;
+            return 1;
+        }
+        else
+        {
+            *not_v = 0;
+            return 0;
+        }
     }
-    else
-    {
-        *not_v = 0;
-        return 0;
-    }
+
+    return 0;
 }
 
 int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
@@ -238,7 +243,7 @@ vector_t *match_port(h_table_t *table, short port)
     return result_not_port;
 }
 
-int match_rule(rule_struct_t *rule_struct, rule_t rule)
+int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
 {
     vector_t *result_src;
     vector_t *result_dst;
@@ -248,11 +253,11 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     vector_t *match_dport;
     short rule_index;
 
-    result_src = search_node(rule_struct->src_trie, rule.src);
-    result_dst = and_v(result_src, search_node(rule_struct->dst_trie, rule.dst));
-    match_sport = match_port(rule_struct->sport_table, rule.sport);
+    result_src = search_node(rule_struct->src_trie, packet->src);
+    result_dst = and_v(result_src, search_node(rule_struct->dst_trie, packet->dst));
+    match_sport = match_port(rule_struct->sport_table, packet->sport);
     result_sport = and_v(result_dst, match_sport);
-    match_dport = match_port(rule_struct->dport_table, rule.dport);
+    match_dport = match_port(rule_struct->dport_table, packet->dport);
     result_dport = and_v(result_sport, match_dport);
 
     rule_index = first_match_index(result_dport);
@@ -274,6 +279,17 @@ int match_rule(rule_struct_t *rule_struct, rule_t rule)
     return 0;
 }
 
+int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet){
+    uint8_t type =  packet->payload->type;
+    uint8_t field_len = packet->payload->field_len;
+    char *field = packet->payload->field;
+    data_t *data = packet->payload->data;
+
+    data_constraint_t *data_c = match_data_constraint(rule_struct->data_c, type, field_len, field, data);
+
+    return data_c!=NULL;
+}
+
 void destroy_rules(rule_struct_t *rule_struct)
 {
     destroy_trie(rule_struct->src_trie);
@@ -287,6 +303,8 @@ void destroy_rules(rule_struct_t *rule_struct)
 
     destroy_table(rule_struct->dport_table);
     free(rule_struct->dport_table);
+
+    destroy_data_constraint(rule_struct->data_c);
 }
 
 int rule_to_buffer(rule_t *rule, unsigned char *buffer)

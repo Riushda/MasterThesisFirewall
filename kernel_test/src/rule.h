@@ -1,8 +1,6 @@
-#include <arpa/inet.h>
-
 #include "htable.h"
 #include "trie.h"
-#include "data_constraint.h"
+#include "abstract_packet.h"
 
 #ifndef RULE_H
 #define RULE_H
@@ -58,7 +56,9 @@ int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *bu
 
 int remove_rule(rule_struct_t *rule_struct, rule_t rule);
 
-int match_rule(rule_struct_t *rule_struct, rule_t rule);
+int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet);
+
+int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet);
 
 void destroy_rules(rule_struct_t *rule_struct);
 
