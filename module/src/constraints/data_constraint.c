@@ -3,6 +3,7 @@
 /* convert buffer to struct functions */
 
 int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
+	data_t *element;
 	int i;
 
 	int int_value;
@@ -67,7 +68,7 @@ int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
 	return offset;
 }
 
-int buffer_to_data_constraint(char *buf, data_constraint_t **data_c){
+int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **data_c){
 	int offset;
 	int i;
 	char field[100];
@@ -97,14 +98,13 @@ int buffer_to_data_constraint(char *buf, data_constraint_t **data_c){
 
 		offset = buffer_to_data_t(buffer, type, &data);
 		if(offset<0){
-			kfree(data);
-			destroy_data_constraint(*data_c);
+			destroy_all_data_constraint(*data_c);
 			return -1;
 		}
 
 		buffer += offset;
 
-		add_data_constraint(data_c, type, field_len, field, data);
+		add_data_constraint(data_c, type, field_len, field, data, index);
 	}
 
 	return 0;
@@ -218,7 +218,6 @@ int init_data_t(data_t **data, uint8_t type){
 int set_and_get_next_data_t(data_t **data, uint8_t type, data_t **target){
 
 	int err;
-	data_t *element;
 
 	if(*data==NULL){
 
@@ -231,12 +230,12 @@ int set_and_get_next_data_t(data_t **data, uint8_t type, data_t **target){
 		return 0;
 	}
 
-	element = *data;
+	data_t *element = *data;
 	while(element->next!=NULL){
 		element = element->next;
 	}
 
-	init_data_t(&(element->next), type);
+	err = init_data_t(&(element->next), type);
 	if(err)
 		return -1;
 
@@ -267,8 +266,6 @@ int add_int_data_t(data_t **data, int int_value){
 
 int add_str_data_t(data_t **data, uint8_t str_len, char *str){
 	int err;
-	string_value_t *str_value;
-
 	data_t **target = (data_t **)kmalloc(sizeof(data_t *), GFP_KERNEL);
 	if(target==NULL)
 		return -1;
@@ -279,7 +276,7 @@ int add_str_data_t(data_t **data, uint8_t str_len, char *str){
 		return -1;
 	}
 		
-	str_value = &((*target)->value.str_value);
+	string_value_t *str_value = &((*target)->value.str_value);
 
 	str_value->str_len = str_len;
 
@@ -299,8 +296,6 @@ int add_str_data_t(data_t **data, uint8_t str_len, char *str){
 
 int add_int_range_data_t(data_t **data, int start, int end){
 	int err;
-	interval_t *int_range;
-
 	data_t **target = (data_t **)kmalloc(sizeof(data_t *), GFP_KERNEL);
 	if(target==NULL)
 		return -1;
@@ -311,7 +306,7 @@ int add_int_range_data_t(data_t **data, int start, int end){
 		return -1;
 	}
 	
-	int_range = &((*target)->value.int_range);
+	interval_t *int_range = &((*target)->value.int_range);
 	
 	int_range->start = start;
 
@@ -322,7 +317,7 @@ int add_int_range_data_t(data_t **data, int start, int end){
 	return 0;
 }
 
-int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data, uint16_t index){
 
 	memset(data_c, 0, sizeof(data_constraint_t));
 
@@ -340,23 +335,36 @@ int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_l
 
 	data_c->data = data;
 
+	memset(data_c->vector, 0, VECTOR_SIZE);
+	set_bit_v(data_c->vector, index);
+
 	data_c->next = NULL;
 
 	return 0;
 }
 
-int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
-	data_constraint_t *element;
+int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data, uint16_t index){
+	int err;
 
 	if(*data_c==NULL){
 		*data_c = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);
 		if(*data_c==NULL)
 			return -1;
 		
-		return set_data_constraint(*data_c, type, field_len, field, data);
+		return set_data_constraint(*data_c, type, field_len, field, data, index);
 	}
 
-	element = *data_c;
+	data_constraint_t *match = match_data_constraint(*data_c, type, field_len, field, data);
+
+	if(match!=NULL){
+		set_bit_v(match->vector, index);
+		destroy_data_t(data, type);
+		return 0;
+	}
+
+	// if no existing constraint match, then add a new one
+
+	data_constraint_t *element = *data_c;
 	while(element->next!=NULL){
 		element = element->next;
 	}
@@ -367,10 +375,114 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 
 	memset(element->next, 0, sizeof(data_constraint_t));
 
-	return set_data_constraint(element->next, type, field_len, field, data);
+	return set_data_constraint(element->next, type, field_len, field, data, index);
+}
+
+/* search for matching struct functions */
+
+int match_data_t(data_t *src, data_t *dst, uint8_t type){
+
+	int condition;
+
+	// check if at least one element
+	data_t *element = src;
+	while(element!=NULL){
+
+		switch (type)
+		{
+			case INT_TYPE:
+				condition = (element->value).int_value != (dst->value).int_value;
+				break;
+			case STRING_TYPE:
+				condition = (element->value).str_value.str_len != (dst->value).str_value.str_len;
+				if(!condition)
+					condition = memcmp((element->value).str_value.str, (dst->value).str_value.str, (dst->value).str_value.str_len);
+				break;
+			case INT_RANGE_TYPE:
+				condition = (element->value).int_range.start != (dst->value).int_range.start;
+				condition += (element->value).int_range.end != (dst->value).int_range.end;
+				break;
+			default:
+				// unknown type
+				return -1;
+		}
+		
+		if(!condition)
+			return 0;
+
+		element = element->next;
+	}
+
+	return -1;
+}
+
+data_constraint_t *match_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+
+	int condition;
+
+	data_constraint_t *element = data_c;
+	while(element!=NULL){
+		condition = element->type==type;
+		if(condition){
+			condition = element->field_len==field_len;
+			if(condition){
+				condition = memcmp(element->field, field, field_len);
+				if(!condition){
+					condition = match_data_t(element->data, data, type);
+					if(!condition){
+						return element;
+					}
+				}
+			}
+		}	
+
+		element = element->next;
+	}
+
+	return NULL;
 }
 
 /* struct destroy functions */
+
+int remove_data_constraint(data_constraint_t **data_c, uint16_t index){
+	data_constraint_t *to_remove;
+	int zero = 0;
+
+	data_constraint_t *element = *data_c;
+	data_constraint_t *previous = element;
+	while(element!=NULL){
+
+		if(is_set_v(element->vector, index)){
+			unset_shift_v(element->vector, index);
+		}
+
+		if(!memcmp(element->vector, &zero, sizeof(VECTOR_SIZE))){
+
+			to_remove = element;
+
+			element = element->next;
+
+			previous->next = element;
+
+			if(to_remove==*data_c)
+				*data_c = element;
+
+			if(to_remove->field!=NULL)
+				kfree(to_remove->field);
+
+			destroy_data_t(to_remove->data, to_remove->type);
+
+			kfree(to_remove);
+		}
+		else{
+
+			previous = element;
+
+			element = element->next;
+		}
+	}
+	return 0;
+}
 
 void destroy_data_t(data_t *data, uint8_t type){
 
@@ -401,7 +513,7 @@ void destroy_data_t(data_t *data, uint8_t type){
 	}
 }
 
-void destroy_data_constraint(data_constraint_t *data_c){
+void destroy_all_data_constraint(data_constraint_t *data_c){
 
 	data_constraint_t *element = data_c;
 	data_constraint_t *previous = element;
@@ -457,6 +569,8 @@ void print_data_constraint(data_constraint_t *data_c){
 		printk(KERN_INFO "	field : %s\n", element->field);
 
 		print_data_t(element->data, element->type);
+
+		printk(KERN_INFO " 	vector : %d\n", *(element->vector));
 
 		element = element->next;
 		i += 1;

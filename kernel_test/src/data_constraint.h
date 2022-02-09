@@ -75,9 +75,11 @@ data_constraint_t *match_data_constraint(data_constraint_t *data_c, uint8_t type
 
 /* struct destroy functions */
 
+int remove_data_constraint(data_constraint_t **data_c, uint16_t index);
+
 void destroy_data_t(data_t *data, uint8_t type);
 
-void destroy_data_constraint(data_constraint_t *data_c);
+void destroy_all_data_constraint(data_constraint_t *data_c);
 
 /* print functions */
 

@@ -214,6 +214,8 @@ int remove_rule(rule_struct_t *rule_struct, rule_t rule)
     remove_hash(rule_struct->dport_table, key, rule.index);
 
     unset_shift_v(rule_struct->actions, rule.index);
+    
+    remove_data_constraint(&(rule_struct->data_c), rule.index);
 
     return 0;
 }
@@ -304,7 +306,7 @@ void destroy_rules(rule_struct_t *rule_struct)
     destroy_table(rule_struct->dport_table);
     free(rule_struct->dport_table);
 
-    destroy_data_constraint(rule_struct->data_c);
+    destroy_all_data_constraint(rule_struct->data_c);
 }
 
 int rule_to_buffer(rule_t *rule, unsigned char *buffer)

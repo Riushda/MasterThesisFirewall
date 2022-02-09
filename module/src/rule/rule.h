@@ -1,6 +1,4 @@
-#include "../utils/constant.h"
-#include "../utils/utils.h"
-#include "../constraints/data_constraint.h"
+#include "../protocol/abstract_packet.h"
 #include "htable.h"
 #include "trie.h"
 
@@ -22,7 +20,6 @@ typedef struct rule
     proto_t proto;
     bool_t action;
     short index;
-    data_constraint_t *constraints;
 } rule_t;
 
 /* USER */
@@ -47,6 +44,7 @@ typedef struct rule_structure
     trie_t *dst_trie;
     h_table_t *sport_table;
     h_table_t *dport_table;
+    data_constraint_t *data_c;
     vector_t actions[VECTOR_SIZE];
 } rule_struct_t;
 
@@ -54,9 +52,13 @@ int init_rules(rule_struct_t *rule_struct);
 
 int insert_rule(rule_struct_t *rule_struct, rule_t rule);
 
+int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *buf);
+
 int remove_rule(rule_struct_t *rule_struct, rule_t rule);
 
-int match_rule(rule_struct_t *rule_struct, rule_t rule);
+int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet);
+
+int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet);
 
 void destroy_rules(rule_struct_t *rule_struct);
 

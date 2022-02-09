@@ -98,7 +98,7 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 
 		offset = buffer_to_data_t(buffer, type, &data);
 		if(offset<0){
-			destroy_data_constraint(*data_c);
+			destroy_all_data_constraint(*data_c);
 			return -1;
 		}
 
@@ -444,6 +444,46 @@ data_constraint_t *match_data_constraint(data_constraint_t *data_c, uint8_t type
 
 /* struct destroy functions */
 
+int remove_data_constraint(data_constraint_t **data_c, uint16_t index){
+	data_constraint_t *to_remove;
+	int zero = 0;
+
+	data_constraint_t *element = *data_c;
+	data_constraint_t *previous = element;
+	while(element!=NULL){
+
+		if(is_set_v(element->vector, index)){
+			unset_shift_v(element->vector, index);
+		}
+
+		if(!memcmp(element->vector, &zero, sizeof(VECTOR_SIZE))){
+
+			to_remove = element;
+
+			element = element->next;
+
+			previous->next = element;
+
+			if(to_remove==*data_c)
+				*data_c = element;
+
+			if(to_remove->field!=NULL)
+				free(to_remove->field);
+
+			destroy_data_t(to_remove->data, to_remove->type);
+
+			free(to_remove);
+		}
+		else{
+
+			previous = element;
+
+			element = element->next;
+		}
+	}
+	return 0;
+}
+
 void destroy_data_t(data_t *data, uint8_t type){
 
 	string_value_t *str_value;
@@ -473,7 +513,7 @@ void destroy_data_t(data_t *data, uint8_t type){
 	}
 }
 
-void destroy_data_constraint(data_constraint_t *data_c){
+void destroy_all_data_constraint(data_constraint_t *data_c){
 
 	data_constraint_t *element = data_c;
 	data_constraint_t *previous = element;

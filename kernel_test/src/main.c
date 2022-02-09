@@ -11,7 +11,7 @@ int main()
     parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
     parse_port("*", &rule.sport, &rule.not_sport);
     parse_port("22", &rule.dport, &rule.not_dport);
-    rule.index = 2;
+    rule.index = 1;
     rule.action = 1;
 
     char buffer[1024];
@@ -50,9 +50,14 @@ int main()
     printf("IP MATCHED : %d\n", match_rule(&rule_struct, &packet));
     printf("CONSTRAINT MATCHED : %d\n", match_constraint(&rule_struct, &packet));
 
+    print_data_constraint(rule_struct.data_c);
+    remove_rule(&rule_struct, rule);
+    printf("AFTER REMOVE : \n");
+    print_data_constraint(rule_struct.data_c);
+
     destroy_rules(&rule_struct);
     destroy_abstract_packet(&packet);
-    destroy_data_constraint(data_c);
+    destroy_all_data_constraint(data_c);
 
     // data_constraint tests
 
@@ -93,10 +98,13 @@ int main()
     buffer_to_data_constraint(buf, 2, &data_c_2);
 
     print_data_constraint(data_c);
-    //print_data_constraint(data_c_2);
+    remove_data_constraint(&data_c, 1);
+    remove_data_constraint(&data_c, 1);
+    printf("AFTER REMOVE : \n");
+    print_data_constraint(data_c);
 
-    destroy_data_constraint(data_c);
-    destroy_data_constraint(data_c_2); */
+    destroy_all_data_constraint(data_c);
+    destroy_all_data_constraint(data_c_2); */
 
     return 0;
 }

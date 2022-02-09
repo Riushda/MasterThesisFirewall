@@ -89,7 +89,7 @@ static void netlink_recv_msg(struct sk_buff *skb)
 /* do not hook packet without layer 3, having only layer 1 and 2 */
 static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_state *state)
 {
-    rule_t rule;
+    abstract_packet_t packet;
     
     struct iphdr *iph;
     struct tcphdr *tcph;
@@ -105,21 +105,21 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     if (!skb)
         return NF_ACCEPT;
 
-    memset(&rule, 0, sizeof(rule_t));
+    memset(&packet, 0, sizeof(abstract_packet_t));
 
     // packet parsing
 
     iph = ip_hdr(skb);
-    memcpy(&rule.src, &iph->saddr, sizeof(rule.src));
-    memcpy(&rule.src_bm, &mask, 1);
-    memcpy(&rule.dst, &iph->daddr, sizeof(rule.dst));
-    memcpy(&rule.dst_bm, &mask, 1);
+    memcpy(&packet.src, &iph->saddr, sizeof(packet.src));
+    memcpy(&packet.src_bm, &mask, 1);
+    memcpy(&packet.dst, &iph->daddr, sizeof(packet.dst));
+    memcpy(&packet.dst_bm, &mask, 1);
 
     if(iph->protocol == IPPROTO_TCP){
 
         tcph = tcp_hdr(skb);
-        memcpy(&rule.sport, &tcph->source, sizeof(rule.sport));
-        memcpy(&rule.dport, &tcph->dest, sizeof(rule.dport));
+        memcpy(&packet.sport, &tcph->source, sizeof(packet.sport));
+        memcpy(&packet.dport, &tcph->dest, sizeof(packet.dport));
 
         data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
 
@@ -131,8 +131,8 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         // the udp code has not been tested
 
         udph = udp_hdr(skb);
-        memcpy(&rule.sport, &udph->source, sizeof(rule.sport));
-        memcpy(&rule.dport, &udph->dest, sizeof(rule.dport));
+        memcpy(&packet.sport, &udph->source, sizeof(packet.sport));
+        memcpy(&packet.dport, &udph->dest, sizeof(packet.dport));
 
         //data = (char *)((unsigned char *)iph + sizeof(*iph));
         data = (char *)((unsigned char *)udph + sizeof(*udph));
@@ -147,16 +147,16 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     memset(buffer, 0, buffer_len);
 
-    rule_to_buffer(&rule, buffer); // length will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
+    //rule_to_buffer(&rule, buffer); // length will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
 
     buffer_len = parse_packet(data, port, buffer);
 
     if(buffer_len>0){ // if publish message 
 
-        print_rule(rule);
+        print_abstract_packet(&packet);
         
         // match the rule
-        if (!match_rule(&rule_struct, rule)) 
+        if (!match_rule(&rule_struct, &packet)) 
         {
             printk(KERN_INFO "firewall: forbidden packet!\n");
             return NF_DROP;
@@ -186,7 +186,19 @@ static int __init init(void)
     set_current_time(&hour, &minute);
     printk(KERN_INFO "time : %d:%d\n", hour, minute);
 
-    // data_constraint tests
+    // packet matching tests
+
+    rule_t rule;
+    rule_struct_t rule_struct_2;
+    memset(&rule_struct_2, 0, sizeof(rule_struct_t));
+    memset(&rule, 0, sizeof(rule_t));
+
+    parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
+    parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
+    parse_port("*", &rule.sport, &rule.not_sport);
+    parse_port("22", &rule.dport, &rule.not_dport);
+    rule.index = 1;
+    rule.action = 1;
 
     char buffer[1024];
     memset(buffer, 0, 1024);
@@ -194,35 +206,44 @@ static int __init init(void)
 
     data_constraint_t *data_c = NULL;
     data_t *data_1 = NULL;
-    data_t *data_2 = NULL;
-    data_t *data_3 = NULL;
-
-    add_int_data_t(&data_1, 5);
-    add_int_data_t(&data_1, 10);
-    add_int_data_t(&data_1, 15);
-
-    add_str_data_t(&data_2, 6, "pizza");
-    add_str_data_t(&data_2, 6, "de la");
-    add_str_data_t(&data_2, 5, "mama");
-
-    add_int_range_data_t(&data_3, 5, 10);
-    add_int_range_data_t(&data_3, 10, 15);
-    add_int_range_data_t(&data_3, 15, 20);
-
-    add_data_constraint(&data_c, INT_TYPE, 6, "test1", data_1);
-    add_data_constraint(&data_c, STRING_TYPE, 6, "test2", data_2);
-    add_data_constraint(&data_c, INT_RANGE_TYPE, 6, "test3", data_3);
-
+    add_str_data_t(&data_1, 7, "friend");
+    add_data_constraint(&data_c, STRING_TYPE, 6, "hello", data_1, 1);
     data_constraint_to_buffer(data_c, &buf);
 
-    data_constraint_t *data_c_2 = NULL;
-    buffer_to_data_constraint(buf, &data_c_2);
+    init_rules(&rule_struct_2);
 
-    print_data_constraint(data_c);
-    print_data_constraint(data_c_2);
+    insert_rule_and_constraint(&rule_struct_2, rule, buf);
 
-    destroy_data_constraint(data_c);
-    destroy_data_constraint(data_c_2);
+    abstract_packet_t packet;
+    memset(&packet, 0, sizeof(abstract_packet_t));
+
+    parse_ip("127.0.0.1/24", &packet.src, &packet.src_bm);
+    parse_ip("127.0.0.1/24", &packet.dst, &packet.dst_bm);
+    parse_port("22", &packet.sport, NULL);
+    parse_port("22", &packet.dport, NULL);
+
+    payload_t payload;
+    data_t *data_2 = NULL;
+
+    add_str_data_t(&data_2, 7, "friend");
+
+    create_payload(&payload, STRING_TYPE, 6, "hello", data_2);
+
+    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, &payload);
+
+    print_abstract_packet(&packet);
+
+    printk(KERN_INFO "IP MATCHED : %d\n", match_rule(&rule_struct_2, &packet));
+    printk(KERN_INFO "CONSTRAINT MATCHED : %d\n", match_constraint(&rule_struct_2, &packet));
+
+    print_data_constraint(rule_struct_2.data_c);
+    remove_rule(&rule_struct_2, rule);
+    printk(KERN_INFO "AFTER REMOVE (there should be nothing): \n");
+    print_data_constraint(rule_struct_2.data_c);
+
+    destroy_rules(&rule_struct_2);
+    destroy_abstract_packet(&packet);
+    destroy_all_data_constraint(data_c);
     
     /* rule_struct list initialization */
 
