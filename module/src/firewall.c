@@ -68,17 +68,30 @@ static void netlink_recv_msg(struct sk_buff *skb)
             break;
         case ADD:
             printk(KERN_INFO "ADD\n");
+
             memcpy(&rule, msg+1, sizeof(rule_t));
+
+            msg = msg + 1 + sizeof(rule_t);
+
             rule.src=htonl(rule.src);
             rule.dst=htonl(rule.dst);
-            insert_rule(&rule_struct, rule);
+            if(!(*msg)){
+                insert_rule(&rule_struct, rule);
+            }
+            else{
+                insert_rule_and_constraint(&rule_struct, rule, msg);
+            }
+
             break;
         case REMOVE:
             printk(KERN_INFO "REMOVE\n");
+
             memcpy(&rule, msg+1, sizeof(rule_t));
             rule.src=htonl(rule.src);
             rule.dst=htonl(rule.dst);
+
             remove_rule(&rule_struct, rule);
+
             break;
         default:
             msg = msg;
@@ -99,7 +112,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     uint16_t port;
     unsigned char buffer[MAX_PACKET_SIZE];
    
-    int buffer_len;
+    int parsed_len;
     uint8_t mask = 32;
 
     if (!skb)
@@ -110,20 +123,16 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     // packet parsing
 
     iph = ip_hdr(skb);
-    memcpy(&packet.src, &iph->saddr, sizeof(packet.src));
-    memcpy(&packet.src_bm, &mask, 1);
-    memcpy(&packet.dst, &iph->daddr, sizeof(packet.dst));
-    memcpy(&packet.dst_bm, &mask, 1);
 
     if(iph->protocol == IPPROTO_TCP){
 
         tcph = tcp_hdr(skb);
-        memcpy(&packet.sport, &tcph->source, sizeof(packet.sport));
-        memcpy(&packet.dport, &tcph->dest, sizeof(packet.dport));
 
         data = (char *)((unsigned char *)tcph + (tcph->doff * 4));
 
         port = ntohs(tcph->dest); 
+
+        create_abstract_packet(&packet, iph->saddr, iph->daddr, tcph->source, tcph->dest, mask, mask, NULL);
 
     }
     else if(iph->protocol == IPPROTO_UDP){
@@ -131,13 +140,13 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         // the udp code has not been tested
 
         udph = udp_hdr(skb);
-        memcpy(&packet.sport, &udph->source, sizeof(packet.sport));
-        memcpy(&packet.dport, &udph->dest, sizeof(packet.dport));
 
         //data = (char *)((unsigned char *)iph + sizeof(*iph));
         data = (char *)((unsigned char *)udph + sizeof(*udph));
 
         port = ntohs(udph->dest);
+
+        create_abstract_packet(&packet, iph->saddr, iph->daddr, udph->source, udph->dest, mask, mask, NULL);
 
     }
     else{
@@ -145,13 +154,13 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         return NF_ACCEPT; // other ip/transport layer protocol
     }
 
-    memset(buffer, 0, buffer_len);
+    //memset(buffer, 0, sizeof(rule_t));
 
-    //rule_to_buffer(&rule, buffer); // length will always be 12 : 2 int ips (8 bytes) + 2 short ports (4 bytes)
+    //rule_to_buffer(&rule, buffer);  => to replace by function packet_ip_to_buffer
 
-    buffer_len = parse_packet(data, port, buffer);
+    parsed_len = parse_packet(&packet, data, port, buffer+sizeof(rule_t));
 
-    if(buffer_len>0){ // if publish message 
+    if(parsed_len>0){ // if publish message 
 
         print_abstract_packet(&packet);
         
@@ -164,16 +173,14 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
         // send buffer to userspace
 
-        //netlink_send_msg(buffer, buffer_len);
+        //netlink_send_msg(buffer, sizeof(rule_t)+parsed_len);
     }
-    else if(!buffer_len){ // tcp/udp packet but not related to known iot protocol
-        buffer_len = 0; // for compilation
+    else if(!parsed_len){ // tcp/udp packet but not related to known iot protocol
+        parsed_len = 0; // for compilation
     }
-    else if(buffer_len==-2){ // tcp/udp packet related to known iot protocol but not a publish
-        buffer_len = -2; // for compilation
+    else if(parsed_len==-1){ // tcp/udp packet related to known iot protocol but not a publish
+        parsed_len = -1; // for compilation
     }
-
-    // if buffer_len==0, then not a publish message so accept it
 
     return NF_ACCEPT;
 }
@@ -222,14 +229,14 @@ static int __init init(void)
     parse_port("22", &packet.sport, NULL);
     parse_port("22", &packet.dport, NULL);
 
-    payload_t payload;
+    payload_t *payload = NULL;
     data_t *data_2 = NULL;
 
     add_str_data_t(&data_2, 7, "friend");
 
     create_payload(&payload, STRING_TYPE, 6, "hello", data_2);
 
-    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, &payload);
+    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, payload);
 
     print_abstract_packet(&packet);
 

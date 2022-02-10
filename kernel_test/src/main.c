@@ -36,14 +36,14 @@ int main()
     parse_port("22", &packet.sport, NULL);
     parse_port("22", &packet.dport, NULL);
 
-    payload_t payload;
+    payload_t *payload = NULL;
     data_t *data_2 = NULL;
 
     add_str_data_t(&data_2, 7, "friend");
 
     create_payload(&payload, STRING_TYPE, 6, "hello", data_2);
 
-    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, &payload);
+    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, payload);
 
     print_abstract_packet(&packet);
 

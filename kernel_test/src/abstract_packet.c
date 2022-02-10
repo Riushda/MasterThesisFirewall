@@ -2,22 +2,26 @@
 
 /* create struct functions */
 
-int create_payload(payload_t *payload, uint8_t type, uint8_t field_len, char *field, data_t *data){
-	
-	memset(payload, 0, sizeof(payload_t));
+int create_payload(payload_t **payload, uint8_t type, uint8_t field_len, char *field, data_t *data){
 
-	payload->type = type;
-	payload->field_len = field_len;
+	*payload = (payload_t *)malloc(sizeof(payload_t));
+	if(*payload==NULL)
+		return -1;
 
-	payload->field = (char *)malloc(field_len);
-	if(payload->field==NULL){
+	memset(*payload, 0, sizeof(payload_t));
+
+	(*payload)->type = type;
+	(*payload)->field_len = field_len;
+
+	(*payload)->field = (char *)malloc(field_len);
+	if((*payload)->field==NULL){
 		return -1;
 	}
 
-	memset(payload->field, 0, field_len);
-	memcpy(payload->field, field, field_len);
+	memset((*payload)->field, 0, field_len);
+	memcpy((*payload)->field, field, field_len);
 
-	payload->data = data;
+	(*payload)->data = data;
 
 	return 0;
 }
@@ -50,6 +54,8 @@ void destroy_payload(payload_t *payload){
 	
 	if(payload->data!=NULL)
 		destroy_data_t(payload->data, payload->type);
+
+	free(payload);
 }
 
 void destroy_abstract_packet(abstract_packet_t *packet){

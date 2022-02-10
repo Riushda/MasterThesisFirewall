@@ -283,7 +283,7 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
 }
 
 int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet){
-    uint8_t type =  packet->payload->type;
+    uint8_t type = (uint8_t) packet->payload->type;
     uint8_t field_len = packet->payload->field_len;
     char *field = packet->payload->field;
     data_t *data = packet->payload->data;

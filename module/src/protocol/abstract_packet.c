@@ -2,27 +2,31 @@
 
 /* create struct functions */
 
-int create_payload(payload_t *payload, uint8_t type, uint8_t field_len, char *field, data_t *data){
+int create_payload(payload_t **payload, uint8_t type, uint8_t field_len, char *field, data_t *data){
 	
-	memset(payload, 0, sizeof(payload_t));
+	*payload = (payload_t *)kmalloc(sizeof(payload_t), GFP_KERNEL);
+	if(*payload==NULL)
+		return -1;
 
-	payload->type = type;
-	payload->field_len = field_len;
+	memset(*payload, 0, sizeof(payload_t));
 
-	payload->field = (char *)kmalloc(field_len, GFP_KERNEL);
-	if(payload->field==NULL){
+	(*payload)->type = type;
+	(*payload)->field_len = field_len;
+
+	(*payload)->field = (char *)kmalloc(field_len, GFP_KERNEL);
+	if((*payload)->field==NULL){
 		return -1;
 	}
 
-	memset(payload->field, 0, field_len);
-	memcpy(payload->field, field, field_len);
+	memset((*payload)->field, 0, field_len);
+	memcpy((*payload)->field, field, field_len);
 
-	payload->data = data;
+	(*payload)->data = data;
 
 	return 0;
 }
 
-int create_abstract_packet(abstract_packet_t *packet, int src, int dst, int sport, int dport, bitmask_t src_bm, bitmask_t dst_bm, payload_t *payload){
+int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sport, short dport, bitmask_t src_bm, bitmask_t dst_bm, payload_t *payload){
 
 	memset(packet, 0, sizeof(abstract_packet_t));
 
@@ -50,6 +54,8 @@ void destroy_payload(payload_t *payload){
 	
 	if(payload->data!=NULL)
 		destroy_data_t(payload->data, payload->type);
+
+	kfree(payload);
 }
 
 void destroy_abstract_packet(abstract_packet_t *packet){
