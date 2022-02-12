@@ -23,11 +23,11 @@ class Relation():
             if(c.type == I_CONSTRAINT.TIME.value):
                 for v in c.values:
                     job = schedule.every().day.at(v[0]).do(
-                        task, netlink, CODE.ENABLE_RULE.value, self.first.index)
+                        task, netlink, CODE.ENABLE_RELATION.value, self.first.index)
                     self.jobs.append(job)
 
                     job = schedule.every().day.at(v[1]).do(
-                        task, netlink, CODE.DISABLE_RULE.value, self.first.index)
+                        task, netlink, CODE.DISABLE_RELATION.value, self.first.index)
                     self.jobs.append(job)
 
     def cancel_jobs(self, schedule):

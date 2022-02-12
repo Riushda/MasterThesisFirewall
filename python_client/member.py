@@ -21,7 +21,7 @@ class Member():
         buffer = bytearray()
         buffer += self.ip.to_bytes(4, 'big')
         buffer += self.bitmask.to_bytes(1, 'little')
-        buffer += self.port.to_bytes(2, 'little')
+        buffer += self.port.to_bytes(2, 'big')
         buffer += self.n_port.to_bytes(1, 'little')
         return buffer
 

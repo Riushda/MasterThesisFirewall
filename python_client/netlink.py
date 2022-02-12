@@ -14,8 +14,10 @@ class Netlink():
 
     def send_msg(self, code, data):
         try:
-            print(code.to_bytes(1, 'little') + data)
-            self.sock.send(code.to_bytes(1, 'little') + data)
+            message = code.to_bytes(1, 'little') + data
+            length = 4 * len(message)
+            print(length.to_bytes(2, 'little') + message)
+            self.sock.send(length.to_bytes(2, 'little') + message)
         except(socket.error):
             print("Error while sending")
 

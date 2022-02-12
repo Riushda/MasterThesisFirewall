@@ -19,8 +19,8 @@ class CODE(Enum):
     PID = 0
     ADD_RELATION = 1
     RM_RELATION = 2
-    ENABLE_RULE = 3
-    DISABLE_RULE = 4
+    ENABLE_RELATION = 3
+    DISABLE_RELATION = 4
 
 
 class CONSTRAINT(Enum):
