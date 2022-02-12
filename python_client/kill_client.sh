@@ -1,1 +1,1 @@
-pkill python3.10
+pkill python3

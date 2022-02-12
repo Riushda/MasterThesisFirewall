@@ -206,3 +206,48 @@ vector_t *or_v(vector_t *vector1, vector_t *vector2)
 
     return result;
 }
+
+// function to convert from char hexa to char bytes
+
+void convert_backslash(char *src, int len)
+{
+    int i;
+    for (i = 0; i < len; i += 4)
+    {   
+        src[i] = '0';
+    }
+}
+
+int convert_hexa(char *src, char *dst, int len)
+{
+    int i;
+    int err;
+    long res;
+
+    char number[5];
+    memset(number, 0, 5);
+
+    for (i = 0; i < len; i++)
+    {
+        memcpy(number, src + i * 4, 4);
+        err = kstrtol(number, 16, &res);
+        if(err)
+            return -1;
+        dst[i] = (uint8_t) res;
+    }
+
+    return 0;
+}
+
+int hexa_to_byte(char *hexstring, char *dst, uint8_t n)
+{
+    int err;
+
+    convert_backslash(hexstring, n*4);
+
+    err = convert_hexa(hexstring, dst, n);
+    if(err)
+        return -1;
+
+    return 0;
+}

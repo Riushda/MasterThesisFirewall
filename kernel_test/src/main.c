@@ -2,7 +2,7 @@
 
 int main()
 {
-    rule_t rule;
+    /*rule_t rule;
     rule_struct_t rule_struct;
     memset(&rule_struct, 0, sizeof(rule_struct_t));
     memset(&rule, 0, sizeof(rule_t));
@@ -57,7 +57,7 @@ int main()
 
     destroy_rules(&rule_struct);
     destroy_abstract_packet(&packet);
-    destroy_all_data_constraint(data_c);
+    destroy_all_data_constraint(data_c);*/
 
     // data_constraint tests
 
@@ -105,6 +105,19 @@ int main()
 
     destroy_all_data_constraint(data_c);
     destroy_all_data_constraint(data_c_2); */
+
+    // test hexa to byte
+
+    char dst[5];
+    char hexa[24] = "\\x05\\x01\\x00\\x03\\x04\\x05"; // 20 = 4+5*4
+    
+    char len[1];
+    hexa_to_byte(hexa, len, 1);
+
+    hexa_to_byte(hexa+4, dst, (uint8_t) *len);
+
+    for(int i=0; i<*len; i++)
+        printf("dst[%d] : %d\n", i, dst[i]);
 
     return 0;
 }

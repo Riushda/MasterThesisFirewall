@@ -344,7 +344,6 @@ int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_l
 }
 
 int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data, uint16_t index){
-	int err;
 
 	if(*data_c==NULL){
 		*data_c = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);

@@ -30,16 +30,34 @@ int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sp
 
 	memset(packet, 0, sizeof(abstract_packet_t));
 
-	packet->src = src;
-	packet->dst = dst;
-	packet->sport = sport;
-	packet->dport = dport;
-	packet->src_bm = src_bm;
-	packet->dst_bm = dst_bm;
+	memcpy(&packet->src, &src, sizeof(int));
+    memcpy(&packet->src_bm, &src_bm, 1);
+    memcpy(&packet->dst, &dst, sizeof(int));
+    memcpy(&packet->dst_bm, &dst_bm, 1);
+
+	memcpy(&packet->sport, &sport, sizeof(short));
+    memcpy(&packet->dport, &dport, sizeof(short));
 
 	packet->payload = payload;
 
 	return 0;
+}
+
+int packet_ip_to_buffer(abstract_packet_t *packet, unsigned char *buffer)
+{
+    int offset;
+    offset = 0;
+
+    memcpy(buffer + offset, &packet->src, sizeof(packet->src));
+    offset += sizeof(packet->src);
+    memcpy(buffer + offset, &packet->dst, sizeof(packet->dst));
+    offset += sizeof(packet->dst);
+    memcpy(buffer + offset, &packet->sport, sizeof(packet->sport));
+    offset += sizeof(packet->sport);
+    memcpy(buffer + offset, &packet->dport, sizeof(packet->dport));
+    offset += sizeof(packet->dport);
+
+    return offset;
 }
 
 /* struct destroy functions */

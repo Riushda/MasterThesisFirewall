@@ -55,8 +55,8 @@ static void netlink_recv_msg(struct sk_buff *skb)
     nlh = (struct nlmsghdr *)skb->data;
     msg = (char *)NLMSG_DATA(nlh);
     
-    printk(KERN_INFO "skb->data : %s\n", (char *) skb->data);
-    printk(KERN_INFO "msg : %s\n", msg);
+    //printk(KERN_INFO "skb->data : %s\n", (char *) skb->data);
+    //printk(KERN_INFO "msg : %s\n", msg);
 
     memcpy(&code, msg, sizeof(bool_t));
 
@@ -76,6 +76,7 @@ static void netlink_recv_msg(struct sk_buff *skb)
             rule.src=htonl(rule.src);
             rule.dst=htonl(rule.dst);
             if(!(*msg)){
+                print_rule(rule);
                 insert_rule(&rule_struct, rule);
             }
             else{
@@ -154,16 +155,16 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         return NF_ACCEPT; // other ip/transport layer protocol
     }
 
-    //memset(buffer, 0, sizeof(rule_t));
+    memset(buffer, 0, sizeof(int)*2 + sizeof(short)*2);
 
-    //rule_to_buffer(&rule, buffer);  => to replace by function packet_ip_to_buffer
+    packet_ip_to_buffer(&packet, buffer); 
 
     parsed_len = parse_packet(&packet, data, port, buffer+sizeof(rule_t));
 
     if(parsed_len>0){ // if publish message 
-
-        print_abstract_packet(&packet);
         
+        print_abstract_packet(&packet);
+
         // match the rule
         if (!match_rule(&rule_struct, &packet)) 
         {
@@ -195,13 +196,13 @@ static int __init init(void)
 
     // packet matching tests
 
-    rule_t rule;
+    /*rule_t rule;
     rule_struct_t rule_struct_2;
     memset(&rule_struct_2, 0, sizeof(rule_struct_t));
     memset(&rule, 0, sizeof(rule_t));
 
-    parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
-    parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
+    parse_ip("192.168.0.104/24", &rule.src, &rule.src_bm);
+    parse_ip("192.168.0.230/24", &rule.dst, &rule.dst_bm);
     parse_port("*", &rule.sport, &rule.not_sport);
     parse_port("22", &rule.dport, &rule.not_dport);
     rule.index = 1;
@@ -224,8 +225,8 @@ static int __init init(void)
     abstract_packet_t packet;
     memset(&packet, 0, sizeof(abstract_packet_t));
 
-    parse_ip("127.0.0.1/24", &packet.src, &packet.src_bm);
-    parse_ip("127.0.0.1/24", &packet.dst, &packet.dst_bm);
+    parse_ip("192.168.0.104/32", &packet.src, &packet.src_bm);
+    parse_ip("192.168.0.230/32", &packet.dst, &packet.dst_bm);
     parse_port("22", &packet.sport, NULL);
     parse_port("22", &packet.dport, NULL);
 
@@ -250,7 +251,23 @@ static int __init init(void)
 
     destroy_rules(&rule_struct_2);
     destroy_abstract_packet(&packet);
-    destroy_all_data_constraint(data_c);
+    destroy_all_data_constraint(data_c);*/
+
+    // test hexa to byte
+
+    char dst[1024];
+    memset(dst, 0, 1024);
+    char hexa[24] = "\\x05\\x01\\x00\\x03\\x04\\x05"; // 20 = 4+5*4
+    
+    char len[1];
+    hexa_to_byte(hexa, len, 1);
+
+    hexa_to_byte(hexa+4, dst, (uint8_t) *len);
+
+    int i;
+    uint8_t n = (uint8_t) *len;
+    for(i=0; i<n; i++)
+        printk("dst[%d] : %d\n", i, dst[i]);
     
     /* rule_struct list initialization */
 
