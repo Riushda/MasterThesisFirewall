@@ -38,8 +38,12 @@ class Relation():
         netlink.send_msg(CODE.ADD_RELATION.value, self.to_bytes())
 
     def rm_from_kernel(self, netlink):
-        netlink.send_msg(CODE.RM_RELATION.value, self.has_broker.to_bytes(1, 'little') +
-                         self.first.index.to_bytes(2, 'little'))
+        buffer = bytearray()
+        buffer += self.has_broker.to_bytes(1, 'little')
+        buffer += self.first.to_bytes()
+        if(self.has_broker == 1):
+            buffer += self.second.to_bytes()
+        netlink.send_msg(CODE.RM_RELATION.value, buffer)
 
     def to_bytes(self):
         s_constraints = []

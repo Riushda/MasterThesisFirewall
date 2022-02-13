@@ -50,17 +50,17 @@ class Handlers(object):
         match type:
             case M_TYPE.BROKER.value:
                 if(name in self.broker_list):
-                    return "This name is alreayd taken."
+                    return "Error: This name is already taken."
                 self.broker_list[name] = member
                 return f"Broker {name} {member} added!"
             case M_TYPE.PUB.value:
                 if(name in self.pub_list):
-                    return "This name is alreayd taken."
+                    return "Error: This name is already taken."
                 self.pub_list[name] = member
                 return f"Publisher {name} {member} added!"
             case M_TYPE.SUB.value:
                 if(name in self.sub_list):
-                    return "This name is alreayd taken."
+                    return "Error: This name is already taken."
                 self.sub_list[name] = member
                 return f"Subscriber {name} {member} added!"
             case _:
@@ -130,14 +130,14 @@ class Handlers(object):
 
     def remove_relation(self, index):
 
-        found_relation = None
+        if(index >= len(self.relations)):
+            return "Error: This relation does not exist."
 
-        try:
-            found_relation = self.relations[index]
-        except IndexError:
-            return "This relation does not exist."
-
+        found_relation = self.relations[index]
         rule_index = found_relation.first.index
+
+        found_relation.cancel_jobs(schedule)
+        found_relation.rm_from_kernel(netlink)
 
         del self.rules[rule_index]
         self.current_index -= 1
@@ -150,9 +150,6 @@ class Handlers(object):
 
         for x in range(rule_index, len(self.rules)):
             self.rules[x].index -= offset
-
-        found_relation.cancel_jobs(schedule)
-        found_relation.rm_from_kernel(netlink)
 
         del self.relations[index]
 
@@ -169,7 +166,7 @@ class Handlers(object):
             return dst_member
 
         new_rule = Rule(src_member, dst_member,
-                        self.current_index, policy)
+                        self.current_index, policy, False)
 
         self.current_index += 1
         self.rules.append(new_rule)
@@ -182,18 +179,24 @@ class Handlers(object):
 
     def remove_rule(self, index):
 
-        try:
-            del self.rules[index]
-        except IndexError:
-            return "This rule does not exist."
+        if(index >= len(self.rules)):
+            return "Error: This rule does not exist."
+
+        if(self.rules[index].is_relation):
+            return "Error: This rule is part of a relation."
+
+        has_broker = 0
+
+        buffer = bytearray()
+        buffer += has_broker.to_bytes(1, 'little')
+        buffer += self.rules[index].to_bytes()
+        netlink.send_msg(CODE.RM_RELATION.value, buffer)
+
+        del self.rules[index]
 
         for x in range(index, len(self.rules)):
             self.rules[x].index -= 1
 
-        has_broker = 0
-
-        netlink.send_msg(CODE.RM_RELATION.value, has_broker.to_bytes(1, 'little') +
-                         index.to_bytes(2, 'little'))
         return "Rule deleted!"
 
     def show(self, table):
@@ -206,7 +209,8 @@ class Handlers(object):
 
         elif(table == T_TYPE.RULES.value):
             for x in range(0, len(self.rules)):
-                result += f"{self.rules[x].index} | {self.rules[x]}\n"
+                if(not self.rules[x].is_relation):
+                    result += f"{self.rules[x].index} | {self.rules[x]}\n"
 
         return result
 

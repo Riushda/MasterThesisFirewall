@@ -76,16 +76,16 @@ For the notations, [x:y] means from byte x to byte y included and brackets mean 
     - [0:0] -> has_broker, always 0 for non-contextual rules
         Value: [0, 1] depending on the presence of a broker
     -[1:19] -> first rule structure
-    -{[20:38]} -> second rule structure, if has_broker is 1
+    -{[20:38] -> second rule structure, if has_broker is 1}
     -[39:39] -> number of constraints, max 255
-    -{[40:n]} -> a sequence of constraint structures
+    -{[40:n] -> a sequence of constraint structures}
 
     Content without broker:
     - [0:0] -> has_broker, always 0 for non-contextual rules
         Value: [0, 1] depending on the presence of a broker
     -[1:19] -> first rule structure
     -[20:20] -> number of constraints, max 255
-    -{[21:n]} -> a sequence of constraint structures
+    -{[21:n] -> a sequence of constraint structures}
 
 ## Messages
 
@@ -135,7 +135,8 @@ For the notations, [x:y] means from byte x to byte y included and brackets mean 
         - [2:2] -> code RM_RELATION with value 2
         - [3:3] -> has_broker, always 0 for non-contextual rules
             Value: [0, 1] depending on the presence of a broker
-        - [4:5] -> index of the first rule
+        - [4:22] -> first rule structure
+        - {[23:41] -> second rule structure}
 
 ### Enable relation 
 
