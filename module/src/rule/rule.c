@@ -132,7 +132,11 @@ void print_rule(rule_t rule)
         printk("!");
     }
 
-    printk(KERN_CONT "Dport: %d\n", ntohs(rule.dport));
+    printk(KERN_CONT "Dport: %d ", ntohs(rule.dport));
+
+    printk(KERN_CONT "action : %d ", rule.action);
+
+    printk(KERN_CONT "index : %d\n", rule.index);
 }
 
 int init_rules(rule_struct_t *rule_struct)
@@ -323,6 +327,53 @@ int rule_to_buffer(rule_t *rule, unsigned char *buffer)
     offset += sizeof(rule->sport);
     memcpy(buffer + offset, &rule->dport, sizeof(rule->dport));
     offset += sizeof(rule->dport);
+
+    return offset;
+}
+
+int buffer_to_rule(char *buf, rule_t *rule){
+    
+    int offset = 0;
+    // src 
+
+    memcpy(&(rule->src), buf+offset, sizeof(int));
+    offset += sizeof(int);
+
+    memcpy(&(rule->src_bm), buf+offset, sizeof(bitmask_t));
+    offset += sizeof(bitmask_t);
+
+    memcpy(&(rule->sport), buf+offset, sizeof(short));
+    rule->sport = htons(rule->sport);
+    offset += sizeof(short);
+
+    memcpy(&(rule->not_sport), buf+offset, sizeof(bool_t));
+    offset += sizeof(bool_t);
+
+    // dst 
+
+    memcpy(&(rule->dst), buf+offset, sizeof(int));
+    offset += sizeof(int);
+
+    memcpy(&(rule->dst_bm), buf+offset, sizeof(bitmask_t));
+    offset += sizeof(bitmask_t);
+
+    memcpy(&(rule->dport), buf+offset, sizeof(short));
+    rule->dport = htons(rule->dport);
+    offset += sizeof(short);
+
+    memcpy(&(rule->not_dport), buf+offset, sizeof(bool_t));
+    offset += sizeof(bool_t);
+
+    // action
+
+    memcpy(&(rule->action), buf+offset, sizeof(bool_t));
+    offset += sizeof(bool_t);
+
+    // index
+
+    memcpy(&(rule->index), buf+offset, sizeof(short));
+    offset += sizeof(short);
+
 
     return offset;
 }

@@ -89,7 +89,7 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 		field_len = (uint8_t) *buffer;
 		buffer += sizeof(uint8_t);
 		
-		memset(field, 0, field_len);
+		memset(field, 0, 100);
 		memcpy(field, buffer, field_len);
 
 		buffer += field_len;

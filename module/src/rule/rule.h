@@ -8,18 +8,21 @@
 typedef struct rule
 {
     int src;
-    int dst;
-    short sport;
-    short dport;
     bitmask_t src_bm;
-    bitmask_t dst_bm;
-    bool_t not_src;
-    bool_t not_dst;
+    short sport;
     bool_t not_sport;
+    
+    int dst;
+    bitmask_t dst_bm;
+    short dport;
     bool_t not_dport;
-    proto_t proto;
+    
     bool_t action;
     short index;
+
+    bool_t not_dst;
+    bool_t not_src;
+    proto_t proto;
 } rule_t;
 
 /* USER */
@@ -35,6 +38,8 @@ void print_rule(rule_t rule);
 /* SKB */
 
 int rule_to_buffer(rule_t *rule, unsigned char *buffer);
+
+int buffer_to_rule(char *buf, rule_t *rule);
 
 /* RULE STRUCTURE */
 

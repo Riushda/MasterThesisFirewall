@@ -1,9 +1,10 @@
 #include "protocol.h"
 
-int parse_packet(abstract_packet_t *packet, char *data, uint16_t port, char *buffer){
+/* this function will fill packet and buffer, packet is used for matching and buffer sent to userspace */
+int parse_packet(char *data, uint16_t port, abstract_packet_t *packet, char *buffer){
 	
 	if(port==MQTT_PORT){
-		return parse_mqtt(packet, data, buffer);
+		return parse_mqtt(data, packet, buffer);
 	}
 
 	return 0;
@@ -20,7 +21,7 @@ ________________________________________________________________________________
 |________|_________|___________|___________________|____________________________________|
 
 */
-int parse_mqtt(abstract_packet_t *packet, char *data, char *buffer){
+int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
 
 	uint8_t application_header; 
     uint8_t msg_len;
@@ -67,7 +68,7 @@ int parse_mqtt(abstract_packet_t *packet, char *data, char *buffer){
             TODO : detect payload type, parse it and use "add_int_data_t", "add_str_data_t" or "add_int_range_data_t" with switch statement
         */
 
-        create_payload(&p, NULL_TYPE, topic_len, topic, data); // NULL_TYPE means only constraint on topic, so data remains NULL for now
+        create_payload(&p, NULL_TYPE, topic_len+1, topic, data); // NULL_TYPE means only constraint on topic, so data remains NULL for now
 
         packet->payload = p;
 

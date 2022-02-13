@@ -47,57 +47,58 @@ static void netlink_send_msg(char *msg, int msg_size)
 
 static void netlink_recv_msg(struct sk_buff *skb)
 {
-    char *msg;
+    bool_t has_broker;
     bool_t code;
     rule_t rule;
     memset(&rule, 0, sizeof(rule_t));
 
-    nlh = (struct nlmsghdr *)skb->data;
-    msg = (char *)NLMSG_DATA(nlh);
-    
-    //printk(KERN_INFO "skb->data : %s\n", (char *) skb->data);
-    //printk(KERN_INFO "msg : %s\n", msg);
+    int offset = 0;
 
-    memcpy(&code, msg, sizeof(bool_t));
+    memcpy(&code, skb->data + offset, sizeof(bool_t));
+    offset += sizeof(bool_t);
 
     switch (code)
-        {
+    {
         case PID_INFO:
             printk(KERN_INFO "PID_INFO\n");
-            memcpy(&firewall_pid, msg+1, sizeof(int));
+            memcpy(&firewall_pid, skb->data + offset, sizeof(int));
             break;
         case ADD:
             printk(KERN_INFO "ADD\n");
 
-            memcpy(&rule, msg+1, sizeof(rule_t));
+            memcpy(&has_broker, skb->data + offset, sizeof(bool_t));
+            offset += sizeof(bool_t);
 
-            msg = msg + 1 + sizeof(rule_t);
+            offset += buffer_to_rule(skb->data + offset, &rule);
 
-            rule.src=htonl(rule.src);
-            rule.dst=htonl(rule.dst);
-            if(!(*msg)){
-                print_rule(rule);
+            print_rule(rule);
+
+            if(!(skb->data+offset)){
                 insert_rule(&rule_struct, rule);
             }
             else{
-                insert_rule_and_constraint(&rule_struct, rule, msg);
+                offset += 1; // increment 1 byte of number of constraints
+                insert_rule_and_constraint(&rule_struct, rule, skb->data + offset);
             }
 
             break;
         case REMOVE:
             printk(KERN_INFO "REMOVE\n");
 
-            memcpy(&rule, msg+1, sizeof(rule_t));
-            rule.src=htonl(rule.src);
-            rule.dst=htonl(rule.dst);
+            memcpy(&has_broker, skb->data + offset, sizeof(bool_t));
+            offset += sizeof(bool_t);
+
+            memcpy(&(rule.index), skb->data + offset, sizeof(short));
+            offset += sizeof(short);
+
+            print_rule(rule);
 
             remove_rule(&rule_struct, rule);
 
             break;
         default:
-            msg = msg;
             printk(KERN_INFO "action not know\n");
-        }
+    }
 }
 
 /* do not hook packet without layer 3, having only layer 1 and 2 */
@@ -159,7 +160,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     packet_ip_to_buffer(&packet, buffer); 
 
-    parsed_len = parse_packet(&packet, data, port, buffer+sizeof(rule_t));
+    parsed_len = parse_packet(data, port, &packet, buffer+sizeof(rule_t));
 
     if(parsed_len>0){ // if publish message 
         
@@ -252,22 +253,6 @@ static int __init init(void)
     destroy_rules(&rule_struct_2);
     destroy_abstract_packet(&packet);
     destroy_all_data_constraint(data_c);*/
-
-    // test hexa to byte
-
-    char dst[1024];
-    memset(dst, 0, 1024);
-    char hexa[24] = "\\x05\\x01\\x00\\x03\\x04\\x05"; // 20 = 4+5*4
-    
-    char len[1];
-    hexa_to_byte(hexa, len, 1);
-
-    hexa_to_byte(hexa+4, dst, (uint8_t) *len);
-
-    int i;
-    uint8_t n = (uint8_t) *len;
-    for(i=0; i<n; i++)
-        printk("dst[%d] : %d\n", i, dst[i]);
     
     /* rule_struct list initialization */
 

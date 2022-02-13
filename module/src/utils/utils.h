@@ -34,6 +34,4 @@ vector_t *and_v(vector_t *vector1, vector_t *vector2);
 
 vector_t *or_v(vector_t *vector1, vector_t *vector2);
 
-int hexa_to_byte(char *hexstring, char *dst, uint8_t n);
-
 #endif
