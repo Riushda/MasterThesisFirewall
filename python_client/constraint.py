@@ -76,11 +76,16 @@ def parse_time_interval(value):
 def parse_context(context):
 
     constraint_list = []
+    names = []
 
     for c in context:
 
         split = c.split("/")
         constraint = None
+        if(split[1] not in names):
+            names.append(split[1])
+        else:
+            return f"Error: constraints names must be unique."
 
         match split[0]:
             case CONSTRAINT.SUBJECT.value:

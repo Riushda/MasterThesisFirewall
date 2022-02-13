@@ -14,15 +14,13 @@ class Netlink():
 
     def send_msg(self, code, data):
         try:
-            message = code.to_bytes(1, 'little') + data
-            length = 4 * len(message)
-            print(length.to_bytes(2, 'little') + message)
-            self.sock.send(length.to_bytes(2, 'little') + message)
+            print(code.to_bytes(1, 'little') + data)
+            self.sock.send(code.to_bytes(1, 'little') + data)
         except(socket.error):
-            print("Error while sending")
+            print("Error: netlink send")
 
     def recv_msg(self):
         try:
             self.sock.recv(MAX_PAYLOAD)
         except(socket.error):
-            print("Error while receiving")
+            print("Error: netlink receive")

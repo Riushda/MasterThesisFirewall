@@ -1,6 +1,8 @@
 # Message format
 
-    This document explains the format of the different messages sent to kernel. Each message follows the abstract format len + code + data, len is the total len of the message without the len itself, code is the message type and data is the payload associated with the message. We use the same notation as python, [x:y] means from byte x to byte y included. The first two bytes [0:1] always represent the size of the message. Memory representation is always little endian unless specified. Brackets means optional.
+This document explains the format of the different messages sent to kernel. Each message follows the abstract format code + data, code is the message type and data is the payload associated with the message. Memory representation is always little endian unless specified. 
+
+For the notations, [x:y] means from byte x to byte y included and brackets mean optional.
 
 ## Structures
 
@@ -70,13 +72,20 @@
 
     Size: Variable
 
-    Content:
+    Content with broker:
     - [0:0] -> has_broker, always 0 for non-contextual rules
         Value: [0, 1] depending on the presence of a broker
     -[1:19] -> first rule structure
     -{[20:38]} -> second rule structure, if has_broker is 1
-    -{[39:39]} -> number of constraints, max 255
+    -[39:39] -> number of constraints, max 255
     -{[40:n]} -> a sequence of constraint structures
+
+    Content without broker:
+    - [0:0] -> has_broker, always 0 for non-contextual rules
+        Value: [0, 1] depending on the presence of a broker
+    -[1:19] -> first rule structure
+    -[20:20] -> number of constraints, max 255
+    -{[21:n]} -> a sequence of constraint structures
 
 ## Messages
 

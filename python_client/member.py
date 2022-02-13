@@ -38,19 +38,22 @@ def parse_member(name, str_ip, str_port, type):
 
     split = str_ip.split("/")
     if(len(split) > 2):
-        return "Error: Incorrect ip format, correct format is IP[/BITMASK]."
+        return "Error: Incorrect ip format, correct format is IP{/BITMASK}."
 
     if(len(split) > 1):
         bitmask = int(split[1])
         if(bitmask > 32):
             return "Error: Bitmask max value is 32."
 
-    if(split[0] != "*"):
-        ip = int(ipaddress.IPv4Address(split[0]))
+    if(split[0] != "any"):
+        try:
+            ip = int(ipaddress.IPv4Address(split[0]))
+        except(ipaddress.AddressValueError):
+            return "Error: Incorrect ip format, correct format is IP{/BITMASK}."
     else:
         bitmask = 0
 
-    if(str_port != "*"):
+    if(str_port != "any"):
         if(str_port[0][0] == "-"):
             port = int(str_port[1:])
             n_port = 1

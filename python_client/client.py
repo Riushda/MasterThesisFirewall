@@ -19,10 +19,10 @@ parser.add_argument("--name", type=str,
                     help="name of the member", default="dev")
 
 parser.add_argument("--ip", type=str,
-                    help="ip with optional bitmask", default="*")
+                    help="ip with optional bitmask", default="any")
 
 parser.add_argument("--port", type=str,
-                    help="port", default="*")
+                    help="port", default="any")
 
 parser.add_argument("--type", type=str, choices=[e.value for e in M_TYPE],
                     help="type of device", default=M_TYPE.PUB.value)
@@ -52,16 +52,16 @@ parser.add_argument("--constraint", action='append',
 # Parameters related to rules
 
 parser.add_argument("--src", type=str,
-                    help="ip with optional bitmask", default="*")
+                    help="ip with optional bitmask", default="any")
 
 parser.add_argument("--dst", type=str,
-                    help="ip with optional bitmask", default="*")
+                    help="ip with optional bitmask", default="any")
 
 parser.add_argument("--sport", type=str,
-                    help="source port", default="*")
+                    help="source port", default="any")
 
 parser.add_argument("--dport", type=str,
-                    help="destination port", default="*")
+                    help="destination port", default="any")
 
 # Parameters related to show
 
