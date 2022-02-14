@@ -85,15 +85,18 @@ class Handlers(object):
 
     def add_relation(self, pub, sub, broker, policy, context):
 
+        if(pub == "/" or sub == "/"):
+            return "Error: Please specify a publisher and a subscriber."
+
         constraints = parse_context(context)
         if(not isinstance(constraints, list)):
             return constraints
 
+        broker_member = None
         try:
             pub_member = self.pub_list[pub]
             sub_member = self.sub_list[sub]
 
-            broker_member = None
             if(broker != "/"):
                 broker_member = self.broker_list[broker]
         except KeyError:

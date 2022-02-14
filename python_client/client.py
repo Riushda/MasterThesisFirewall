@@ -38,13 +38,13 @@ parser.add_argument("--index", type=int,
 # Parameters related to relations
 
 parser.add_argument("--pub", type=str,
-                    help="a publisher", default="dev")
+                    help="a publisher", default="/")
 
 parser.add_argument("--sub", type=str,
-                    help="a subscriber", default="dev")
+                    help="a subscriber", default="/")
 
 parser.add_argument("--broker", type=str,
-                    help="a broker", default="dev")
+                    help="a broker", default="/")
 
 parser.add_argument("--constraint", action='append',
                     help='a constraint on the context', default=[])
