@@ -88,8 +88,7 @@ static void netlink_recv_msg(struct sk_buff *skb)
             memcpy(&has_broker, skb->data + offset, sizeof(bool_t));
             offset += sizeof(bool_t);
 
-            memcpy(&(rule.index), skb->data + offset, sizeof(short));
-            offset += sizeof(short);
+            offset += buffer_to_rule(skb->data + offset, &rule);
 
             print_rule(rule);
 

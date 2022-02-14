@@ -343,7 +343,7 @@ int buffer_to_rule(char *buf, rule_t *rule){
     offset += sizeof(bitmask_t);
 
     memcpy(&(rule->sport), buf+offset, sizeof(short));
-    rule->sport = htons(rule->sport);
+    rule->sport = rule->sport;
     offset += sizeof(short);
 
     memcpy(&(rule->not_sport), buf+offset, sizeof(bool_t));
@@ -358,7 +358,7 @@ int buffer_to_rule(char *buf, rule_t *rule){
     offset += sizeof(bitmask_t);
 
     memcpy(&(rule->dport), buf+offset, sizeof(short));
-    rule->dport = htons(rule->dport);
+    rule->dport = rule->dport;
     offset += sizeof(short);
 
     memcpy(&(rule->not_dport), buf+offset, sizeof(bool_t));
