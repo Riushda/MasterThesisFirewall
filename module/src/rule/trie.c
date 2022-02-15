@@ -104,12 +104,13 @@ vector_t *search_node(trie_t *trie, int ip)
     vector = NULL;
     element = trie->root;
 
-    for (level = 0; level < IP_SIZE; level++)
+    for (level = 0; level <= IP_SIZE; level++)
     {
         vector = element->vector;
         index = is_set_ip(ip, level);
         if (!element->children[index])
             return vector;
+            
         element = element->children[index];
     }
 

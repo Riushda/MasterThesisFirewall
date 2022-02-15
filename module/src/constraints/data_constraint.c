@@ -104,6 +104,9 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 
 		buffer += offset;
 
+		printk("field : %s\n", field);
+		print_data_t(data, type);
+
 		add_data_constraint(data_c, type, field_len, field, data, index);
 	}
 
@@ -280,13 +283,13 @@ int add_str_data_t(data_t **data, uint8_t str_len, char *str){
 
 	str_value->str_len = str_len;
 
-	str_value->str = (char *)kmalloc(str_value->str_len, GFP_KERNEL);
+	str_value->str = (char *)kmalloc(str_value->str_len + 1, GFP_KERNEL);
 	if(str_value->str==NULL){
 		kfree(target);
 		destroy_data_t(*target, STRING_TYPE);
 		return -1;
 	}
-	memset(str_value->str, 0, str_value->str_len);
+	memset(str_value->str, 0, str_value->str_len + 1);
 	memcpy(str_value->str, str, str_value->str_len);
 
 	kfree(target);
@@ -324,13 +327,13 @@ int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_l
 	data_c->type = type;
 	data_c->field_len = field_len;
 	
-	data_c->field = (char *)kmalloc(data_c->field_len, GFP_KERNEL);
+	data_c->field = (char *)kmalloc(data_c->field_len + 1, GFP_KERNEL);
 	if(data_c->field==NULL){
 		kfree(data_c);
 		return -1;
 	}
 
-	memset(data_c->field, 0, data_c->field_len);
+	memset(data_c->field, 0, data_c->field_len + 1);
 	memcpy(data_c->field, field, data_c->field_len);
 
 	data_c->data = data;
@@ -394,6 +397,7 @@ int match_data_t(data_t *src, data_t *dst, uint8_t type){
 				break;
 			case STRING_TYPE:
 				condition = (element->value).str_value.str_len != (dst->value).str_value.str_len;
+				printk("str len equal : %d\n", condition);
 				if(!condition)
 					condition = memcmp((element->value).str_value.str, (dst->value).str_value.str, (dst->value).str_value.str_len);
 				break;
@@ -422,11 +426,17 @@ data_constraint_t *match_data_constraint(data_constraint_t *data_c, uint8_t type
 	data_constraint_t *element = data_c;
 	while(element!=NULL){
 		condition = element->type==type;
+		printk("ELEMENT->TYPE : %d\n", element->type);
+		printk("TYPE : %d\n", type);
 		if(condition){
 			condition = element->field_len==field_len;
 			if(condition){
 				condition = memcmp(element->field, field, field_len);
 				if(!condition){
+					
+					if(type==NULL_TYPE)
+						return element;
+
 					condition = match_data_t(element->data, data, type);
 					if(!condition){
 						return element;
@@ -563,7 +573,23 @@ void print_data_constraint(data_constraint_t *data_c){
 	data_constraint_t *element = data_c;
 	while(element!=NULL){
 		printk(KERN_INFO "data_constraint %d :\n", i);
-		printk(KERN_INFO "	type : %d\n", element->type);
+
+		printk(KERN_INFO "	type : ");
+		switch(element->type)
+		{	
+			case INT_TYPE:
+				printk(KERN_CONT "INT\n");
+				break;
+			case STRING_TYPE:
+				printk(KERN_CONT "STRING\n");
+				break;
+			case INT_RANGE_TYPE:
+				printk(KERN_CONT "INT_RANGE\n");
+				break;
+			default:
+				printk(KERN_CONT "UNKOWN\n");
+		}
+
 		printk(KERN_INFO "	field_len : %d\n", element->field_len);
 		printk(KERN_INFO "	field : %s\n", element->field);
 

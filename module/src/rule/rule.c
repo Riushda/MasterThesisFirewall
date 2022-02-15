@@ -111,14 +111,16 @@ void print_rule(rule_t rule)
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Src: %pI4/%d ", &rule.src, rule.src_bm);
+    int src = htonl(rule.src);
+    printk(KERN_CONT "Src: %pI4/%d ", &src, rule.src_bm);
 
     if (rule.not_dst)
     {
         printk(KERN_CONT "!");
     }
 
-    printk(KERN_CONT "Dst: %pI4/%d ", &rule.dst, rule.dst_bm);
+    int dst = htonl(rule.dst);
+    printk(KERN_CONT "Dst: %pI4/%d ", &dst, rule.dst_bm);
 
     if (rule.not_sport)
     {
@@ -158,6 +160,7 @@ int init_rules(rule_struct_t *rule_struct)
         return -1;
 
     rule_struct->data_c = NULL; // will be malloc during first insert
+    memset(rule_struct->has_constraint, 0, VECTOR_SIZE);
 
     memset(rule_struct->actions, 0, VECTOR_SIZE);
     return 0;
@@ -194,6 +197,8 @@ int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *bu
 {
     if(insert_rule(rule_struct, rule))
         return -1;
+
+    set_bit_v(rule_struct->has_constraint, rule.index);
     
     if(buffer_to_data_constraint(buf, rule.index, &(rule_struct->data_c)))
         return -1;
@@ -219,9 +224,12 @@ int remove_rule(rule_struct_t *rule_struct, rule_t rule)
     remove_hash(rule_struct->dport_table, key, rule.index);
 
     unset_shift_v(rule_struct->actions, rule.index);
-    
-    remove_data_constraint(&(rule_struct->data_c), rule.index);
 
+    if(is_set_v(rule_struct->has_constraint, rule.index)){
+        unset_shift_v(rule_struct->has_constraint, rule.index);
+        remove_data_constraint(&(rule_struct->data_c), rule.index);
+    }
+        
     return 0;
 }
 
@@ -260,6 +268,9 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
     vector_t *match_dport;
     short rule_index;
 
+    bool_t temp;
+    uint8_t match;
+
     result_src = search_node(rule_struct->src_trie, packet->src);
     result_dst = and_v(result_src, search_node(rule_struct->dst_trie, packet->dst));
     match_sport = match_port(rule_struct->sport_table, packet->sport);
@@ -276,14 +287,26 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
     kfree(match_dport);
 
     if (rule_index != -1 && rule_index < VECTOR_SIZE){
-        bool_t temp = is_set_v(rule_struct->actions, rule_index);
-        int match;
-        memset(&match, 0, sizeof(int));
-        memcpy(&match, &temp, sizeof(bool_t));
-        return match;
+        temp = is_set_v(rule_struct->actions, rule_index);
+        
+        memset(&match, 0, sizeof(uint8_t));
+        memcpy(&match, &temp, sizeof(uint8_t));
+        if(match)
+            return rule_index;
     }
 
-    return 0;
+    return -1;
+}
+
+int has_constraint(rule_struct_t *rule_struct, int index){
+    uint8_t match;
+
+    bool_t temp = is_set_v(rule_struct->has_constraint, index);
+
+    memset(&match, 0, sizeof(uint8_t));
+    memcpy(&match, &temp, sizeof(uint8_t));
+
+    return match;
 }
 
 int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet){
@@ -337,6 +360,7 @@ int buffer_to_rule(char *buf, rule_t *rule){
     // src 
 
     memcpy(&(rule->src), buf+offset, sizeof(int));
+    rule->src = htonl(rule->src);
     offset += sizeof(int);
 
     memcpy(&(rule->src_bm), buf+offset, sizeof(bitmask_t));
@@ -352,6 +376,7 @@ int buffer_to_rule(char *buf, rule_t *rule){
     // dst 
 
     memcpy(&(rule->dst), buf+offset, sizeof(int));
+    rule->dst = htonl(rule->dst);
     offset += sizeof(int);
 
     memcpy(&(rule->dst_bm), buf+offset, sizeof(bitmask_t));

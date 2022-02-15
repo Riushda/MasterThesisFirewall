@@ -50,6 +50,7 @@ typedef struct rule_structure
     h_table_t *sport_table;
     h_table_t *dport_table;
     data_constraint_t *data_c;
+    vector_t has_constraint[VECTOR_SIZE];
     vector_t actions[VECTOR_SIZE];
 } rule_struct_t;
 
@@ -62,6 +63,8 @@ int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *bu
 int remove_rule(rule_struct_t *rule_struct, rule_t rule);
 
 int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet);
+
+int has_constraint(rule_struct_t *rule_struct, int index);
 
 int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet);
 

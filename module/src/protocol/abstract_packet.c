@@ -13,12 +13,12 @@ int create_payload(payload_t **payload, uint8_t type, uint8_t field_len, char *f
 	(*payload)->type = type;
 	(*payload)->field_len = field_len;
 
-	(*payload)->field = (char *)kmalloc(field_len, GFP_KERNEL);
+	(*payload)->field = (char *)kmalloc(field_len + 1, GFP_KERNEL);
 	if((*payload)->field==NULL){
 		return -1;
 	}
 
-	memset((*payload)->field, 0, field_len);
+	memset((*payload)->field, 0, field_len + 1);
 	memcpy((*payload)->field, field, field_len);
 
 	(*payload)->data = data;
@@ -29,6 +29,9 @@ int create_payload(payload_t **payload, uint8_t type, uint8_t field_len, char *f
 int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sport, short dport, bitmask_t src_bm, bitmask_t dst_bm, payload_t *payload){
 
 	memset(packet, 0, sizeof(abstract_packet_t));
+
+	src = htonl(src);
+	dst = htonl(dst);
 
 	memcpy(&packet->src, &src, sizeof(int));
     memcpy(&packet->src_bm, &src_bm, 1);
@@ -97,9 +100,12 @@ void print_payload(payload_t *payload){
 void print_abstract_packet(abstract_packet_t *packet){
 
 	printk(KERN_INFO "packet : ");
+	
+	int src = htonl(packet->src); 
+	printk(KERN_CONT "Src: %pI4/%d ", &src, packet->src_bm);
 
-	printk(KERN_CONT "Src: %pI4/%d ", &packet->src, packet->src_bm);
-	printk(KERN_CONT "Dst: %pI4/%d ", &packet->dst, packet->dst_bm);
+	int dst = htonl(packet->dst); 
+	printk(KERN_CONT "Dst: %pI4/%d ", &dst, packet->dst_bm);
 
 	printk(KERN_CONT "Sport: %d ", ntohs(packet->sport));
 	printk(KERN_CONT "Dport: %d\n ", ntohs(packet->dport));

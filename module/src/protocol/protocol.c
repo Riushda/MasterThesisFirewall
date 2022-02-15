@@ -68,7 +68,7 @@ int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
             TODO : detect payload type, parse it and use "add_int_data_t", "add_str_data_t" or "add_int_range_data_t" with switch statement
         */
 
-        create_payload(&p, NULL_TYPE, topic_len+1, topic, data); // NULL_TYPE means only constraint on topic, so data remains NULL for now
+        create_payload(&p, NULL_TYPE, topic_len, topic, data); // NULL_TYPE means only constraint on topic, so data remains NULL for now
 
         packet->payload = p;
 
