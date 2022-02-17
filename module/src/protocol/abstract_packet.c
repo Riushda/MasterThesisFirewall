@@ -1,32 +1,81 @@
 #include "abstract_packet.h"
 
-/* create struct functions */
-
-int create_payload(payload_t **payload, uint8_t type, uint8_t field_len, char *field, data_t *data){
+int decode_payload(char *buf, data_t **payload){
+	char *token;
+	char *running = buf;
+	const char delimiter[2] = "&";
+	if(memcmp(buf, "?", 1))
+		return -1;
 	
-	*payload = (payload_t *)kmalloc(sizeof(payload_t), GFP_KERNEL);
-	if(*payload==NULL)
-		return -1;
-
-	memset(*payload, 0, sizeof(payload_t));
-
-	(*payload)->type = type;
-	(*payload)->field_len = field_len;
-
-	(*payload)->field = (char *)kmalloc(field_len + 1, GFP_KERNEL);
-	if((*payload)->field==NULL){
-		return -1;
+	token = strsep(&running, delimiter);
+	while(token){
+		
+		
+		token = strsep(&running, delimiter);
 	}
-
-	memset((*payload)->field, 0, field_len + 1);
-	memcpy((*payload)->field, field, field_len);
-
-	(*payload)->data = data;
 
 	return 0;
 }
 
-int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sport, short dport, bitmask_t src_bm, bitmask_t dst_bm, payload_t *payload){
+/* match packet with constraint */
+
+data_constraint_t *match_data_constraint(abstract_packet_t *packet, data_constraint_t *data_c){
+
+	int condition;
+
+	data_constraint_t *element = data_c;
+	while(element!=NULL){
+
+		condition = element->type==type;
+		if(condition){
+			condition = element->field_len==field_len;
+			if(condition){
+				condition = memcmp(element->field, field, field_len);
+				if(!condition){
+
+					if(type==SUBJECT_TYPE)
+						return element;
+
+					condition = match_data_t(element->data, data, type);
+					if(!condition)
+						return element;
+				}
+			}
+		}	
+
+		element = element->next;
+	}
+
+	return NULL;
+}
+
+/* create struct functions */
+
+int create_content(content_t **content, uint8_t type, uint8_t subject_len, char *subject, data_t *payload){
+	
+	*content = (content_t *)kmalloc(sizeof(content_t), GFP_KERNEL);
+	if(*content==NULL)
+		return -1;
+
+	memset(*content, 0, sizeof(content_t));
+
+	(*content)->type = type;
+	(*content)->subject_len = subject_len;
+
+	(*content)->subject = (char *)kmalloc(subject_len + 1, GFP_KERNEL);
+	if((*content)->subject==NULL){
+		return -1;
+	}
+
+	memset((*content)->subject, 0, subject_len + 1);
+	memcpy((*content)->subject, subject, subject_len);
+
+	(*content)->payload = payload;
+
+	return 0;
+}
+
+int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sport, short dport, bitmask_t src_bm, bitmask_t dst_bm, content_t *content){
 
 	memset(packet, 0, sizeof(abstract_packet_t));
 
@@ -41,7 +90,7 @@ int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sp
 	memcpy(&packet->sport, &sport, sizeof(short));
     memcpy(&packet->dport, &dport, sizeof(short));
 
-	packet->payload = payload;
+	packet->content = content;
 
 	return 0;
 }
@@ -65,35 +114,35 @@ int packet_ip_to_buffer(abstract_packet_t *packet, unsigned char *buffer)
 
 /* struct destroy functions */
 
-void destroy_payload(payload_t *payload){
+void destroy_content(content_t *content){
 
-	if(payload==NULL)
+	if(content==NULL)
 		return;
 
-	if(payload->field!=NULL)
-		kfree(payload->field);
+	if(content->subject!=NULL)
+		kfree(content->subject);
 	
-	if(payload->data!=NULL)
-		destroy_data_t(payload->data, payload->type);
+	if(content->payload!=NULL)
+		destroy_data_t(content->payload, content->type);
 
-	kfree(payload);
+	kfree(content);
 }
 
 void destroy_abstract_packet(abstract_packet_t *packet){
-	destroy_payload(packet->payload);
+	destroy_content(packet->content);
 	return;
 }
 
 /* print functions */
 
-void print_payload(payload_t *payload){
-	if(payload!=NULL){
-		printk(KERN_INFO "payload : ");
-		printk(KERN_CONT "type : %d ", payload->type);
-		printk(KERN_CONT "field_len : %d ", payload->field_len);
-		printk(KERN_CONT "field : %s\n", payload->field);
+void print_content(content_t *content){
+	if(content!=NULL){
+		printk(KERN_INFO "content : ");
+		printk(KERN_CONT "type : %d ", content->type);
+		printk(KERN_CONT "subject_len : %d ", content->subject_len);
+		printk(KERN_CONT "subject : %s\n", content->subject);
 
-		print_data_t(payload->data, payload->type);
+		print_payload_t(content->payload, content->type);
 	}
 }
 
@@ -110,6 +159,6 @@ void print_abstract_packet(abstract_packet_t *packet){
 	printk(KERN_CONT "Sport: %d ", ntohs(packet->sport));
 	printk(KERN_CONT "Dport: %d\n ", ntohs(packet->dport));
 
-	print_payload(packet->payload);
+	print_content(packet->content);
 	return;
 }

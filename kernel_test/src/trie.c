@@ -110,6 +110,7 @@ vector_t *search_node(trie_t *trie, int ip)
         index = is_set_ip(ip, level);
         if (!current->children[index])
             return vector;
+            
         current = current->children[index];
     }
 

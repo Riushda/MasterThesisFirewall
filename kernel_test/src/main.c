@@ -1,15 +1,16 @@
 #include "rule.h"
 
 int main(){
+
     rule_t rule;
     rule_struct_t rule_struct;
     memset(&rule_struct, 0, sizeof(rule_struct_t));
     memset(&rule, 0, sizeof(rule_t));
 
-    //parse_ip("127.0.0.1/24", &rule.src, &rule.src_bm);
-    //parse_ip("127.0.0.1/24", &rule.dst, &rule.dst_bm);
-    parse_ip("192.168.1.104/31", &rule.src, &rule.src_bm);
-    parse_ip("192.168.1.230/31", &rule.dst, &rule.dst_bm);
+    // rule
+
+    parse_ip("192.168.1.104/24", &rule.src, &rule.src_bm);
+    parse_ip("192.168.1.230/24", &rule.dst, &rule.dst_bm);
     parse_port("*", &rule.sport, &rule.not_sport);
     parse_port("22", &rule.dport, &rule.not_dport);
     rule.index = 1;
@@ -22,37 +23,50 @@ int main(){
 
     data_constraint_t *data_c = NULL;
     data_t *data_1 = NULL;
-    add_str_data_t(&data_1, 7, "friend");
-    add_data_constraint(&data_c, STRING_TYPE, 6, "hello", data_1, 1);
+
+    char value[7];
+    uint8_t str_len = 6;
+    memcpy(value, &str_len, 1);
+    memcpy(value+1, "friend", 6);
+
+    add_data_t(&data_1, STRING_TYPE, 0, NULL, value);
+
+    add_data_constraint(&data_c, STRING_TYPE, 5, "hello", data_1, 1);
     data_constraint_to_buffer(data_c, &buf);
 
     init_rules(&rule_struct);
 
     insert_rule_and_constraint(&rule_struct, rule, buf);
 
+    // packet
+
     abstract_packet_t packet;
     memset(&packet, 0, sizeof(abstract_packet_t));
 
-    //parse_ip("127.0.0.1/24", &packet.src, &packet.src_bm);
-    //parse_ip("127.0.0.1/24", &packet.dst, &packet.dst_bm);
-    parse_ip("192.168.1.104/32", &packet.src, &packet.src_bm);
-    parse_ip("192.168.1.230/32", &packet.dst, &packet.dst_bm);
+    parse_ip("192.168.1.204/32", &packet.src, &packet.src_bm);
+    parse_ip("192.168.1.130/32", &packet.dst, &packet.dst_bm);
     parse_port("22", &packet.sport, NULL);
     parse_port("22", &packet.dport, NULL);
 
-    payload_t *payload = NULL;
+    content_t *content = NULL;
     data_t *data_2 = NULL;
 
-    add_str_data_t(&data_2, 7, "friend");
+    char value2[7];
+    uint8_t str_len2 = 6;
+    memcpy(value2, &str_len2, 1);
+    memcpy(value2+1, "friend", 6);
 
-    create_payload(&payload, STRING_TYPE, 6, "hello", data_2);
+    add_data_t(&data_2, STRING_TYPE, 5, "hello", value2);
 
-    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, payload);
+    create_content(&content, STRING_TYPE, 4, "test", data_2);
+
+    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, content);
 
     print_abstract_packet(&packet);
 
-    printf("IP MATCHED : %d\n", match_rule(&rule_struct, &packet));
-    printf("CONSTRAINT MATCHED : %d\n", match_constraint(&rule_struct, &packet));
+    // match
+
+    printf("RULE MATCHED : %d\n", match_rule(&rule_struct, &packet, 1));
 
     print_data_constraint(rule_struct.data_c);
     remove_rule(&rule_struct, rule);
@@ -110,18 +124,28 @@ int main(){
     destroy_all_data_constraint(data_c);
     destroy_all_data_constraint(data_c_2); */
 
-    // test hexa to byte
+    /*data_t *data = NULL;
+    int type = INT_RANGE_TYPE;
 
-    char dst[5];
-    char hexa[24] = "\\x05\\x01\\x00\\x03\\x04\\x05"; // 20 = 4+5*4
-    
-    char len[1];
-    hexa_to_byte(hexa, len, 1);
+    //int value = 5;
 
-    hexa_to_byte(hexa+4, dst, (uint8_t) *len);
+    //char value[9];
+    //uint8_t str_len = 8;
+    //memcpy(value, &str_len, 1);
+    //memcpy(value+1, "MONSIEUR", 8);
 
-    for(int i=0; i<*len; i++)
-        printf("dst[%d] : %d\n", i, dst[i]);
+    char value[8];
+    int start = 5;
+    int end = 10;
+    memcpy(value, &start, sizeof(int));
+    memcpy(value+sizeof(int), &end, sizeof(int));
+
+    int err = add_data_t(&data, type, 5, "HELLO", value);
+    printf("error : %d\n", err);
+
+    print_data_t(data, type);
+
+    destroy_data_t(data, type);*/
 
     return 0;
 }

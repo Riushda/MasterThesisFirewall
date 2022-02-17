@@ -170,8 +170,11 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         
         print_abstract_packet(&packet);
 
+        // TODO : changer le matching pour match les contraintes de toutes les rules qui match (pas seulement la première)
+        // au final on ne matchera que l'action de la rule ip de plus petit index, la premiere rule insérée qui match
+
         // match the rule
-        int rule_index = match_rule(&rule_struct, &packet);
+        int rule_index = match_rule(&rule_struct, &packet, 1);
         if (rule_index < 0) 
         {   
             printk(KERN_INFO "firewall: forbidden packet by ip/port !\n");

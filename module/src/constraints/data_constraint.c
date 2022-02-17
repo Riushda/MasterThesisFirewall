@@ -96,13 +96,17 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 
 		data_t *data = NULL;
 
-		offset = buffer_to_data_t(buffer, type, &data);
-		if(offset<0){
-			destroy_all_data_constraint(*data_c);
-			return -1;
-		}
+		if(type!=SUBJECT_TYPE){
 
-		buffer += offset;
+			offset = buffer_to_data_t(buffer, type, &data);
+			if(offset<0){
+				destroy_all_data_constraint(*data_c);
+				return -1;
+			}
+
+			buffer += offset;
+
+		}
 
 		printk("field : %s\n", field);
 		print_data_t(data, type);
@@ -195,9 +199,12 @@ int data_constraint_to_buffer(data_constraint_t *data_c, char **buf){
 		memcpy(buffer, element->field, element->field_len);
 		buffer += element->field_len;
 
-		offset = data_t_to_buffer(element->data, element->type, &buffer);
+		if(element->type!=SUBJECT_TYPE){
 
-		buffer += offset;
+			offset = data_t_to_buffer(element->data, element->type, &buffer);
+
+			buffer += offset;
+		}
 
 		element = element->next;
 	}
@@ -356,7 +363,7 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 		return set_data_constraint(*data_c, type, field_len, field, data, index);
 	}
 
-	data_constraint_t *match = match_data_constraint(*data_c, type, field_len, field, data);
+	data_constraint_t *match = get_same_constraint(*data_c, type, field_len, field, data);
 
 	if(match!=NULL){
 		set_bit_v(match->vector, index);
@@ -382,65 +389,72 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 
 /* search for matching struct functions */
 
-int match_data_t(data_t *src, data_t *dst, uint8_t type){
+// check if dst contains src, if all values of src are in dst
+int contains_data_t(data_t *src, data_t *dst, uint8_t type){
 
 	int condition;
 
 	// check if at least one element
-	data_t *element = src;
-	while(element!=NULL){
+	data_t *element_src = src;
+	data_t *element_dst = dst;
+	while(element_src!=NULL){
+		condition = 1;
+		while(element_dst!=NULL){
 
-		switch (type)
-		{
-			case INT_TYPE:
-				condition = (element->value).int_value != (dst->value).int_value;
+			switch (type)
+			{
+				case INT_TYPE:
+					condition = (element_src->value).int_value != (element_dst->value).int_value;
+					break;
+				case STRING_TYPE:
+					condition = (element_src->value).str_value.str_len != (element_dst->value).str_value.str_len;
+					if(!condition)
+						condition = memcmp((element_src->value).str_value.str, (element_dst->value).str_value.str, (element_dst->value).str_value.str_len);
+					break;
+				case INT_RANGE_TYPE:
+					condition = (element_src->value).int_range.start != (element_dst->value).int_range.start;
+					condition += (element_src->value).int_range.end != (element_dst->value).int_range.end;
+					break;
+			}
+
+			// if condition==0 then we found an element in dst that match the current element of src	
+			if(!condition)
 				break;
-			case STRING_TYPE:
-				condition = (element->value).str_value.str_len != (dst->value).str_value.str_len;
-				printk("str len equal : %d\n", condition);
-				if(!condition)
-					condition = memcmp((element->value).str_value.str, (dst->value).str_value.str, (dst->value).str_value.str_len);
-				break;
-			case INT_RANGE_TYPE:
-				condition = (element->value).int_range.start != (dst->value).int_range.start;
-				condition += (element->value).int_range.end != (dst->value).int_range.end;
-				break;
-			default:
-				// unknown type
-				return -1;
+
+			element_dst = element_dst->next;
 		}
 		
-		if(!condition)
-			return 0;
+		// if condition is positive, then no element in dst match the current element of src
+		if(condition)
+			return -1;
 
-		element = element->next;
+		element_src = element_src->next;
 	}
 
-	return -1;
+	return 0;
 }
 
-data_constraint_t *match_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
+data_constraint_t *get_same_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
 
 	int condition;
 
 	data_constraint_t *element = data_c;
 	while(element!=NULL){
+
 		condition = element->type==type;
-		printk("ELEMENT->TYPE : %d\n", element->type);
-		printk("TYPE : %d\n", type);
 		if(condition){
 			condition = element->field_len==field_len;
 			if(condition){
 				condition = memcmp(element->field, field, field_len);
 				if(!condition){
-					
-					if(type==NULL_TYPE)
+
+					if(type==SUBJECT_TYPE)
 						return element;
 
-					condition = match_data_t(element->data, data, type);
-					if(!condition){
+					condition = contains_data_t(element->data, data, type);
+					condition += contains_data_t(data, element->data, type);
+					if(!condition) // if element->data contains data and data contains element->data then element->data == data
 						return element;
-					}
 				}
 			}
 		}	
@@ -577,6 +591,9 @@ void print_data_constraint(data_constraint_t *data_c){
 		printk(KERN_INFO "	type : ");
 		switch(element->type)
 		{	
+			case SUBJECT_TYPE:
+				printk(KERN_CONT "SUBJECT\n");
+				break;
 			case INT_TYPE:
 				printk(KERN_CONT "INT\n");
 				break;
