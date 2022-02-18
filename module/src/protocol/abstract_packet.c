@@ -1,6 +1,6 @@
 #include "abstract_packet.h"
 
-int decode_payload(char *buf, data_t **payload){
+/*int decode_payload(char *buf, data_t **payload){
 	char *token;
 	char *running = buf;
 	const char delimiter[2] = "&";
@@ -15,38 +15,97 @@ int decode_payload(char *buf, data_t **payload){
 	}
 
 	return 0;
+}*/
+
+/* return 0 if at least one data_t of the constraint match the payload */
+
+int match_payload(data_t *payload, data_constraint_t *data_c){
+	int condition;
+
+	data_t *constraint = data_c->data;
+	data_t *curr_data = payload;
+	while(curr_data!=NULL){
+
+		condition = 0;
+
+		while(constraint!=NULL){
+
+			if(data_c->type==curr_data->type && data_c->field_len==curr_data->field_len){
+
+				if(!memcmp(data_c->field, curr_data->field, curr_data->field_len)){
+
+					switch (data_c->type)
+					{
+						case INT_TYPE:
+							condition = (constraint->value).int_value != (curr_data->value).int_value;
+							break;
+						case STRING_TYPE:
+							int data_str_len = (curr_data->value).str_value.str_len;
+							condition = (constraint->value).str_value.str_len != data_str_len;
+							if(!condition)
+								condition = memcmp((constraint->value).str_value.str, (curr_data->value).str_value.str, data_str_len);
+							break;
+						case INT_RANGE_TYPE:
+							condition = (constraint->value).int_range.start != (curr_data->value).int_range.start;
+							condition += (constraint->value).int_range.end != (curr_data->value).int_range.end;
+							break;
+					}
+
+					if(!condition) // if constraint matching current payload data found
+						break;
+				}
+
+			}
+
+			constraint = constraint->next;
+
+		}
+
+		if(condition) // if at least one constraint matches payload data field but not value
+			break;
+
+		curr_data = curr_data->next;
+	}
+
+	return condition;
 }
 
-/* match packet with constraint */
+/* check if all the constraints of the rule of index rule_index match the packet content 
+*  return 0 if success
+*/
 
-data_constraint_t *match_data_constraint(abstract_packet_t *packet, data_constraint_t *data_c){
+int match_data_constraint(content_t *content, data_constraint_t *data_c, int rule_index){
 
 	int condition;
 
 	data_constraint_t *element = data_c;
 	while(element!=NULL){
 
-		condition = element->type==type;
-		if(condition){
-			condition = element->field_len==field_len;
-			if(condition){
-				condition = memcmp(element->field, field, field_len);
-				if(!condition){
+		condition = 0;
 
-					if(type==SUBJECT_TYPE)
-						return element;
+		if(is_set_v(element->vector, rule_index)){ // check if rule is constrained by the current constraint 
 
-					condition = match_data_t(element->data, data, type);
+			switch (element->type)
+			{
+				case SUBJECT_TYPE:
+					condition = element->field_len!=content->subject_len;
 					if(!condition)
-						return element;
-				}
+						condition = memcmp(element->field, content->subject, content->subject_len);
+					break;
+				default:
+					condition = match_payload(content->payload, element);
+					break;
 			}
-		}	
+			
+		}
+
+		if(condition)
+			break;
 
 		element = element->next;
 	}
 
-	return NULL;
+	return condition;
 }
 
 /* create struct functions */
@@ -142,7 +201,7 @@ void print_content(content_t *content){
 		printk(KERN_CONT "subject_len : %d ", content->subject_len);
 		printk(KERN_CONT "subject : %s\n", content->subject);
 
-		print_payload_t(content->payload, content->type);
+		print_data_t(content->payload, content->type);
 	}
 }
 

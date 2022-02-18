@@ -19,6 +19,10 @@ typedef struct abstract_packet
 	content_t *content;
 } abstract_packet_t;
 
+/* match constraint function */
+
+int match_data_constraint(content_t *content, data_constraint_t *data_c, int rule_index);
+
 /* create struct functions */
 
 int create_content(content_t **content, uint8_t type, uint8_t subject_len, char *subject, data_t *payload);

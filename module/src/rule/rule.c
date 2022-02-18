@@ -160,7 +160,6 @@ int init_rules(rule_struct_t *rule_struct)
         return -1;
 
     rule_struct->data_c = NULL; // will be malloc during first insert
-    memset(rule_struct->has_constraint, 0, VECTOR_SIZE);
 
     memset(rule_struct->actions, 0, VECTOR_SIZE);
     return 0;
@@ -197,8 +196,6 @@ int insert_rule_and_constraint(rule_struct_t *rule_struct, rule_t rule, char *bu
 {
     if(insert_rule(rule_struct, rule))
         return -1;
-
-    set_bit_v(rule_struct->has_constraint, rule.index);
     
     if(buffer_to_data_constraint(buf, rule.index, &(rule_struct->data_c)))
         return -1;
@@ -223,12 +220,9 @@ int remove_rule(rule_struct_t *rule_struct, rule_t rule)
     memcpy(key + sizeof(bool_t), &rule.dport, sizeof(short));
     remove_hash(rule_struct->dport_table, key, rule.index);
 
-    unset_shift_v(rule_struct->actions, rule.index);
+    remove_data_constraint(&(rule_struct->data_c), rule.index);
 
-    if(is_set_v(rule_struct->has_constraint, rule.index)){
-        unset_shift_v(rule_struct->has_constraint, rule.index);
-        remove_data_constraint(&(rule_struct->data_c), rule.index);
-    }
+    unset_shift_v(rule_struct->actions, rule.index);
         
     return 0;
 }
@@ -258,7 +252,22 @@ vector_t *match_port(h_table_t *table, short port)
     return result_not_port;
 }
 
-int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
+int first_constrained_match_index(abstract_packet_t *packet, data_constraint_t *data_c, vector_t *vector){
+    int i;
+
+    for (i = 0; i < VECTOR_SIZE; i++)
+    {
+        if (is_set_v(vector, i)){
+            if(!match_data_constraint(packet->content, data_c, i))
+                return i;
+        }
+            
+    }
+
+    return -1;
+}
+
+int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet, bool_t constraint)
 {
     vector_t *result_src;
     vector_t *result_dst;
@@ -278,7 +287,13 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
     match_dport = match_port(rule_struct->dport_table, packet->dport);
     result_dport = and_v(result_sport, match_dport);
 
-    rule_index = first_match_index(result_dport);
+    if(constraint){ // if constrained matching
+        // remove rules index in result_dport with constraint not matching the packet until a matching one is found
+        rule_index = first_constrained_match_index(packet, rule_struct->data_c, result_dport);
+    }
+    else{ // if simple ip matching
+        rule_index = first_match_index(result_dport);
+    }
 
     kfree(result_dst);
     kfree(result_sport);
@@ -296,28 +311,6 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet)
     }
 
     return -1;
-}
-
-int has_constraint(rule_struct_t *rule_struct, int index){
-    uint8_t match;
-
-    bool_t temp = is_set_v(rule_struct->has_constraint, index);
-
-    memset(&match, 0, sizeof(uint8_t));
-    memcpy(&match, &temp, sizeof(uint8_t));
-
-    return match;
-}
-
-int match_constraint(rule_struct_t *rule_struct, abstract_packet_t *packet){
-    uint8_t type = (uint8_t) packet->payload->type;
-    uint8_t field_len = packet->payload->field_len;
-    char *field = packet->payload->field;
-    data_t *data = packet->payload->data;
-
-    data_constraint_t *data_c = match_data_constraint(rule_struct->data_c, type, field_len, field, data);
-
-    return data_c!=NULL;
 }
 
 void destroy_rules(rule_struct_t *rule_struct)

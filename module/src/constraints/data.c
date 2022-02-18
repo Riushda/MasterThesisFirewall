@@ -105,7 +105,7 @@ int data_t_to_buffer(data_t *data, uint8_t type, char **buf){
 
 int init_data_t(data_t **data, uint8_t type){
 	
-	*data = (data_t *)malloc(sizeof(data_t));
+	*data = (data_t *)kmalloc(sizeof(data_t), GFP_KERNEL);
 	if(*data==NULL)
 		return -1;
 
@@ -126,7 +126,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 
 	if(field_len>0 && field!=NULL){
 
-		element->field = (char *)malloc(field_len + 1);
+		element->field = (char *)kmalloc(field_len + 1, GFP_KERNEL);
 
 		if(element->field == NULL){
 			destroy_data_t(element, INT_TYPE);
@@ -150,7 +150,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 
 			memcpy(&(str_value->str_len), value, 1);
 
-			str_value->str = (char *)malloc(str_value->str_len + 1);
+			str_value->str = (char *)kmalloc(str_value->str_len + 1, GFP_KERNEL);
 			if(str_value->str==NULL){
 				destroy_data_t(element, STRING_TYPE);
 				return -1;
@@ -254,7 +254,7 @@ void destroy_data_t(data_t *data, uint8_t type){
 	while(element!=NULL){
 		
 		if(element->field_len > 0 && element->field!=NULL)
-			free(element->field);
+			kfree(element->field);
 
 		switch (type)
 		{
@@ -263,16 +263,16 @@ void destroy_data_t(data_t *data, uint8_t type){
 				str_value = &(element->value.str_value);
 
 				if(str_value->str!=NULL)
-					free(str_value->str);
+					kfree(str_value->str);
 
 				break;
 
-			// other data type without malloc do not need to be freed
+			// other data type without kmalloc do not need to be freed
 		}
 
 		element = element->next;
 
-		free(previous);
+		kfree(previous);
 
 		previous = element;
 	}
@@ -284,25 +284,25 @@ void print_data_t(data_t *data, uint8_t type){
 	while(element!=NULL){
 
 		if(element->field_len > 0 && element->field!=NULL){
-			printf("	   %s : ", element->field);
+			printk(KERN_INFO "	   %s : ", element->field);
 		}
 		else{
-			printf("	   data %d : ", i);
+			printk(KERN_INFO "	   data %d : ", i);
 		}
 
 		switch (type)
 		{
 			case INT_TYPE:
-				printf("%d\n", element->value.int_value);
+				printk(KERN_CONT "%d\n", element->value.int_value);
 				break;
 			case STRING_TYPE:
-				printf("%s\n", (element->value.str_value).str);
+				printk(KERN_CONT "%s\n", (element->value.str_value).str);
 				break;
 			case INT_RANGE_TYPE:
-				printf("%d-%d\n", (element->value.int_range).start, (element->value.int_range).end);
+				printk(KERN_CONT "%d-%d\n", (element->value.int_range).start, (element->value.int_range).end);
 				break;
 			default:
-				printf("unkown\n");
+				printk(KERN_CONT "unkown\n");
 		}
 
 		element = element->next;

@@ -138,7 +138,7 @@ int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sp
 
 	memset(packet, 0, sizeof(abstract_packet_t));
 
-	//src = htonl(src); // iin kernel should be uncommented
+	//src = htonl(src); // in kernel should be uncommented
 	//dst = htonl(dst); // in kernel should be uncommented
 
 	memcpy(&packet->src, &src, sizeof(int));

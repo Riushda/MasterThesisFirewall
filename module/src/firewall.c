@@ -76,14 +76,13 @@ static void netlink_recv_msg(struct sk_buff *skb)
             uint8_t n_constraint = *(skb->data+offset);
 
             if(!n_constraint){
-                printk("normal IP RULE\n");
                 insert_rule(&rule_struct, rule);
             }
             else{
-                printk("nconstraint : %d\n", n_constraint);
+
                 insert_rule_and_constraint(&rule_struct, rule, skb->data + offset);
+
                 print_data_constraint(rule_struct.data_c);
-                printk("rule_struct.data_c!=NULL : %d\n", rule_struct.data_c!=NULL);
             }
 
             break;
@@ -170,23 +169,12 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
         
         print_abstract_packet(&packet);
 
-        // TODO : changer le matching pour match les contraintes de toutes les rules qui match (pas seulement la première)
-        // au final on ne matchera que l'action de la rule ip de plus petit index, la premiere rule insérée qui match
-
         // match the rule
         int rule_index = match_rule(&rule_struct, &packet, 1);
         if (rule_index < 0) 
         {   
-            printk(KERN_INFO "firewall: forbidden packet by ip/port !\n");
+            printk(KERN_INFO "firewall: forbidden packet !\n");
             return NF_DROP;
-        }
-
-        if(has_constraint(&rule_struct, rule_index)){
-            int match = match_constraint(&rule_struct, &packet);
-            if(!match){
-                printk(KERN_INFO "firewall: forbidden packet by constraint !\n");
-                return NF_DROP;
-            }
         }
 
         // send buffer to userspace
@@ -218,8 +206,12 @@ static int __init init(void)
     memset(&rule_struct_2, 0, sizeof(rule_struct_t));
     memset(&rule, 0, sizeof(rule_t));
 
-    parse_ip("192.168.1.104/32", &rule.src, &rule.src_bm);
-    parse_ip("192.168.1.230/32", &rule.dst, &rule.dst_bm);
+    // rule
+
+    parse_ip("192.168.1.104/24", &rule.src, &rule.src_bm);
+    parse_ip("192.168.1.230/24", &rule.dst, &rule.dst_bm);
+    rule.src = htonl(rule.src);
+    rule.dst = htonl(rule.dst);
     parse_port("*", &rule.sport, &rule.not_sport);
     parse_port("22", &rule.dport, &rule.not_dport);
     rule.index = 1;
@@ -232,41 +224,54 @@ static int __init init(void)
 
     data_constraint_t *data_c = NULL;
     data_t *data_1 = NULL;
-    add_str_data_t(&data_1, 7, "friend");
-    add_data_constraint(&data_c, STRING_TYPE, 6, "hello", data_1, 1);
+
+    char value[7];
+    uint8_t str_len = 6;
+    memcpy(value, &str_len, 1);
+    memcpy(value+1, "friend", 6);
+
+    add_data_t(&data_1, STRING_TYPE, 0, NULL, value);
+
+    add_data_constraint(&data_c, STRING_TYPE, 5, "hello", data_1, 1);
     data_constraint_to_buffer(data_c, &buf);
 
     init_rules(&rule_struct_2);
 
     insert_rule_and_constraint(&rule_struct_2, rule, buf);
 
+    // packet
+
     abstract_packet_t packet;
     memset(&packet, 0, sizeof(abstract_packet_t));
 
-    parse_ip("192.168.1.104/32", &packet.src, &packet.src_bm);
-    parse_ip("192.168.1.230/32", &packet.dst, &packet.dst_bm);
-    packet.src = htonl(packet.src);
-    packet.dst = htonl(packet.dst);
+    parse_ip("192.168.1.204/32", &packet.src, &packet.src_bm);
+    parse_ip("192.168.1.130/32", &packet.dst, &packet.dst_bm);
     parse_port("22", &packet.sport, NULL);
     parse_port("22", &packet.dport, NULL);
 
-    payload_t *payload = NULL;
+    content_t *content = NULL;
     data_t *data_2 = NULL;
 
-    add_str_data_t(&data_2, 7, "friend");
+    char value2[7];
+    uint8_t str_len2 = 6;
+    memcpy(value2, &str_len2, 1);
+    memcpy(value2+1, "friend", 6);
 
-    create_payload(&payload, STRING_TYPE, 6, "hello", data_2);
+    add_data_t(&data_2, STRING_TYPE, 5, "hello", value2);
 
-    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, payload);
+    create_content(&content, STRING_TYPE, 4, "test", data_2);
+
+    create_abstract_packet(&packet, packet.src, packet.dst, packet.sport, packet.dport, packet.src_bm, packet.dst_bm, content);
 
     print_abstract_packet(&packet);
 
-    printk(KERN_INFO "IP MATCHED : %d\n", match_rule(&rule_struct_2, &packet));
-    printk(KERN_INFO "CONSTRAINT MATCHED : %d\n", match_constraint(&rule_struct_2, &packet));
+    // match
+
+    printk("RULE MATCHED : %d\n", match_rule(&rule_struct_2, &packet, 1));
 
     print_data_constraint(rule_struct_2.data_c);
     remove_rule(&rule_struct_2, rule);
-    printk(KERN_INFO "AFTER REMOVE (there should be nothing): \n");
+    printk("AFTER REMOVE : \n");
     print_data_constraint(rule_struct_2.data_c);
 
     destroy_rules(&rule_struct_2);
