@@ -1,8 +1,25 @@
-#include "rule.h"
+#include "protocol.h"
 
 int main(){
 
-    rule_t rule;
+    // decode payload tests
+
+    data_t *data = NULL;
+
+    //char payload[50] = "?field1=value1&field2=value2&field3=value3}";
+    char payload[35] = "{field1 : 50, 200, field2 : 300}";
+    format_t *pattern = NULL;
+    //create_format(&pattern, 1, "=", "&", "}");
+    create_format(&pattern, 1, ":", ",", "}");
+    print_format(pattern);
+    int err  = decode_payload(pattern, payload, strlen(payload), &data);
+    printf("err : %d\n", err);
+    print_data_t(data, INT_TYPE);
+
+    destroy_format(pattern);
+    destroy_data_t(data, INT_TYPE);
+
+    /*rule_t rule;
     rule_struct_t rule_struct;
     memset(&rule_struct, 0, sizeof(rule_struct_t));
     memset(&rule, 0, sizeof(rule_t));
@@ -75,7 +92,7 @@ int main(){
 
     destroy_rules(&rule_struct);
     destroy_abstract_packet(&packet);
-    destroy_all_data_constraint(data_c);
+    destroy_all_data_constraint(data_c);*/
 
     // data_constraint tests
 

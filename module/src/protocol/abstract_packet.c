@@ -19,20 +19,35 @@
 
 /* return 0 if at least one data_t of the constraint match the payload */
 
-int match_payload(data_t *payload, data_constraint_t *data_c){
+int match_payload(content_t *content, data_constraint_t *data_c){
 	int condition;
+	int match_type;
+	int match_field;
 
 	data_t *constraint = data_c->data;
-	data_t *curr_data = payload;
+	data_t *curr_data = content->payload;
 	while(curr_data!=NULL){
 
 		condition = 0;
 
 		while(constraint!=NULL){
 
-			if(data_c->type==curr_data->type && data_c->field_len==curr_data->field_len){
+			match_type = data_c->type==curr_data->type || (data_c->type==INT_RANGE_TYPE && curr_data->type==INT_TYPE);
 
-				if(!memcmp(data_c->field, curr_data->field, curr_data->field_len)){
+			if(match_type){
+
+				if(curr_data->field==NULL){ // if data has not field, then subject is considered to be its field
+					match_field = content->subject_len==data_c->field_len;
+					if(match_field)
+						match_field = !memcmp(content->subject, data_c->field, data_c->field_len);
+				}
+				else{
+					match_field = curr_data->field_len==data_c->field_len;
+					if(match_field)
+						match_field = !memcmp(curr_data->field, data_c->field, curr_data->field_len);
+				}
+
+				if(match_field){
 
 					switch (data_c->type)
 					{
@@ -46,8 +61,8 @@ int match_payload(data_t *payload, data_constraint_t *data_c){
 								condition = memcmp((constraint->value).str_value.str, (curr_data->value).str_value.str, data_str_len);
 							break;
 						case INT_RANGE_TYPE:
-							condition = (constraint->value).int_range.start != (curr_data->value).int_range.start;
-							condition += (constraint->value).int_range.end != (curr_data->value).int_range.end;
+							condition = (constraint->value).int_range.start <= (curr_data->value).int_value;
+							condition += (constraint->value).int_range.end >= (curr_data->value).int_value;
 							break;
 					}
 
@@ -93,7 +108,7 @@ int match_data_constraint(content_t *content, data_constraint_t *data_c, int rul
 						condition = memcmp(element->field, content->subject, content->subject_len);
 					break;
 				default:
-					condition = match_payload(content->payload, element);
+					condition = match_payload(content, element);
 					break;
 			}
 			

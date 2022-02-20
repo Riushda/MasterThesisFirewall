@@ -3,6 +3,7 @@
 int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
 	data_t *element;
 	int i;
+	int err;
 
 	int int_value;
 	uint8_t str_len;
@@ -22,23 +23,32 @@ int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
 		{
 			case INT_TYPE:
 				
-				add_data_t(data, INT_TYPE, 0, NULL, buffer);
-				buffer += sizeof(int);
-				offset += sizeof(int);
+				err = add_data_t(data, INT_TYPE, 0, NULL, buffer);
+				if(err<0)
+					return -1;
+
+				buffer += err;
+				offset += err;
 
 				break;
 			case STRING_TYPE:
 
-				add_data_t(data, STRING_TYPE, 0, NULL, buffer);
-				buffer += sizeof(uint8_t) + str_len;
-				offset += sizeof(uint8_t) + str_len;
+				err = add_data_t(data, STRING_TYPE, 0, NULL, buffer);
+				if(err<0)
+					return -1;
+
+				buffer += err;
+				offset += err;
 
 				break;
 			case INT_RANGE_TYPE:
 
-				add_data_t(data, INT_RANGE_TYPE, 0, NULL, buffer);
-				buffer += sizeof(int)*2;
-				offset += sizeof(int)*2;
+				err = add_data_t(data, INT_RANGE_TYPE, 0, NULL, buffer);
+				if(err<0)
+					return -1;
+
+				buffer += err;
+				offset += err;
 				
 				break;
 			default:
@@ -116,6 +126,7 @@ int init_data_t(data_t **data, uint8_t type){
 
 int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *value){
 
+	int offset = 0;
 	data_t *element = *data;
 	
 	memset(element, 0, sizeof(data_t));
@@ -127,14 +138,16 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 	if(field_len>0 && field!=NULL){
 
 		element->field = (char *)kmalloc(field_len + 1, GFP_KERNEL);
-
 		if(element->field == NULL){
-			destroy_data_t(element, INT_TYPE);
+			destroy_data_t(element, type);
 			return -1;
 		}
 
 		memset(element->field, 0, field_len + 1);
 		memcpy(element->field, field, field_len);
+	}
+	else{
+		element->field = NULL;
 	}
 
 	switch (type)
@@ -142,6 +155,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 		case INT_TYPE:
 
 			memcpy(&((element->value).int_value) , value, sizeof(int)); 
+			offset += sizeof(int);
 
 			break;
 		case STRING_TYPE:
@@ -149,6 +163,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 			string_value_t *str_value = &(element->value.str_value);
 
 			memcpy(&(str_value->str_len), value, 1);
+			offset += 1;
 
 			str_value->str = (char *)kmalloc(str_value->str_len + 1, GFP_KERNEL);
 			if(str_value->str==NULL){
@@ -157,13 +172,15 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 			}
 			memset(str_value->str, 0, str_value->str_len + 1);
 			memcpy(str_value->str, value + 1, str_value->str_len);
+			offset += str_value->str_len;
 		
 			break;
 		case INT_RANGE_TYPE:
 
 			memcpy(&((element->value).int_range.start), value, sizeof(int));
 			memcpy(&((element->value).int_range.end), value + sizeof(int), sizeof(int));  
-		
+			offset += sizeof(int)*2;
+
 			break;
 		
 		default:
@@ -172,7 +189,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 
 	element->next = NULL;
 
-	return 0;
+	return offset;
 }
 
 int add_data_t(data_t **data, int type, uint8_t field_len, char *field, void *value){
@@ -297,6 +314,7 @@ void print_data_t(data_t *data, uint8_t type){
 				break;
 			case STRING_TYPE:
 				printk(KERN_CONT "%s\n", (element->value.str_value).str);
+				printk(KERN_INFO "	   str_len : %d\n", (element->value.str_value).str_len);
 				break;
 			case INT_RANGE_TYPE:
 				printk(KERN_CONT "%d-%d\n", (element->value.int_range).start, (element->value.int_range).end);

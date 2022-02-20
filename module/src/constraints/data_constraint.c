@@ -42,9 +42,6 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 
 		}
 
-		printk("field : %s\n", field);
-		print_data_t(data, type);
-
 		add_data_constraint(data_c, type, field_len, field, data, index);
 	}
 

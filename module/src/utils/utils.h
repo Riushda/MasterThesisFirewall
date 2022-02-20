@@ -24,6 +24,8 @@ bool_t is_set_v(vector_t *vector, short index);
 
 void set_bit_v(vector_t *vector, short index);
 
+void unset_bit_v(vector_t *vector, short index);
+
 void unset_shift_v(vector_t *vector, short index);
 
 bool_t is_null_v(vector_t *vector);

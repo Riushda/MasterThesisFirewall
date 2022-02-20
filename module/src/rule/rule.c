@@ -104,6 +104,9 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
 
 void print_rule(rule_t rule)
 {
+    if(rule.index<0)
+        return;
+
     printk(KERN_CONT "rule: ");
 
     if (rule.not_src)
@@ -162,6 +165,9 @@ int init_rules(rule_struct_t *rule_struct)
     rule_struct->data_c = NULL; // will be malloc during first insert
 
     memset(rule_struct->actions, 0, VECTOR_SIZE);
+
+    memset(rule_struct->enabled, 0, VECTOR_SIZE);
+
     return 0;
 }
 
@@ -188,6 +194,8 @@ int insert_rule(rule_struct_t *rule_struct, rule_t rule)
 
     if (rule.action)
         set_bit_v(rule_struct->actions, rule.index);
+
+    set_bit_v(rule_struct->enabled, rule.index);
 
     return 0;
 }
@@ -223,6 +231,8 @@ int remove_rule(rule_struct_t *rule_struct, rule_t rule)
     remove_data_constraint(&(rule_struct->data_c), rule.index);
 
     unset_shift_v(rule_struct->actions, rule.index);
+
+    unset_shift_v(rule_struct->enabled, rule.index);
         
     return 0;
 }
@@ -277,8 +287,8 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet, bool_t con
     vector_t *match_dport;
     short rule_index;
 
-    bool_t temp;
-    uint8_t match;
+    vector_t *action_enabled;
+    bool_t match;
 
     result_src = search_node(rule_struct->src_trie, packet->src);
     result_dst = and_v(result_src, search_node(rule_struct->dst_trie, packet->dst));
@@ -302,15 +312,22 @@ int match_rule(rule_struct_t *rule_struct, abstract_packet_t *packet, bool_t con
     kfree(match_dport);
 
     if (rule_index != -1 && rule_index < VECTOR_SIZE){
-        temp = is_set_v(rule_struct->actions, rule_index);
+        action_enabled = and_v(rule_struct->actions, rule_struct->enabled);
+        match = is_set_v(action_enabled, rule_index);
         
-        memset(&match, 0, sizeof(uint8_t));
-        memcpy(&match, &temp, sizeof(uint8_t));
         if(match)
             return rule_index;
     }
 
     return -1;
+}
+
+void enable_rule(rule_struct_t *rule_struct, int index){
+    set_bit_v(rule_struct->enabled, index);
+}
+
+void disable_rule(rule_struct_t *rule_struct, int index){
+    unset_bit_v(rule_struct->enabled, index);
 }
 
 void destroy_rules(rule_struct_t *rule_struct)

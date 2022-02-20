@@ -24,7 +24,9 @@ test:
 	-sudo rmmod firewall
     # Clear the kernel log without echo
 	sudo dmesg -C
-    # Insert the module
+    # Insert the module 
+	
 	sudo insmod firewall.ko
+	
     # Display the kernel log
 	dmesg --follow

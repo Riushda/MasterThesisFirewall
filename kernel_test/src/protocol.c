@@ -56,8 +56,8 @@ int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
 
         parsed_len = 1 + topic_len + 1 + payload_len;
 
-        printk(KERN_INFO "topic : %s\n", topic);
-        printk(KERN_INFO "payload : %s\n", payload);
+        printf("topic : %s\n", topic);
+        printf("payload : %s\n", payload);
 
         // choose the pattern of payload, hardcoded for now
 
@@ -72,9 +72,9 @@ int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
         content_t *content;
         data_t *p = NULL;
         
-        decode_payload(pattern, payload, payload_len, &p); // fix crash when payload doesn't match, strsep tests in kernel_tests
+        decode_payload(pattern, payload, payload_len, &p);
 
-        create_content(&content, STRING_TYPE, topic_len, topic, p);
+        create_content(&content, SUBJECT_TYPE, topic_len, topic, p); // SUBJECT_TYPE means only constraint on topic, so payload remains NULL for now
 
         packet->content = content;
 
