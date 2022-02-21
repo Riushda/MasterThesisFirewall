@@ -26,6 +26,8 @@ int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
     char str[strlen(str_ip)];
     char *token;
     char *running;
+    long temp;
+    int err;
     const char delimiter[2] = "/";
 
     memset(ip, 0, sizeof(int));
@@ -59,8 +61,7 @@ int parse_ip(string_t *str_ip, int *ip, bitmask_t *bitmask)
     token = strsep(&running, delimiter);
     if (token)
     {
-        long temp;
-        int err = kstrtol(token, 10, &temp); // replacement for atoi, convert char* token into long temp
+        err = kstrtol(token, 10, &temp); // replacement for atoi, convert char* token into long temp
         if (err == -EINVAL || err == -ERANGE)
             return -1;
 
@@ -104,6 +105,9 @@ void parse_port(string_t *str_port, short *port, bool_t *not_v)
 
 void print_rule(rule_t rule)
 {
+    int src;
+    int dst;
+
     if(rule.index<0)
         return;
 
@@ -114,7 +118,7 @@ void print_rule(rule_t rule)
         printk(KERN_CONT "!");
     }
 
-    int src = htonl(rule.src);
+    src = htonl(rule.src);
     printk(KERN_CONT "Src: %pI4/%d ", &src, rule.src_bm);
 
     if (rule.not_dst)
@@ -122,7 +126,7 @@ void print_rule(rule_t rule)
         printk(KERN_CONT "!");
     }
 
-    int dst = htonl(rule.dst);
+    dst = htonl(rule.dst);
     printk(KERN_CONT "Dst: %pI4/%d ", &dst, rule.dst_bm);
 
     if (rule.not_sport)
@@ -366,7 +370,8 @@ int rule_to_buffer(rule_t *rule, unsigned char *buffer)
 
 int buffer_to_rule(char *buf, rule_t *rule){
     
-    int offset = 0;
+    int offset;
+    offset = 0;
     // src 
 
     memcpy(&(rule->src), buf+offset, sizeof(int));

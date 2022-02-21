@@ -79,10 +79,13 @@ void destroy_format(format_t *pattern){
 
 uint8_t remove_spaces(char* s, uint8_t len) {
     uint8_t left;
-    char* element = s;
-    uint8_t offset = 0;
-
+    char* element;
+    uint8_t offset;
     int i;
+
+    element = s;
+    offset = 0;
+    
     for(i=0; i<len; i++){
 
         if(*element != ' '){

@@ -10,9 +10,14 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 	uint8_t type;
 	uint8_t field_len;
 
-	char *buffer = buf;
+	char *buffer;
+	uint8_t n_constraint;
 
-	uint8_t n_constraint = (uint8_t) *buffer;
+	data_t *data;
+
+	buffer = buf;
+
+	n_constraint = (uint8_t) *buffer;
 	buffer += sizeof(uint8_t);
 
 	for(i=0; i<n_constraint; i++){
@@ -28,7 +33,7 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 
 		buffer += field_len;
 
-		data_t *data = NULL;
+		data = NULL;
 
 		if(type!=SUBJECT_TYPE){
 
@@ -52,11 +57,18 @@ int buffer_to_data_constraint(char *buf, uint16_t index, data_constraint_t **dat
 
 // destination buffer considered as already initialized (buf[1024] for instance)
 int data_constraint_to_buffer(data_constraint_t *data_c, char **buf){
-	char *buffer = *buf;
+	char *buffer; 
 	int offset;
-	data_constraint_t *element = data_c;
 
-	uint8_t n_constraint = 0;
+	data_constraint_t *element;
+
+	uint8_t n_constraint;
+
+	buffer = *buf;
+	
+	element = data_c;
+
+	n_constraint = 0;
 
 	while(element!=NULL){
 		n_constraint += 1;
@@ -96,8 +108,9 @@ int data_constraint_to_buffer(data_constraint_t *data_c, char **buf){
 data_constraint_t *get_same_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_len, char *field, data_t *data){
 
 	int condition;
+	data_constraint_t *element;
 
-	data_constraint_t *element = data_c;
+	element = data_c;
 	while(element!=NULL){
 
 		condition = element->type==type;
@@ -154,6 +167,10 @@ int set_data_constraint(data_constraint_t *data_c, uint8_t type, uint8_t field_l
 
 int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_len, char *field, data_t *data, uint16_t index){
 
+	data_constraint_t *same;
+
+	data_constraint_t *element;
+
 	if(*data_c==NULL){
 		*data_c = (data_constraint_t *)kmalloc(sizeof(data_constraint_t), GFP_KERNEL);
 		if(*data_c==NULL)
@@ -162,7 +179,7 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 		return set_data_constraint(*data_c, type, field_len, field, data, index);
 	}
 
-	data_constraint_t *same = get_same_data_constraint(*data_c, type, field_len, field, data);
+	same = get_same_data_constraint(*data_c, type, field_len, field, data);
 
 	if(same!=NULL){
 		set_bit_v(same->vector, index);
@@ -172,7 +189,7 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 
 	// if no existing constraint match, then add a new one
 
-	data_constraint_t *element = *data_c;
+	element = *data_c;
 	while(element->next!=NULL){
 		element = element->next;
 	}
@@ -190,10 +207,15 @@ int add_data_constraint(data_constraint_t **data_c, uint8_t type, uint8_t field_
 
 int remove_data_constraint(data_constraint_t **data_c, uint16_t index){
 	data_constraint_t *to_remove;
-	int zero = 0;
+	int zero;
 
-	data_constraint_t *element = *data_c;
-	data_constraint_t *previous = element;
+	data_constraint_t *element;
+	data_constraint_t *previous;
+
+	zero = 0;
+
+	element = *data_c;
+	previous = element;
 	while(element!=NULL){
 
 		if(is_set_v(element->vector, index)){
@@ -229,9 +251,11 @@ int remove_data_constraint(data_constraint_t **data_c, uint16_t index){
 }
 
 void destroy_all_data_constraint(data_constraint_t *data_c){
+	data_constraint_t *element;
+	data_constraint_t *previous;
 
-	data_constraint_t *element = data_c;
-	data_constraint_t *previous = element;
+	element = data_c;
+	previous = element;
 	while(element!=NULL){
 		
 		if(element->field!=NULL)
@@ -250,8 +274,11 @@ void destroy_all_data_constraint(data_constraint_t *data_c){
 /* print functions */
 
 void print_data_constraint(data_constraint_t *data_c){
-	int i = 0;
-	data_constraint_t *element = data_c;
+	int i;
+	data_constraint_t *element;
+
+	i = 0;
+	element = data_c;
 	while(element!=NULL){
 		printk(KERN_INFO "data_constraint %d :\n", i);
 

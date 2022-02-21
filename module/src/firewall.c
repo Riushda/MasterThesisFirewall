@@ -11,8 +11,8 @@ struct sock *nl_sock = NULL;
 struct nlmsghdr *nlh;
 
 static struct nf_hook_ops *nfho_in = NULL;
-static struct nf_hook_ops *nfho_out = NULL;
-static struct nf_hook_ops *nfho_fw = NULL;
+//static struct nf_hook_ops *nfho_out = NULL;
+//static struct nf_hook_ops *nfho_fw = NULL;
 
 rule_struct_t rule_struct;
 int firewall_pid = 0;
@@ -56,11 +56,12 @@ static void netlink_recv_msg(struct sk_buff *skb)
     rule_t rule2;
     uint8_t n_constraint;
     short index;
+    int offset;
     memset(&rule1, 0, sizeof(rule_t));
     memset(&rule2, 0, sizeof(rule_t));
     rule2.index = -1;
 
-    int offset = 0;
+    offset = 0;
 
     memcpy(&code, skb->data + offset, sizeof(bool_t));
     offset += sizeof(bool_t);
@@ -166,9 +167,16 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
     char *data;
     uint16_t port;
     unsigned char buffer[MAX_PACKET_SIZE];
+    uint8_t mask;
    
     int parsed_len;
-    uint8_t mask = 32;
+    int buffer_len;
+
+    int rule_index;
+
+    buffer_len = 0;
+    mask = 32;
+
 
     if (!skb)
         return NF_ACCEPT;
@@ -211,25 +219,27 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     memset(buffer, 0, sizeof(int)*2 + sizeof(short)*2);
 
-    packet_ip_to_buffer(&packet, buffer); 
+    buffer_len = packet_ip_to_buffer(&packet, buffer); 
 
     parsed_len = parse_packet(data, port, &packet, buffer+sizeof(rule_t));
+    buffer_len += parsed_len;
 
     if(parsed_len>0){ // if publish message 
-        
-        print_abstract_packet(&packet);
 
         // match the rule
-        int rule_index = match_rule(&rule_struct, &packet, 1);
+        rule_index = match_rule(&rule_struct, &packet, 1);
         if (rule_index < 0) 
         {   
             printk(KERN_INFO "firewall: forbidden packet !\n");
             return NF_DROP;
         }
+        else{
+            print_abstract_packet(&packet);
+        }
 
         // send buffer to userspace
 
-        //netlink_send_msg(buffer, sizeof(rule_t)+parsed_len);
+        netlink_send_msg(buffer, buffer_len);
     }
     else if(!parsed_len){ // tcp/udp packet but not related to known iot protocol
         parsed_len = 0; // for compilation
@@ -244,8 +254,15 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 static int __init init(void)
 {   
 
-    // decode payload tests
+    // time tests
 
+    uint16_t hour;
+    uint16_t minute;
+    set_current_time(&hour, &minute);
+    printk(KERN_INFO "time : %d:%d\n", hour, minute);
+
+    // decode payload tests
+/*
     data_t *data = NULL;
 
     //char payload[50] = "?field1=value1&field2=value2&field3=value3}";
@@ -263,13 +280,6 @@ static int __init init(void)
     destroy_format(pattern);
     //destroy_data_t(data, STRING_TYPE);
     destroy_data_t(data, INT_TYPE);
-
-    // time tests
-
-    uint16_t hour;
-    uint16_t minute;
-    set_current_time(&hour, &minute);
-    printk(KERN_INFO "time : %d:%d\n", hour, minute);
 
     // packet matching tests
 
@@ -352,7 +362,7 @@ static int __init init(void)
 
     destroy_rules(&rule_struct_2);
     destroy_abstract_packet(&packet);
-    destroy_all_data_constraint(data_c);
+    destroy_all_data_constraint(data_c);*/
     
     /* rule_struct list initialization */
 

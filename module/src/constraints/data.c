@@ -1,19 +1,18 @@
 #include "data.h"
 
 int buffer_to_data_t(char *buf, uint8_t type, data_t **data){
-	data_t *element;
 	int i;
 	int err;
 
-	int int_value;
-	uint8_t str_len;
-	int start;
-	int end;
+	char *buffer;
+	int offset;
 
-	char *buffer = buf;
-	int offset = 0;
+	uint8_t n_value;
 
-	uint8_t n_value = (uint8_t) *buffer;
+	buffer = buf;
+	offset = 0;
+
+	n_value = (uint8_t) *buffer;
 	buffer += sizeof(uint8_t);
 	offset += sizeof(uint8_t);
 	
@@ -126,8 +125,13 @@ int init_data_t(data_t **data, uint8_t type){
 
 int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *value){
 
-	int offset = 0;
-	data_t *element = *data;
+	int offset;
+	data_t *element;
+
+	string_value_t *str_value;
+
+	offset = 0;
+	element = *data;
 	
 	memset(element, 0, sizeof(data_t));
 
@@ -160,7 +164,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 			break;
 		case STRING_TYPE:
 
-			string_value_t *str_value = &(element->value.str_value);
+			str_value = &(element->value.str_value);
 
 			memcpy(&(str_value->str_len), value, 1);
 			offset += 1;
@@ -195,6 +199,7 @@ int set_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 int add_data_t(data_t **data, int type, uint8_t field_len, char *field, void *value){
 
 	int err;
+	data_t *element;
 
 	if(*data==NULL){
 
@@ -205,7 +210,7 @@ int add_data_t(data_t **data, int type, uint8_t field_len, char *field, void *va
 		return set_data_t(data, type, field_len, field, value);
 	}
 
-	data_t *element = *data;
+	element = *data;
 	while(element->next!=NULL){
 		element = element->next;
 	}
@@ -222,9 +227,12 @@ int contains_data_t(data_t *src, data_t *dst, uint8_t type){
 
 	int condition;
 
+	data_t *element_src;
+	data_t *element_dst;
+
 	// check if at least one element
-	data_t *element_src = src;
-	data_t *element_dst = dst;
+	element_src = src;
+	element_dst = dst;
 	while(element_src!=NULL){
 		condition = 1;
 		while(element_dst!=NULL){
@@ -266,8 +274,11 @@ void destroy_data_t(data_t *data, uint8_t type){
 
 	string_value_t *str_value;
 
-	data_t *element = data;
-	data_t *previous = element;
+	data_t *element;
+	data_t *previous;
+
+	element = data;
+	previous = element;
 	while(element!=NULL){
 		
 		if(element->field_len > 0 && element->field!=NULL)
@@ -296,8 +307,11 @@ void destroy_data_t(data_t *data, uint8_t type){
 }
 
 void print_data_t(data_t *data, uint8_t type){
-	int i = 0;
-	data_t *element = data;
+	int i;
+	data_t *element;
+
+	i = 0;
+	element = data;
 	while(element!=NULL){
 
 		if(element->field_len > 0 && element->field!=NULL){

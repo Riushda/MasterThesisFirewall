@@ -15,6 +15,9 @@ firewall-objs := $(firewall-objs:${PWD}/%=%)
 
 all:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
+
+stop :
+	-sudo rmmod firewall
 	
 clean:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean

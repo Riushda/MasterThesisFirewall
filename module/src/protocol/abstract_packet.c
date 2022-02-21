@@ -24,8 +24,13 @@ int match_payload(content_t *content, data_constraint_t *data_c){
 	int match_type;
 	int match_field;
 
-	data_t *constraint = data_c->data;
-	data_t *curr_data = content->payload;
+	int data_str_len;
+
+	data_t *constraint;
+	data_t *curr_data;
+
+	constraint = data_c->data;
+	curr_data = content->payload;
 	while(curr_data!=NULL){
 
 		condition = 0;
@@ -55,7 +60,7 @@ int match_payload(content_t *content, data_constraint_t *data_c){
 							condition = (constraint->value).int_value != (curr_data->value).int_value;
 							break;
 						case STRING_TYPE:
-							int data_str_len = (curr_data->value).str_value.str_len;
+							data_str_len = (curr_data->value).str_value.str_len;
 							condition = (constraint->value).str_value.str_len != data_str_len;
 							if(!condition)
 								condition = memcmp((constraint->value).str_value.str, (curr_data->value).str_value.str, data_str_len);
@@ -63,6 +68,8 @@ int match_payload(content_t *content, data_constraint_t *data_c){
 						case INT_RANGE_TYPE:
 							condition = (constraint->value).int_range.start <= (curr_data->value).int_value;
 							condition += (constraint->value).int_range.end >= (curr_data->value).int_value;
+							break;
+						default:
 							break;
 					}
 
@@ -93,7 +100,8 @@ int match_data_constraint(content_t *content, data_constraint_t *data_c, int rul
 
 	int condition;
 
-	data_constraint_t *element = data_c;
+	data_constraint_t *element;
+	element = data_c;
 	while(element!=NULL){
 
 		condition = 0;
@@ -221,13 +229,15 @@ void print_content(content_t *content){
 }
 
 void print_abstract_packet(abstract_packet_t *packet){
+	int src;
+	int dst;
 
 	printk(KERN_INFO "packet : ");
 	
-	int src = htonl(packet->src); 
+	src = htonl(packet->src); 
 	printk(KERN_CONT "Src: %pI4/%d ", &src, packet->src_bm);
 
-	int dst = htonl(packet->dst); 
+	dst = htonl(packet->dst); 
 	printk(KERN_CONT "Dst: %pI4/%d ", &dst, packet->dst_bm);
 
 	printk(KERN_CONT "Sport: %d ", ntohs(packet->sport));

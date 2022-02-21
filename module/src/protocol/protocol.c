@@ -28,8 +28,15 @@ int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
     uint16_t topic_len;
     uint8_t payload_len;
     uint8_t topic_len_short;
+
     int offset;
-	int parsed_len = 0;
+	int parsed_len;
+
+    format_t *pattern;
+    content_t *content;
+    data_t *p;
+
+    parsed_len = 0;
 
 	application_header = *(data);
     offset = 1;
@@ -63,14 +70,13 @@ int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
 
         // match \??(\w+)=(\w+)&? => regex to keep if needed later
 
-        format_t *pattern = NULL;
+        pattern = NULL;
         create_format(&pattern, 1, "=", "&", NULL); // match ?field1=value1&field2=value2&....
         //create_format(&pattern, 1, ":", ",", "}"); // match json {field1: value1, field2: value2, ... }
 
         // set informations in packet (for rule matching)
 
-        content_t *content;
-        data_t *p = NULL;
+        p = NULL;
         
         decode_payload(pattern, payload, payload_len, &p); // fix crash when payload doesn't match, strsep tests in kernel_tests
 
