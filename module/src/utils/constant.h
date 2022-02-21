@@ -9,7 +9,7 @@
 #define TABLE_SIZE 1024
 
 /* netlink_recv_msg first byte */
-enum code{PID_INFO=0, ADD=1, REMOVE=2};
+enum code{PID_INFO=0, ADD=1, REMOVE=2, ENABLE=3, DISABLE=4};
 
 typedef unsigned char vector_t;
 typedef unsigned char h_key_t;

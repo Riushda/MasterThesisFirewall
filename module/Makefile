@@ -15,6 +15,9 @@ firewall-objs := $(firewall-objs:${PWD}/%=%)
 
 all:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
+
+stop :
+	-sudo rmmod firewall
 	
 clean:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) clean
@@ -24,7 +27,9 @@ test:
 	-sudo rmmod firewall
     # Clear the kernel log without echo
 	sudo dmesg -C
-    # Insert the module
+    # Insert the module 
+	
 	sudo insmod firewall.ko
+	
     # Display the kernel log
 	dmesg --follow

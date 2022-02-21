@@ -53,6 +53,19 @@ void set_bit_v(vector_t *vector, short index)
     *element |= bitmask;
 }
 
+void unset_bit_v(vector_t *vector, short index)
+{
+    bitmask_t bitmask;
+    vector_t *element;
+
+    element = vector;
+    bitmask = 1 << (index % 8);
+    bitmask = ~bitmask; // bitwise NOT, invert all bits
+
+    element += ((int)index / 8);
+    *element &= bitmask;
+}
+
 void unset_shift_v(vector_t *vector, short index)
 {
     bitmask_t bitmask;
