@@ -43,6 +43,7 @@ static void netlink_send_msg(char *msg, int msg_size)
 
     //printk(KERN_INFO "firewall: Send %s\n", msg);
 
+    printk(KERN_INFO "%d bytes sent\n", msg_size);
     res = nlmsg_unicast(nl_sock, skb_out, firewall_pid);
     if (res < 0)
         printk(KERN_INFO "firewall: error while sending skb to user\n");
@@ -166,7 +167,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     char *data;
     uint16_t port;
-    unsigned char buffer[MAX_PACKET_SIZE];
+    unsigned char buffer[MAX_PAYLOAD_SIZE];
     uint8_t mask;
    
     int parsed_len;
@@ -221,7 +222,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     buffer_len = packet_ip_to_buffer(&packet, buffer); 
 
-    parsed_len = parse_packet(data, port, &packet, buffer+sizeof(rule_t));
+    parsed_len = parse_packet(data, port, &packet, buffer+buffer_len);
     buffer_len += parsed_len;
 
     if(parsed_len>0){ // if publish message 

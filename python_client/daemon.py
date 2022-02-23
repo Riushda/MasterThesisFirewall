@@ -12,15 +12,23 @@ from relation import Relation
 from rule import Rule
 from constraint import parse_context
 from scheduleThread import ScheduleThread, schedule_job
+from receiver import receive
+from threading import Thread
+import signal
 
 netlink = Netlink()
 s_mutex = threading.Lock()
 schedule_tread = ScheduleThread(s_mutex, schedule)
 schedule_tread.start()
 
+# run receiver
+event = threading.Event()
+thread = Thread(target = receive, args = (netlink, event, ))
+thread.start()
 
 def signal_handler(sig, frame):
     print('You pressed Ctrl+C!')
+    event.set() # set bool in thread to true
     schedule_tread.stop()
     netlink.close()
     sys.exit(0)
@@ -216,7 +224,6 @@ class Handlers(object):
                     result += f"{self.rules[x].index} | {self.rules[x]}\n"
 
         return result
-
 
 pid = os.getpid().to_bytes(4, 'little')
 netlink.send_msg(CODE.PID.value, pid)

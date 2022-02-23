@@ -89,6 +89,7 @@ int parse_mqtt(char *data, abstract_packet_t *packet, char *buffer){
         // concatenate informations in buffer (for userspace)
 
         topic_len_short = (uint8_t) topic_len;
+        offset = 0;
 
         memset(buffer, 0, parsed_len);
 
