@@ -167,7 +167,7 @@ static unsigned int hfunc(void *priv, struct sk_buff *skb, const struct nf_hook_
 
     char *data;
     uint16_t port;
-    unsigned char buffer[MAX_PACKET_SIZE];
+    unsigned char buffer[MAX_PAYLOAD_SIZE];
     uint8_t mask;
    
     int parsed_len;

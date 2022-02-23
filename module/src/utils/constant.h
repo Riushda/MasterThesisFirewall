@@ -7,6 +7,7 @@
 #define KEY_SIZE 3
 #define CHILD_NBR 2
 #define TABLE_SIZE 1024
+#define MAX_PAYLOAD_SIZE 1024
 
 /* netlink_recv_msg first byte */
 enum code{PID_INFO=0, ADD=1, REMOVE=2, ENABLE=3, DISABLE=4};

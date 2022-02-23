@@ -124,7 +124,12 @@ int decode_payload(format_t *pattern, char *buf, uint8_t buf_len, data_t **paylo
     long long_value;
     int integer_value;
     uint8_t strlen_value;
-    char *buffer = buf;
+    char content[MAX_PAYLOAD_SIZE];
+    char *buffer;
+    
+    buffer = content;
+    memset(buffer, 0, buf_len);
+    memcpy(buffer, buf, buf_len);
 
     buf_len = remove_spaces(buffer, buf_len);
 

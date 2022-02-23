@@ -180,15 +180,20 @@ int create_abstract_packet(abstract_packet_t *packet, int src, int dst, short sp
 int packet_ip_to_buffer(abstract_packet_t *packet, unsigned char *buffer)
 {
     int offset;
+	short port;
     offset = 0;
 
     memcpy(buffer + offset, &packet->src, sizeof(packet->src));
     offset += sizeof(packet->src);
     memcpy(buffer + offset, &packet->dst, sizeof(packet->dst));
     offset += sizeof(packet->dst);
-    memcpy(buffer + offset, &packet->sport, sizeof(packet->sport));
+
+	port = htons(packet->sport);
+    memcpy(buffer + offset, &port, sizeof(packet->sport));
     offset += sizeof(packet->sport);
-    memcpy(buffer + offset, &packet->dport, sizeof(packet->dport));
+
+	port = htons(packet->dport);
+    memcpy(buffer + offset, &port, sizeof(packet->dport));
     offset += sizeof(packet->dport);
 
     return offset;
