@@ -127,9 +127,9 @@ int decode_payload(format_t *pattern, char *buf, uint8_t buf_len, data_t **paylo
     char content[MAX_PAYLOAD_SIZE];
     char *buffer;
     
+    memset(content, 0, MAX_PAYLOAD_SIZE);
+    memcpy(content, buf, buf_len);
     buffer = content;
-    memset(buffer, 0, buf_len);
-    memcpy(buffer, buf, buf_len);
 
     buf_len = remove_spaces(buffer, buf_len);
 
