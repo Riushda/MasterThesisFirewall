@@ -197,6 +197,8 @@ int main(int argc, char *argv[])
                 }
         }
 
+        // cleanup
+
         mnl_socket_close(nl);
 
         return 0;
