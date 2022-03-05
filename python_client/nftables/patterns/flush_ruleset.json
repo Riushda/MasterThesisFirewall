@@ -1,0 +1,9 @@
+{
+    "nftables": [
+        {
+            "flush": {
+                "ruleset": ""
+            }
+        }
+    ]
+}

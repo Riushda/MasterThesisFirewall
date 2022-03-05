@@ -2,142 +2,144 @@ import nftables
 import json
 import copy
 import ipaddress
+from utils import *
 
-from nftables_pattern import *
 
-# return last rule added 
-def get_rule_index(list):
-    rule = None
-    for element in list:
-        if "rule" in element :
-            rule = element["rule"]
+class NftablesAPI:
+    def __init__(self):
+        nft = nftables.Nftables()
+        nft.set_json_output(True)
 
-    return rule
+        # important! to get the rule handle when getting the ruleset
+        nft.set_handle_output(
+            True
+        )
 
-def set_json_port(add_rule, port, direction) :
-    port_json = copy.deepcopy(NFTABLES_PORT_MATCHING)
+        self.nft = nft
 
-    port_json["match"]["left"]["payload"]["field"] = direction
-    port_json["match"]["right"] = port
+    def init_ruleset(self):
+        cmd = json.load(open("./patterns/init_ruleset.json"))
+        self.send_command(cmd)
 
-    add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, port_json)
+    def send_command(self, json_order):
 
-def set_json_ip(add_rule, ip, direction) :
-    ip_json = copy.deepcopy(NFTABLES_IP_MATCHING)
+        try:
+            self.nft.json_validate(json_order)
+        except Exception as e:
+            print(f"ERROR: failed validating JSON schema: {e}")
+            exit(1)
 
-    ip_json["match"]["left"]["payload"]["field"] = direction
+        rc, output, error = self.nft.json_cmd(json_order)
+        if rc != 0:
+            # do proper error handling here, exceptions etc
+            print(f"ERROR: running JSON cmd: {error}")
+            exit(1)
 
-    ip_mask = ip.split("/")
-    if len(ip_mask)>1 : # if ip has mask
-        ip_json["match"]["right"]["prefix"]["addr"] = ip_mask[0] # set ip
-        ip_json["match"]["right"]["prefix"]["len"] = int(ip_mask[1]) # set mask 
-    else :
-        ip_json["match"]["right"] = ip_mask[0] # set ip
+        if "list" in json_order["nftables"][0]:
+            if len(output) == 0:
+                # more error control
+                print("ERROR: no output from libnftables")
+                exit(0)
+            return output["nftables"]
+        else:
+            if len(output) != 0:
+                # more error control?
+                print(f"WARNING: output: {output}")
 
-    add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, ip_json)
+        return output
 
-def add_rule(nft, src = None, sport = None, dst = None, dport = None ):
+    def add_rule(self, src=None, sport=None, dst=None, dport=None, target = 0):
 
-    # build the json rule command
+        # TODO target
+        # build the json rule command
 
-    add_rule = copy.deepcopy(NFTABLES_ADD_RULE)
+        add_rule = json.load(open("./patterns/add_rule.json"))
 
-    if src!=None :
-        set_json_ip(add_rule, src, "saddr")
+        if src:
+            set_json_ip(add_rule, src, "saddr")
 
-    if dst!=None :
-        set_json_ip(add_rule, dst, "daddr")
+        if dst:
+            set_json_ip(add_rule, dst, "daddr")
 
-    if sport != None :
-        set_json_port(add_rule, sport, "sport")
-    
-    if dport != None :
-        set_json_port(add_rule, dport, "dport")
-   
-    send_command(nft, add_rule) # add the rule
+        if sport:
+            set_json_port(add_rule, sport, "sport")
 
-    # find the rule in nftables
-   
-    list_rules = copy.deepcopy(NFTABLES_LIST_CHAIN)
-    output = send_command(nft, list_rules) # get the rules in the chain
+        if dport:
+            set_json_port(add_rule, dport, "dport")
 
-    rule = get_rule_index(output) # get the index of the rule
+        self.send_command(add_rule)
 
-    # create mark and append it to the rule
-    
-    mark = copy.deepcopy(NFTABLES_MARK)
-    mark["mangle"]["value"] = rule["handle"] # set the mark as the index of the rule
+        # find the rule in nftables
 
-    rule["expr"] = rule["expr"][:-1]
-    rule["expr"].append(mark)
-    rule["expr"].append({"accept" : None})
-    
-    # replace the rule in nftables
+        # get the rules in the chain
+        rule_list = self.send_command(
+            json.load(open("./patterns/list_chain.json")))
 
-    update_rule = add_rule
-    update_rule["nftables"][0]["replace"] = update_rule["nftables"][0].pop("add")
-    update_rule["nftables"][0]["replace"]["rule"] = rule
+        rule = last_rule_index(rule_list)  # get the rule
 
-    send_command(nft, update_rule) 
+        # create mark and append it to the rule
 
-    return rule["handle"]
+        mark = json.load(open("./patterns/mark.json"))
+        # set the mark as the index of the rule
+        mark["mangle"]["value"] = rule["handle"]
 
-def del_rule(nft, handle):
-    del_rule = copy.deepcopy(NFTABLES_DEL_RULE)
+        rule["expr"] = rule["expr"][:-1]
+        rule["expr"].append(mark)
+        rule["expr"].append({"accept": None})
 
-    del_rule["nftables"][0]["delete"]["rule"]["handle"] = handle
+        # replace the rule in nftables
 
-    send_command(nft, del_rule)
+        update_rule = {"nftables": [{"replace": {"rule": rule}}]}
 
-    return 0
+        self.send_command(update_rule)
 
-def enable_rule():
-    return 0
+        return rule["handle"]
 
-def disable_rule():
-    return 0
+    def del_rule(self, handle):
+        del_rule = json.load(open("./patterns/delete_rule.json"))
 
-def send_command(nft, json_order):
-    try:
-        nft.json_validate(json_order)
-    except Exception as e:
-        print(f"ERROR: failed validating JSON schema: {e}")
-        exit(1)
+        del_rule["nftables"][0]["delete"]["rule"]["handle"] = handle
 
-    rc, output, error = nft.json_cmd(json_order)
-    if rc != 0:
-        # do proper error handling here, exceptions etc
-        print(f"ERROR: running JSON cmd: {error}")
-        exit(1)
+        self.send_command(del_rule)
 
-    if "list" in json_order["nftables"][0]:
-        if len(output) == 0:
-            # more error control
-            print("ERROR: no output from libnftables")
-            exit(0)
-        return output["nftables"]
-    else :
-        if len(output) != 0:
-            # more error control?
-            print(f"WARNING: output: {output}")
+    def enable_rule(self, handle, target):
+        rule_list = self.send_command(
+            json.load(open("./patterns/list_chain.json")))
+        rule = get_rule(rule_list, handle)
 
-    return output
+        rule["expr"].pop()
 
-def main():
-    nft = nftables.Nftables()
-    nft.set_json_output(True)
-    nft.set_handle_output(
-        True
-    )  # important! to get the rule handle when getting the ruleset
+        # TODO target
 
-    send_command(nft, copy.deepcopy(NFTABLES_INIT))
-    handle = add_rule(nft, src="192.168.0.1/24", sport=80, dst="192.168.2.55/18", dport=22)
-    handle = add_rule(nft, src="192.168.0.1/25", sport=81, dst="192.168.2.55/19", dport=23)
-    handle = add_rule(nft, src="192.168.0.1/26", sport=82, dst="192.168.2.55/20", dport=24)
-    handle = add_rule(nft, src="192.168.0.1/26", sport=83, dst="192.168.2.55/21", dport=25)
-    handle = add_rule(nft, src="192.168.0.1/28", sport=84, dst="192.168.2.55/22", dport=26)
-    
-    del_rule(nft, handle)
-    
-if __name__ == "__main__":
-    main()
+        rule["expr"].append({
+            "jump": {
+                "target": "DISABLE"
+            }
+        })
+
+        update_rule = {"nftables": [{"replace": {"rule": rule}}]}
+        self.send_command(update_rule)
+
+    def disable_rule(self, handle):
+        rule_list = self.send_command(
+            json.load(open("./patterns/list_chain.json")))
+        rule = get_rule(rule_list, handle)
+
+        rule["expr"].pop()
+
+        rule["expr"].append({
+            "jump": {
+                "target": "DISABLE"
+            }
+        })
+
+        update_rule = {"nftables": [{"replace": {"rule": rule}}]}
+        self.send_command(update_rule)
+
+    def list_ruleset(self):
+        cmd = json.load(open("./patterns/list_ruleset.json"))
+        print(json.dumps(self.send_command(cmd), indent=4, sort_keys=True))
+
+    def flush_ruleset(self):
+        cmd = json.load(open("./patterns/flush_ruleset.json"))
+        self.send_command(cmd)

@@ -1,0 +1,12 @@
+{
+    "match": {
+        "op": "==",
+        "left": {
+            "payload": {
+                "protocol": "th",
+                "field": ""
+            }
+        },
+        "right": 0
+    }
+}

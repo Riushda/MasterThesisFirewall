@@ -1,0 +1,13 @@
+{
+    "nftables": [
+        {
+            "list": {
+                "chain": {
+                    "family": "ip",
+                    "table": "filter",
+                    "name": "MERGE"
+                }
+            }
+        }
+    ]
+}

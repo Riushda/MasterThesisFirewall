@@ -1,0 +1,17 @@
+{
+    "match": {
+        "op": "==",
+        "left": {
+            "payload": {
+                "protocol": "ip",
+                "field": ""
+            }
+        },
+        "right": {
+            "prefix": {
+                "addr": "",
+                "len": 0
+            }
+        }
+    }
+}
