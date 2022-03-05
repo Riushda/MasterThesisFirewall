@@ -1,58 +1,86 @@
 import nftables
 import json
+import copy
+import ipaddress
 
 from nftables_pattern import *
 
-def get_rule_index(list, rule):
-    index = 0
+# return last rule added 
+def get_rule_index(list):
+    rule = None
     for element in list:
         if "rule" in element :
-            element = element["rule"]
+            rule = element["rule"]
 
-            if rule.items() <= element.items() :
-                index = element["handle"]
-                break
+    return rule
 
-    return index
+def set_json_port(add_rule, port, direction) :
+    port_json = copy.deepcopy(NFTABLES_PORT_MATCHING)
 
-def add_rule(nft, sport = None, dport = None, dst = None, src = None):
+    port_json["match"]["left"]["payload"]["field"] = direction
+    port_json["match"]["right"] = port
+
+    add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, port_json)
+
+def set_json_ip(add_rule, ip, direction) :
+    ip_json = copy.deepcopy(NFTABLES_IP_MATCHING)
+
+    ip_json["match"]["left"]["payload"]["field"] = direction
+
+    ip_mask = ip.split("/")
+    if len(ip_mask)>1 : # if ip has mask
+        ip_json["match"]["right"]["prefix"]["addr"] = ip_mask[0] # set ip
+        ip_json["match"]["right"]["prefix"]["len"] = int(ip_mask[1]) # set mask 
+    else :
+        ip_json["match"]["right"] = ip_mask[0] # set ip
+
+    add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, ip_json)
+
+def add_rule(nft, src = None, sport = None, dst = None, dport = None ):
 
     # build the json rule command
 
-    add_rule = NFTABLES_ADD_RULE.copy()
+    add_rule = copy.deepcopy(NFTABLES_ADD_RULE)
+
+    if src!=None :
+        set_json_ip(add_rule, src, "saddr")
+
+    if dst!=None :
+        set_json_ip(add_rule, dst, "daddr")
 
     if sport != None :
-        sport_json = NFTABLES_PORT_MATCHING.copy()
-        sport_json[1]["match"]["right"] = sport
-        add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, sport_json[0])
-        add_rule["nftables"][0]["add"]["rule"]["expr"].insert(1, sport_json[1])
+        set_json_port(add_rule, sport, "sport")
     
     if dport != None :
-        dport_json = NFTABLES_PORT_MATCHING.copy()
-        dport_json[1]["match"]["right"] = dport
-        add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, dport_json[0])
-        add_rule["nftables"][0]["add"]["rule"]["expr"].insert(1, dport_json[1])
-
+        set_json_port(add_rule, dport, "dport")
+   
     send_command(nft, add_rule) # add the rule
 
-    list_rules = NFTABLES_LIST_CHAIN.copy()
+    # find the rule in nftables
+   
+    list_rules = copy.deepcopy(NFTABLES_LIST_CHAIN)
     output = send_command(nft, list_rules) # get the rules in the chain
 
-    rule = NFTABLES_ADD_RULE["nftables"][0]["add"]["rule"].copy()
-    index = get_rule_index(output, rule) # get the index of the rule
+    rule = get_rule_index(output) # get the index of the rule
+
+    # create mark and append it to the rule
     
-    mark = NFTABLES_MARK.copy()
-    mark["mangle"]["value"] = index
+    mark = copy.deepcopy(NFTABLES_MARK)
+    mark["mangle"]["value"] = rule["handle"] # set the mark as the index of the rule
+
+    rule["expr"] = rule["expr"][:-1]
+    rule["expr"].append(mark)
+    rule["expr"].append({"accept" : None})
+    
+    # replace the rule in nftables
+
     update_rule = add_rule
-    update_rule["nftables"][0]["add"]["rule"]["expr"][:-1]
     update_rule["nftables"][0]["replace"] = update_rule["nftables"][0].pop("add")
-    update_rule["nftables"][0]["replace"]["rule"]["expr"].append(mark)
-    update_rule["nftables"][0]["replace"]["rule"]["handle"] = index
-    update_rule["nftables"][0]["replace"]["rule"]["expr"].append({"accept" : None})
-    print(update_rule)
-    send_command(nft, update_rule) # update the rule with the mark
-    # DO NOT WORK BUT FIX IS EASY , DO NOT TOUCH PLEASE
-    return index
+    update_rule["nftables"][0]["replace"]["rule"] = rule
+
+    send_command(nft, update_rule) 
+
+    return rule["handle"]
 
 def del_rule():
     return 0
@@ -97,7 +125,11 @@ def main():
     )  # important! to get the rule handle when getting the ruleset
 
     send_command(nft, NFTABLES_INIT)
-    add_rule(nft, sport=80)
+    print(add_rule(nft, src="192.168.0.1/24", sport=80, dst="192.168.2.55/18", dport=22))
+    print(add_rule(nft, src="192.168.0.1/25", sport=81, dst="192.168.2.55/19", dport=23))
+    print(add_rule(nft, src="192.168.0.1/26", sport=82, dst="192.168.2.55/20", dport=24))
+    print(add_rule(nft, src="192.168.0.1/26", sport=83, dst="192.168.2.55/21", dport=25))
+    print(add_rule(nft, src="192.168.0.1/28", sport=84, dst="192.168.2.55/22", dport=26))
     
 
 if __name__ == "__main__":

@@ -26,11 +26,17 @@ NFTABLES_ADD_RULE = {"nftables": [
         "family": "ip",
         "table": "filter",
         "chain": "INPUT",
-        "expr": [
-            {
-                "accept": None
-            }
-        ]
+        "expr": [{
+                "match":{
+                    "op":"==",
+                    "left": {"meta": {
+                        "key":"l4proto"}},
+                    "right": {"set": ["tcp","udp"]}}
+                },
+                {
+                    "accept": None
+                }
+            ]
     }}}
 ]}
 
@@ -38,39 +44,32 @@ NFTABLES_MARK = {"mangle": {"key":
                         {"meta": {"key": "mark"}}, 
                         "value": 0}}
 
-NFTABLES_PORT_MATCHING = [{
-                "match":{
-                    "op":"==",
-                    "left":{
-                    "meta":{
-                        "key":"l4proto"
-                    }
-                    },
-                    "right":{
-                    "set":[
-                        "tcp",
-                        "udp"
-                    ]
-                    }
-                }
-            },
-            {
-                "match":{
-                    "op":"==",
-                    "left":{
-                    "payload":{
-                        "protocol":"th",
-                        "field":"dport"
-                    }
-                    },
-                    "right": 0 # specified port
-                }
-            }]
+NFTABLES_IP_MATCHING = {"match": 
+                            {"op": "==", 
+                            "left": {"payload": 
+                                        {"protocol": "ip", "field": ""}}, # field is either saddr or daddr 
+                            "right": {"prefix":  
+                                        {"addr": "", "len": 0}} # set ip as string and the mask as int
+                            }
+                        }
+
+NFTABLES_PORT_MATCHING = {
+                            "match":{
+                                "op":"==",
+                                "left":{
+                                "payload":{
+                                    "protocol":"th",
+                                    "field":"" # specify sport or dport
+                                }
+                                },
+                                "right": 0 # specified port
+                            }
+                         }
 
 NFTABLES_LIST_CHAIN = {"nftables": [
-    {"list": {"chain": {
-        "family": "ip",
-        "table": "filter",
-        "name": "INPUT"
-    }}}
-]}
+                        {"list": {"chain": {
+                            "family": "ip",
+                            "table": "filter",
+                            "name": "INPUT"
+                        }}}
+                    ]}
