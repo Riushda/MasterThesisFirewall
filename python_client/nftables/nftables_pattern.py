@@ -40,6 +40,15 @@ NFTABLES_ADD_RULE = {"nftables": [
     }}}
 ]}
 
+NFTABLES_DEL_RULE = {"nftables": [
+    {"delete": {"rule": {
+        "family": "ip",
+        "table": "filter",
+        "chain": "INPUT",
+        "handle" : 0
+    }}}
+]}
+
 NFTABLES_MARK = {"mangle": {"key": 
                         {"meta": {"key": "mark"}}, 
                         "value": 0}}

@@ -82,7 +82,13 @@ def add_rule(nft, src = None, sport = None, dst = None, dport = None ):
 
     return rule["handle"]
 
-def del_rule():
+def del_rule(nft, handle):
+    del_rule = copy.deepcopy(NFTABLES_DEL_RULE)
+
+    del_rule["nftables"][0]["delete"]["rule"]["handle"] = handle
+
+    send_command(nft, del_rule)
+
     return 0
 
 def enable_rule():
@@ -124,13 +130,14 @@ def main():
         True
     )  # important! to get the rule handle when getting the ruleset
 
-    send_command(nft, NFTABLES_INIT)
-    print(add_rule(nft, src="192.168.0.1/24", sport=80, dst="192.168.2.55/18", dport=22))
-    print(add_rule(nft, src="192.168.0.1/25", sport=81, dst="192.168.2.55/19", dport=23))
-    print(add_rule(nft, src="192.168.0.1/26", sport=82, dst="192.168.2.55/20", dport=24))
-    print(add_rule(nft, src="192.168.0.1/26", sport=83, dst="192.168.2.55/21", dport=25))
-    print(add_rule(nft, src="192.168.0.1/28", sport=84, dst="192.168.2.55/22", dport=26))
+    send_command(nft, copy.deepcopy(NFTABLES_INIT))
+    handle = add_rule(nft, src="192.168.0.1/24", sport=80, dst="192.168.2.55/18", dport=22)
+    handle = add_rule(nft, src="192.168.0.1/25", sport=81, dst="192.168.2.55/19", dport=23)
+    handle = add_rule(nft, src="192.168.0.1/26", sport=82, dst="192.168.2.55/20", dport=24)
+    handle = add_rule(nft, src="192.168.0.1/26", sport=83, dst="192.168.2.55/21", dport=25)
+    handle = add_rule(nft, src="192.168.0.1/28", sport=84, dst="192.168.2.55/22", dport=26)
     
-
+    del_rule(nft, handle)
+    
 if __name__ == "__main__":
     main()
