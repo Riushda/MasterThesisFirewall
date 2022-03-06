@@ -1,8 +1,10 @@
 from nft.nftables_api import NftablesAPI
+import member
+from constant import M_TYPE
 
 def main():
 
-    api = NftablesAPI()
+    """ api = NftablesAPI()
 
     api.init_ruleset()
     handle = api.add_rule(src="192.168.0.1/24", sport=80,
@@ -10,10 +12,14 @@ def main():
 
     api.disable_rule(handle)
     api.enable_rule(handle)
-    #api.list_ruleset()
+    api.list_ruleset()
     api.del_rule(handle)
 
-    api.flush_ruleset()
+    api.flush_ruleset() """
+
+    m = member.parse_member("A", None, None, M_TYPE.BROKER.value)
+
+    print(m)
 
 
 if __name__ == "__main__":

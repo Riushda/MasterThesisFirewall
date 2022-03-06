@@ -16,13 +16,13 @@ parser.add_argument("--action", type=str,
 # Parameters related to members
 
 parser.add_argument("--name", type=str,
-                    help="name of the member", default="dev")
+                    help="name of the member", default=None)
 
 parser.add_argument("--ip", type=str,
-                    help="ip with optional bitmask", default="any")
+                    help="ip with optional bitmask", default=None)
 
 parser.add_argument("--port", type=str,
-                    help="port", default="any")
+                    help="port", default=None)
 
 parser.add_argument("--type", type=str, choices=[e.value for e in M_TYPE],
                     help="type of device", default=M_TYPE.PUB.value)
