@@ -1,4 +1,7 @@
 import json
+import os
+
+dirname = os.path.dirname(__file__)
 
 
 def last_rule_index(rule_list):
@@ -14,16 +17,16 @@ def get_rule(rule_list, handle):
 
 
 def set_json_port(add_rule, port, direction):
-    port_json = json.load(open("./patterns/port_matching.json"))
+    port_json = json.load(open(f"{dirname}/patterns/port_matching.json"))
 
     port_json["match"]["left"]["payload"]["field"] = direction
     port_json["match"]["right"] = port
 
-    add_rule["nftables"][0]["add"]["rule"]["expr"].insert(0, port_json)
+    add_rule["nftables"][0]["add"]["rule"]["expr"].append(port_json)
 
 
 def set_json_ip(add_rule, ip, direction):
-    ip_json = json.load(open("./patterns/ip_matching.json"))
+    ip_json = json.load(open(f"{dirname}/patterns/ip_matching.json"))
 
     ip_json["match"]["left"]["payload"]["field"] = direction
 

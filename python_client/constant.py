@@ -61,3 +61,9 @@ class POLICY(Enum):
 class I_POLICY(Enum):
     DENY = 0
     ALLOW = 1
+
+
+class POLICY_JSON(Enum):
+    DROP = {"drop": ""}
+    ACCEPT = {"accept": ""}
+    DEFAULT = {"drop": ""}
