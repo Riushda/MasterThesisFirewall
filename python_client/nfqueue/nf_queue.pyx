@@ -2,10 +2,14 @@ from netfilterqueue import NetfilterQueue, Packet
 from scapy.layers.inet6 import IPv6
 from scapy.layers.inet import IP, TCP, UDP
 import scapy.all as scapy
+from multiprocessing import Queue
 
 from lib import protocol
 from lib import abstract_packet
 from lib import data_constraint
+
+constraint_list = data_constraint.ConstraintList()
+packet_queue = None
 
 def handle_packet(pkt : Packet):
 
@@ -52,13 +56,25 @@ def handle_packet(pkt : Packet):
 
 		if decoded :
 			# if protocol layer has been successfully decoded 
-			print(decoded)
 
 			mark = pkt.get_mark()
 
+			abstract_pkt = abstract_packet.AbstractPacket(mark, src, dst, sport, dport, decoded[0], decoded[1])
+
+			match = constraint_list.match_packet(abstract_pkt)
+
+			if not match:
+				pkt.drop()
+				return
+
+			packet_queue.put(abstract_pkt)
+
 	pkt.accept()
 
-def run() :
+def run(queue : Queue) :
+	global packet_queue
+	packet_queue = queue
+
 	nfqueue = NetfilterQueue()
 	nfqueue.bind(0, handle_packet)
 	try :
@@ -67,5 +83,3 @@ def run() :
 		print('bye')
 		nfqueue.unbind()
 		exit(0)
-
-run()
