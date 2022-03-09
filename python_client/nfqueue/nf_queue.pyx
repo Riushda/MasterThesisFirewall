@@ -3,6 +3,7 @@ from scapy.layers.inet6 import IPv6
 from scapy.layers.inet import IP, TCP, UDP
 import scapy.all as scapy
 from multiprocessing import Queue
+import time
 
 from lib import protocol
 from lib import abstract_packet

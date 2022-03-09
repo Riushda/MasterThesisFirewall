@@ -13,7 +13,13 @@ daemon.add_rule(src, sport, dst, dport, policy)
 daemon.remove_rule(index)
 '''
 
-def run(packet_queue : Queue):
+def init() :
+	global network_state
+	network_state = {}
+
+def run(packet_queue : Queue, pub_list, sub_list, broker_list, relations):
+
+	init()
 
 	while True :
 		try:
@@ -21,4 +27,9 @@ def run(packet_queue : Queue):
 			print(packet)
 		except:
 			print("No packet within timeout seconds")
+
+		
+		state_src = network_state[packet.src]
+		state_dst = network_state[packet.dst]
+
 
