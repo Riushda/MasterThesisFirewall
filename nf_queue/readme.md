@@ -23,8 +23,8 @@ The parameter indicates the listening queue.
 
 ! WARNING ! This command should be used only when nf-queue is running otherwise ssh will not work anymore.
 
-sudo iptables -A INPUT -j NFQUEUE --queue-num 0
-sudo iptables -A OUTPUT -j NFQUEUE --queue-num 0
+sudo iptables -A INPUT -j NFQUEUE --queue-num 0 \
+sudo iptables -A OUTPUT -j NFQUEUE --queue-num 0 \
 sudo iptables -A FORWARD -j NFQUEUE --queue-num 0
 
 This redirects all traffic to queue 0, it is possible to specify a specific interface with -i.

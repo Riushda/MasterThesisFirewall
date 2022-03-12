@@ -1,8 +1,6 @@
 import Pyro4
-import signal
 import sys
 import os
-from cairo import Extend
 import schedule
 import threading
 
