@@ -22,8 +22,6 @@ def init():
     network_state = {}
     abstract_rules = []
 
-    test()
-
 
 def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
     init()
@@ -61,56 +59,56 @@ class NetworkContext(object):
                 initial_state_name = str(i)
             # print(state_src)
 
-            allowed = self.is_allowed(state_src)
-            if allowed:
+            if self.is_allowed(state_src):
                 self.states.append(DeviceState(str(i), state_src))
 
-            j = 0
-            for state_dst in it.product(*(state_combinations[Name] for Name in state_combinations)):
-                state_dst = dict(zip(state_combinations.keys(), state_dst))
-                # print(state_dst)
+                j = 0
+                for state_dst in it.product(*(state_combinations[Name] for Name in state_combinations)):
+                    state_dst = dict(zip(state_combinations.keys(), state_dst))
+                    # print(state_dst)
 
-                if self.is_allowed(state_dst):
+                    if self.is_allowed(state_dst):
 
-                    # get all keys in state_src and state dst which doesn't have the same value
-                    diff_keys = [key for key in state_src.keys() & state_dst if state_src[key] != state_dst[key]]
+                        # get all keys in state_src and state dst which doesn't have the same value
+                        diff_keys = [key for key in state_src.keys() & state_dst if state_src[key] != state_dst[key]]
 
-                    conforming = False
+                        conforming = False
 
-                    # no state self loop and transition only between states with 1 difference
-                    if len(diff_keys) == 1:
-                        infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
-                        if infer is None:
-                            conforming = True
-                            # print(str(state_src[key[0]]) + " != " + str(state_dst[key[0]]))
-                            self.transitions_change[(str(i), str(j))] = {
-                                diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]}
+                        # no state self loop and transition only between states with 1 difference
+                        if len(diff_keys) == 1:
+                            infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
+                            if infer is None or state_dst[infer[0]] == infer[1]:
+                                conforming = True
+                                # print(str(state_src[key[0]]) + " != " + str(state_dst[key[0]]))
+                                self.transitions_change[(str(i), str(j))] = {
+                                    diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]}
 
-                    # 2 different keys between state_src and state_dst, changing one key could infer a change
-                    # in the second one resulting in state_dst with 2 different fields without intermediate state
-                    elif len(diff_keys) == 2:
-                        infer1 = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
-                        infer2 = self.state_inference.get((diff_keys[1], state_dst[diff_keys[1]]))
+                        # 2 different keys between state_src and state_dst, changing one key could infer a change
+                        # in the second one resulting in state_dst with 2 different fields without intermediate state
+                        elif len(diff_keys) == 2:
+                            infer1 = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
+                            infer2 = self.state_inference.get((diff_keys[1], state_dst[diff_keys[1]]))
 
-                        condition1 = infer1 and infer1 == (diff_keys[1], state_dst[diff_keys[1]])
-                        condition2 = infer2 and infer2 == (diff_keys[0], state_dst[diff_keys[0]])
-                        if condition1:
-                            conforming = True
-                            self.transitions_change[(str(i), str(j))] = {
-                                diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]],
-                                diff_keys[1]: [state_src[diff_keys[1]], state_dst[diff_keys[1]]]}
+                            condition1 = infer1 and infer1 == (diff_keys[1], state_dst[diff_keys[1]])
+                            condition2 = infer2 and infer2 == (diff_keys[0], state_dst[diff_keys[0]])
+                            if condition1:
+                                conforming = True
+                                self.transitions_change[(str(i), str(j))] = {
+                                    diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]],
+                                    diff_keys[1]: [state_src[diff_keys[1]], state_dst[diff_keys[1]]]}
 
-                        if condition2:
-                            conforming = True
-                            self.transitions_change[(str(i), str(j))] = {
-                                diff_keys[1]: [state_src[diff_keys[1]], state_dst[diff_keys[1]]],
-                                diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]}
+                            if condition2:
+                                conforming = True
+                                self.transitions_change[(str(i), str(j))] = {
+                                    diff_keys[1]: [state_src[diff_keys[1]], state_dst[diff_keys[1]]],
+                                    diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]}
 
-                    if conforming:
-                        self.transitions.append(
-                            {'trigger': 'evaluate', 'source': str(i), 'dest': str(j), 'conditions': 'check_transition',
-                             'after': 'action'})
-                j += 1
+                        if conforming:
+                            self.transitions.append(
+                                {'trigger': 'evaluate', 'source': str(i), 'dest': str(j),
+                                 'conditions': 'check_transition',
+                                 'after': 'action'})
+                    j += 1
 
             i += 1
 
@@ -192,7 +190,7 @@ def test():
     # infer state of one or multiple devices when a message from another device is received
     # TODO : make it possible to infer the state of multiples devices from one message
     #  (array of tuples instead of one tuple in the value), len(diff_keys) will be 2 or greater now
-    state_inference = {("thermo.temp", "hot"): ("heater.status", "off"),
+    state_inference = {("thermo.temp", "hot"): ("heater.status", "off"), # for example add ("air_conditioner.status": "on")
                        ("mvt_sensor.lastMessage", "recent"): ("lamp.status", "on")}
 
     # contains actions to take if condition is met
@@ -207,7 +205,8 @@ def test():
                                      state_inference)
     network_context.show_current_state()
     network_context.evaluate(data=("thermo.temp", "cold"))
-    # network_context.evaluate(data=("heater.status", "off"))
+    network_context.show_current_state()
+    network_context.evaluate(data=("thermo.temp", "hot"))
     network_context.show_current_state()
 
 
