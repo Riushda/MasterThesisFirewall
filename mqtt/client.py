@@ -11,7 +11,7 @@ client.publish("house/main-light","OFF")#publish
 client.disconnect()
 '''
 
-broker_address="192.168.0.230"
+broker_address="192.168.121.131"
 port=1883
 
 def on_connect(client, userdata, flags, rc):
