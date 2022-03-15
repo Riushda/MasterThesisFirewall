@@ -1,8 +1,7 @@
 import nftables
-import json
-import os
+
+from .constant import PolicyJson
 from .utils import *
-from constant import *
 
 
 class NftablesAPI:
@@ -14,6 +13,7 @@ class NftablesAPI:
         nft.set_handle_output(
             True
         )
+        self.mark_count = 0
 
         self.nft = nft
         self.dirname = os.path.dirname(__file__)
@@ -49,7 +49,8 @@ class NftablesAPI:
 
         return output
 
-    def add_rule(self, src=None, sport=None, dst=None, dport=None, policy=POLICY_JSON.DEFAULT.value):
+    def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None,
+                 policy=PolicyJson.DEFAULT.value):
 
         # build the json rule command
 
@@ -67,35 +68,18 @@ class NftablesAPI:
         if dport:
             set_json_port(add_rule, dport, "dport")
 
+        mark = json.load(open(f"{self.dirname}/patterns/mark.json"))
+        mark["mangle"]["value"] = self.mark_count
+        add_rule["nftables"][0]["add"]["rule"]["expr"].append(mark)
         add_rule["nftables"][0]["add"]["rule"]["expr"].append(policy)
 
         self.send_command(add_rule)
+        self.mark_count += 1
 
-        # find the rule in nftables
+        rule_list = self.send_command(json.load(open(f"{dirname}/patterns/list_chain.json")))
+        handle = last_rule_handle(rule_list)
 
-        # get the rules in the chain
-        rule_list = self.send_command(
-            json.load(open(f"{self.dirname}/patterns/list_chain.json")))
-
-        rule = last_rule_index(rule_list)  # get the rule
-
-        # create mark and append it to the rule
-
-        mark = json.load(open(f"{self.dirname}/patterns/mark.json"))
-        # set the mark as the index of the rule
-        mark["mangle"]["value"] = rule["handle"]
-
-        rule["expr"] = rule["expr"][:-1]
-        rule["expr"].append(mark)
-        rule["expr"].append(policy)
-
-        # replace the rule in nftables
-
-        update_rule = {"nftables": [{"replace": {"rule": rule}}]}
-
-        self.send_command(update_rule)
-
-        return rule["handle"]
+        return handle
 
     def del_rule(self, handle):
         del_rule = json.load(open(f"{self.dirname}/patterns/delete_rule.json"))
@@ -104,7 +88,7 @@ class NftablesAPI:
 
         self.send_command(del_rule)
 
-    def enable_rule(self, handle, policy=POLICY_JSON.DEFAULT.value):
+    def enable_rule(self, handle, policy=PolicyJson.DEFAULT.value):
         rule_list = self.send_command(
             json.load(open(f"{self.dirname}/patterns/list_chain.json")))
         rule = get_rule(rule_list, handle)

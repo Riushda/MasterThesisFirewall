@@ -4,10 +4,12 @@ import os
 dirname = os.path.dirname(__file__)
 
 
-def last_rule_index(rule_list):
-    for element in rule_list:
-        if "rule" in element:
-            return element["rule"]
+def last_rule_handle(rule_list):
+    last_element = rule_list[len(rule_list) - 1]
+    if "rule" in last_element:
+        return last_element["rule"]["handle"]
+    else:
+        return 10
 
 
 def get_rule(rule_list, handle):
