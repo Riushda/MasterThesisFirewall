@@ -141,8 +141,8 @@ class NetworkContext(object):
                                send_event=True)
 
     def is_consistent(self, state):
-        for forbidden in self.inconsistent_states:  # no forbidden state
-            if forbidden.items() <= state.items():
+        for inconsistent in self.inconsistent_states:  # no forbidden state
+            if inconsistent.items() <= state.items():
                 return False
 
         return True
@@ -265,8 +265,8 @@ def test():
 
     # but will be converted to this
     initial_state = {"mvt_sensor.lastMessage": "long", "lamp.status": "off",
-                     "thermo.temp": "hot", "thermo.lastMessage": "recent", "heater.status": "off",
-                     "window.status": "open"}  # check how to enable/disable  rules from initial state
+                     "thermo.temp": "cold", "thermo.lastMessage": "recent", "heater.status": "on",
+                     "window.status": "closed"}  # check how to enable/disable  rules from initial state
 
     # contains all possible values for all devices fields
     state_combinations = {"thermo.temp": ["cold", "average", "hot"], "mvt_sensor.lastMessage": ["recent", "long"],
@@ -297,15 +297,19 @@ def test():
             "action": {"disable": {"src": "heater_switch", "dst": "heater"}}}
 
     rule_index = network_context.add_rule(rule)
-    # rule_index = network_context.del_rule(rule_index)
+    #rule_index = network_context.del_rule(rule_index)
     # rule_index = network_context.add_rule(rule)
 
     network_context.show_current_state()
-    network_context.evaluate(data=("thermo.temp", "cold"))
-    network_context.show_current_state()
     network_context.evaluate(data=("thermo.temp", "hot"))
     network_context.show_current_state()
+    network_context.evaluate(data=("thermo.temp", "cold"))
+    network_context.show_current_state()
     network_context.evaluate(data=("heater.status", "on"))
+    network_context.show_current_state()
+    network_context.evaluate(data=("window.status", "open"))
+    network_context.show_current_state()
+    network_context.evaluate(data=("window.status", "closed"))
     network_context.show_current_state()
 
     ''' For efficiency test later
