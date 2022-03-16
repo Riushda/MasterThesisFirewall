@@ -1,11 +1,11 @@
-from rule import Rule
 from constant import *
+from rule import Rule
 
 
-class Relation():
+class Relation:
     def __init__(self, first: Rule, second: Rule = None, context: list = []):
         self.has_broker = 0
-        if(second):
+        if second:
             self.has_broker = 1
         self.first = first
         self.second = second
@@ -13,54 +13,23 @@ class Relation():
         self.jobs = []
 
     def __str__(self):
-        if(self.second):
+        if self.second:
             return f"{self.first} ~ {self.second}"
         else:
             return f"{self.first}"
 
-    def add_jobs(self, netlink, schedule, task):
+    def add_jobs(self, api, schedule, task):
         for c in self.context:
-            if(c.type == I_CONSTRAINT.TIME.value):
+            if c.type == IntegerConstraint.TIME.value:
                 for v in c.values:
                     job = schedule.every().day.at(v[0]).do(
-                        task, netlink, CODE.ENABLE_RELATION.value, self.first.index)
+                        task, api, Code.ENABLE_RELATION.value, self)
                     self.jobs.append(job)
 
                     job = schedule.every().day.at(v[1]).do(
-                        task, netlink, CODE.DISABLE_RELATION.value, self.first.index)
+                        task, api, Code.DISABLE_RELATION.value, self)
                     self.jobs.append(job)
 
     def cancel_jobs(self, schedule):
         for j in self.jobs:
             schedule.cancel_job(j)
-
-    def add_to_kernel(self, netlink):
-        netlink.send_msg(CODE.ADD_RELATION.value, self.to_bytes())
-
-    def rm_from_kernel(self, netlink):
-        buffer = bytearray()
-        buffer += self.has_broker.to_bytes(1, 'little')
-        buffer += self.first.to_bytes()
-        if(self.has_broker == 1):
-            buffer += self.second.to_bytes()
-        netlink.send_msg(CODE.RM_RELATION.value, buffer)
-
-    def to_bytes(self):
-        s_constraints = []
-        for x in range(0, len(self.context)):
-            if(not self.context[x].type in D_CONSTRAINT._value2member_map_):
-                s_constraints.append(x)
-
-        buffer = bytearray()
-
-        buffer += self.has_broker.to_bytes(1, 'little')
-        buffer += self.first.to_bytes()
-
-        if(self.second):
-            buffer += self.second.to_bytes()
-        buffer += len(s_constraints).to_bytes(1, 'little')
-
-        for x in s_constraints:
-            buffer += self.context[x].to_bytes()
-
-        return buffer

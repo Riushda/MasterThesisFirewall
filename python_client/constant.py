@@ -3,19 +3,19 @@ from enum import Enum
 MAX_PAYLOAD = 1024
 
 
-class ACTION(Enum):
+class Action(Enum):
     ADD = "add"
     REMOVE = "rm"
 
 
-class COMMAND(Enum):
+class Command(Enum):
     MEMBER = "member"
     RELATION = "relation"
     RULE = "rule"
     SHOW = "show"
 
 
-class CODE(Enum):
+class Code(Enum):
     PID = 0
     ADD_RELATION = 1
     RM_RELATION = 2
@@ -23,7 +23,7 @@ class CODE(Enum):
     DISABLE_RELATION = 4
 
 
-class CONSTRAINT(Enum):
+class StringConstraint(Enum):
     NO_CONTEXT = "/"
     SUBJECT = "subject"
     INT = "int"
@@ -31,39 +31,40 @@ class CONSTRAINT(Enum):
     TIME = "time"
 
 
-class I_CONSTRAINT(Enum):
+class IntegerConstraint(Enum):
     SUBJECT = 0
     INT = 1
     STR = 2
     TIME = 3
 
 
-class D_CONSTRAINT(Enum):
+class DynamicConstraint(Enum):
     TIME = 3
 
 
-class M_TYPE(Enum):
+class MemberType(Enum):
+    DEVICE = "device"
     BROKER = "broker"
     PUB = "pub"
     SUB = "sub"
 
 
-class T_TYPE(Enum):
+class TableType(Enum):
     RULES = "rules"
     RELATIONS = "relations"
 
 
-class POLICY(Enum):
-    DENY = "deny"
-    ALLOW = "allow"
+class Policy(Enum):
+    DROP = "drop"
+    ACCEPT = "accept"
 
 
-class I_POLICY(Enum):
-    DENY = 0
-    ALLOW = 1
+class IntPolicy(Enum):
+    DROP = 0
+    ACCEPT = 1
 
 
-class POLICY_JSON(Enum):
+class PolicyJson(Enum):
     DROP = {"drop": ""}
     ACCEPT = {"accept": ""}
     DEFAULT = {"drop": ""}
