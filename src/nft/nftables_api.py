@@ -1,8 +1,6 @@
-import json
-import os
-
 import nftables
 
+from nft.command_builder import *
 from utils.constant import *
 
 
@@ -19,10 +17,6 @@ class NftablesAPI:
 
         self.nft = nft
         self.dirname = os.path.dirname(__file__)
-
-    def init_ruleset(self):
-        cmd = json.load(open(f"{self.dirname}/patterns/init_ruleset.json"))
-        self.send_command(cmd)
 
     def send_command(self, json_order):
 
@@ -51,76 +45,74 @@ class NftablesAPI:
 
         return output
 
+    def init_ruleset(self):
+        builder = CommandBuilder()
+        builder.init_ruleset()
+        self.send_command(builder.get_command())
+
     def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None,
-                 policy=PolicyJson.DEFAULT.value):
+                 policy: Policy = Policy.ACCEPT.value):
 
-        # build the json rule command
+        builder = CommandBuilder()
+        builder.add_rule()
+        builder.set_ip(src, "saddr")
+        builder.set_ip(dst, "daddr")
+        builder.set_port(sport, "sport")
+        builder.set_port(dport, "dport")
+        builder.set_mark(self.mark_count)
+        builder.set_policy(policy)
 
-        add_rule = json.load(open(f"{self.dirname}/patterns/add_rule.json"))
-
-        if src:
-            set_json_ip(add_rule, src, "saddr")
-
-        if dst:
-            set_json_ip(add_rule, dst, "daddr")
-
-        if sport:
-            set_json_port(add_rule, sport, "sport")
-
-        if dport:
-            set_json_port(add_rule, dport, "dport")
-
-        mark = json.load(open(f"{self.dirname}/patterns/mark.json"))
-        mark["mangle"]["value"] = self.mark_count
-        add_rule["nftables"][0]["add"]["rule"]["expr"].append(mark)
-        add_rule["nftables"][0]["add"]["rule"]["expr"].append(policy)
-
-        self.send_command(add_rule)
+        self.send_command(builder.get_command())
         self.mark_count += 1
 
-        rule_list = self.send_command(json.load(open(f"{dirname}/patterns/list_chain.json")))
-        handle = last_rule_handle(rule_list)
+        builder.list_chain()
+        rule_list = self.send_command(builder.get_command())
 
-        return handle
+        return last_rule_handle(rule_list)
 
-    def del_rule(self, handle):
-        del_rule = json.load(open(f"{self.dirname}/patterns/delete_rule.json"))
+    def del_rule(self, handle: int):
+        builder = CommandBuilder()
+        builder.delete_rule(handle)
 
-        del_rule["nftables"][0]["delete"]["rule"]["handle"] = handle
+        self.send_command(builder.get_command())
 
-        self.send_command(del_rule)
-
-    def enable_rule(self, handle, policy=PolicyJson.DEFAULT.value):
-        rule_list = self.send_command(
-            json.load(open(f"{self.dirname}/patterns/list_chain.json")))
-        rule = get_rule(rule_list, handle)
-
-        rule["expr"].pop()
-        rule["expr"].append(policy)
-
-        update_rule = {"nftables": [{"replace": {"rule": rule}}]}
-        self.send_command(update_rule)
+    def enable_rule(self, handle, policy: Policy = Policy.ACCEPT.value):
+        builder = CommandBuilder()
+        builder.list_chain()
+        rule_list = self.send_command(builder.get_command())
+        builder.set_command(get_rule(rule_list, handle))
+        builder.enable_rule(policy)
+        self.send_command(builder.get_command())
 
     def disable_rule(self, handle):
-        rule_list = self.send_command(
-            json.load(open(f"{self.dirname}/patterns/list_chain.json")))
-        rule = get_rule(rule_list, handle)
-
-        rule["expr"].pop()
-
-        rule["expr"].append({
-            "jump": {
-                "target": "DISABLE"
-            }
-        })
-
-        update_rule = {"nftables": [{"replace": {"rule": rule}}]}
-        self.send_command(update_rule)
+        builder = CommandBuilder()
+        builder.list_chain()
+        rule_list = self.send_command(builder.get_command())
+        builder.set_command(get_rule(rule_list, handle))
+        builder.disable_rule()
+        self.send_command(builder.get_command())
 
     def list_ruleset(self):
-        cmd = json.load(open(f"{self.dirname}/patterns/list_ruleset.json"))
-        print(json.dumps(self.send_command(cmd), indent=4, sort_keys=True))
+        builder = CommandBuilder()
+        builder.list_ruleset()
+        ruleset = self.send_command(builder.get_command())
+        print(json.dumps(ruleset, indent=4, sort_keys=True))
 
     def flush_ruleset(self):
-        cmd = json.load(open(f"{self.dirname}/patterns/flush_ruleset.json"))
-        self.send_command(cmd)
+        builder = CommandBuilder()
+        builder.flush_ruleset()
+        self.send_command(builder.get_command())
+
+    def store_ruleset(self):
+        builder = CommandBuilder()
+        builder.list_ruleset()
+        ruleset = self.send_command(builder.get_command())
+        file = open("nft/patterns/ruleset.json", "w")
+        file.write(json.dumps(ruleset))
+
+    def restore_ruleset(self):
+        self.init_ruleset()
+        builder = CommandBuilder()
+        builder.restore_ruleset()
+        print(json.dumps(builder.get_command(), indent=4, sort_keys=True))
+        self.send_command(builder.get_command())
