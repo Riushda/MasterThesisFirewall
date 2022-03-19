@@ -1,4 +1,4 @@
-from constant import *
+from utils.constant import *
 
 
 class Constraint:

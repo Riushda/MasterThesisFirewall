@@ -1,7 +1,9 @@
+import json
+import os
+
 import nftables
 
-from .constant import PolicyJson
-from .utils import *
+from utils.constant import *
 
 
 class NftablesAPI:

@@ -2,7 +2,7 @@ import argparse
 
 import Pyro4
 
-from constant import *
+from src.utils.constant import *
 
 daemon = Pyro4.Proxy("PYRONAME:handlers")
 parser = argparse.ArgumentParser()

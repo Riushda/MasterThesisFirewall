@@ -1,9 +1,9 @@
 import threading
 import time
 
-from constant import *
+from daemon.relation import Relation
 from nft.nftables_api import NftablesAPI
-from relation import Relation
+from utils.constant import *
 
 
 class ScheduleThread:

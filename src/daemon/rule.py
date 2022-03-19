@@ -1,5 +1,5 @@
-from constant import *
-from member import Member
+from daemon.member import Member
+from utils.constant import *
 
 
 class Rule:

@@ -1,5 +1,5 @@
-from constant import *
-from rule import Rule
+from daemon.rule import Rule
+from utils.constant import *
 
 
 class Relation:

@@ -1,6 +1,6 @@
 import ipaddress
 
-from constant import *
+from utils.constant import *
 
 
 class Member:
