@@ -1,5 +1,3 @@
-import signal
-import sys
 import threading
 
 import Pyro4
@@ -21,18 +19,12 @@ schedule_tread = ScheduleThread(s_mutex, schedule)
 schedule_tread.start()
 
 
-def signal_handler(sig, frame):
-    print('You pressed Ctrl+C!')
+def stop_client_handlers():
     schedule_tread.stop()
     api.flush_ruleset()
-    sys.exit(0)
 
 
-signal.signal(signal.SIGINT, signal_handler)
-
-
-@Pyro4.expose
-class Handlers(object):
+class ClientHandlers(object):
     def __init__(self):
         self.api = api
         self.relations = []
@@ -40,6 +32,7 @@ class Handlers(object):
         self.pub_list = {}
         self.sub_list = {}
 
+    @Pyro4.expose
     def add_member(self, name: str, src: str, m_type: MemberType):
 
         member = parse_member(name, src, m_type)
@@ -66,6 +59,7 @@ class Handlers(object):
             case _:
                 return "Error: Not a valid member type."
 
+    @Pyro4.expose
     def remove_member(self, name: str, m_type: MemberType):
         try:
             match m_type:
@@ -83,6 +77,7 @@ class Handlers(object):
         except KeyError:
             return "Error: This member does not exist."
 
+    @Pyro4.expose
     def add_relation(self, pub: str, sub: str, broker: str, policy: Policy, context: str):
 
         if not pub or not sub:
@@ -121,7 +116,7 @@ class Handlers(object):
 
     def add_without_broker(self, pub: Member, sub: Member, policy, constraints):
         handle = api.add_rule(pub.ip, pub.port, sub.ip, sub.port,
-                              PolicyJson[policy.upper()].value)
+                              policy)
         rule = Rule(pub, sub, handle, policy)
         relation = Relation(rule, context=constraints)
         relation.add_jobs(api, schedule, schedule_job())
@@ -129,17 +124,18 @@ class Handlers(object):
 
     def add_with_broker(self, pub: Member, sub: Member, broker: Member, policy, constraints):
         handle = api.add_rule(pub.ip, pub.port, broker.ip, broker.port,
-                              PolicyJson[policy.upper()].value)
+                              policy)
         first_rule = Rule(pub, broker, handle, policy)
 
         handle = api.add_rule(broker.ip, broker.port, sub.ip, sub.port,
-                              PolicyJson[policy.upper()].value)
+                              policy)
         second_rule = Rule(broker, sub, handle, policy)
 
         relation = Relation(
             first_rule, second_rule, context=constraints)
         self.relations.append(relation)
 
+    @Pyro4.expose
     def remove_relation(self, index: int):
 
         if index >= len(self.relations):
@@ -154,11 +150,12 @@ class Handlers(object):
             rule_handle = found_relation.second.handle
             api.del_rule(rule_handle)
 
-        found_relation.cancel_jobs()
+        found_relation.cancel_jobs(schedule)
         del self.relations[index]
 
         return "Relation removed!"
 
+    @Pyro4.expose
     def show(self, table: str):
 
         result = ""
@@ -168,11 +165,3 @@ class Handlers(object):
                 result += f"{x} | {self.relations[x]}\n"
 
         return result
-
-
-daemon = Pyro4.Daemon()
-ns = Pyro4.locateNS()
-uri = daemon.register(Handlers())
-ns.register("handlers", uri)
-print("Daemon ready")
-daemon.requestLoop()

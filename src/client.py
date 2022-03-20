@@ -2,9 +2,9 @@ import argparse
 
 import Pyro4
 
-from src.utils.constant import *
+from utils.constant import *
 
-daemon = Pyro4.Proxy("PYRONAME:handlers")
+daemon = Pyro4.Proxy("PYRONAME:ClientHandlers")
 parser = argparse.ArgumentParser()
 
 parser.add_argument("command", type=str, choices=[
