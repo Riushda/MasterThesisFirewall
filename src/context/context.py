@@ -4,6 +4,8 @@ import Pyro4
 import itertools as it
 import time
 
+from daemon.member import Member
+
 daemon = Pyro4.Proxy("PYRONAME:handlers")
 '''
 daemon functions that will be called 
@@ -280,9 +282,15 @@ def test():
     # infer state of one or multiple devices when a message from another device is received
     # TODO : make it possible to infer the state of multiples devices from one message
     #  (array of tuples instead of one tuple in the value), len(diff_keys) will be 2 or greater now
-    state_inference = {("thermo.temp", "hot"): ("heater.status", "off"),
+    state_inference = {("thermo.temp", "hot"): [("heater.status", "off")],
                        # for example add ("air_conditioner.status": "on")
-                       ("mvt_sensor.lastMessage", "recent"): ("lamp.status", "on")}
+                       ("mvt_sensor.lastMessage", "recent"): [("lamp.status", "on")]}
+
+    pub_list = {}
+    relations = {}
+    check = check_inferences(state_inference, pub_list, relations)
+    if not check:
+        return
 
     # contains actions to take if condition is met
     abstract_rules = [{"index": 0, "condition": {"mvt_sensor.lastMessage": "long", "window.status": "closed"},
@@ -297,7 +305,7 @@ def test():
             "action": {"disable": {"src": "heater_switch", "dst": "heater"}}}
 
     rule_index = network_context.add_rule(rule)
-    #rule_index = network_context.del_rule(rule_index)
+    # rule_index = network_context.del_rule(rule_index)
     # rule_index = network_context.add_rule(rule)
 
     network_context.show_current_state()
@@ -317,6 +325,51 @@ def test():
     end = time.time()
     print(end - start)
     '''
+
+
+# check that the inferences keys are publishers and that the values are the subscribers of their key
+def check_inferences(state_inference, pub_list, relations):
+    keys = state_inference.keys()
+
+    for key in keys:
+        device = get_device(key[0])
+
+        # check if keys are publishers
+        if device not in pub_list:
+            print(device + " : keys in inferences must be publishers !")
+            return False
+
+        # check if values are subscribers of their key
+
+        values = state_inference[key]
+        devices = []
+        for value in values:
+            devices.append(get_device(value))
+
+        for relation in relations:
+
+            publisher = relation.first.src.name
+            if publisher == device:
+                subscriber = relation.first.dst.name
+
+                if subscriber in devices:
+                    devices.remove(subscriber)
+
+        if len(devices) > 0:
+            print(str(devices) + " : values in inferences must be subscribers of their key !")
+            return False
+
+    return True
+
+
+def get_device(field):
+    key_list = field.split(".")
+    return key_list[0]
+
+
+def is_member(field, member_list):
+    key_list = field.split(".")
+    return key_list[0] in member_list
 
 
 def get_element(json, field):
