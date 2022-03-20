@@ -8,5 +8,5 @@ ext = [Extension(name="lib.nf_queue", sources=["nf_queue.pyx"]),
        Extension(name="lib.data_constraint", sources=["data_constraint.pyx"]),
        Extension(name="lib.nf_queue_opti", sources=["nf_queue_opti.pyx"])]
 
-ext_options = {"compiler_directives": {"profile": True}, "annotate": True, 'language_level': "3"}
-setup(ext_modules=cythonize(ext, build_dir="build", **ext_options))
+ext_options = {"compiler_directives": {"profile": True}, "annotate": True}
+setup(ext_modules=cythonize(ext, build_dir="build", language_level="3", **ext_options))

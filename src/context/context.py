@@ -89,6 +89,16 @@ class NetworkContext(object):
 
                 conforming = False
 
+                '''for key in diff_keys:
+                    infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
+
+                    if not infer and len(diff_keys) == 1:
+                        conforming = True
+                    elif infer and len(diff_keys) > 1:
+                        for i in range(len(infer)):
+                            if infer[i] not in diff_keys:
+                                break'''
+
                 # no state self loop and transition only between states with 1 difference
                 if len(diff_keys) == 1:
                     infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
@@ -347,10 +357,13 @@ def check_inferences(state_inference, pub_list, relations):
             devices.append(get_device(value))
 
         for relation in relations:
-
             publisher = relation.first.src.name
             if publisher == device:
-                subscriber = relation.first.dst.name
+
+                if not relation.second:
+                    subscriber = relation.first.dst.name
+                else:
+                    subscriber = relation.second.dst.name
 
                 if subscriber in devices:
                     devices.remove(subscriber)

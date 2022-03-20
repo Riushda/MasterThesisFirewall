@@ -1,14 +1,15 @@
 from threading import Thread
 from multiprocessing import Queue
 import time
-import sys
-sys.path.append('../') # not needed when running from parent directory
+
 from context import context
 
-import pyximport   # This is part of Cython
+import pyximport  # This is part of Cython
+
 pyximport.install()
-import abstract_packet
-import nf_queue
+
+from nfqueue import abstract_packet
+from nfqueue import nf_queue
 
 nf_queue.constraint_list.add_constraint(2, 0, "temp", None)
 nf_queue.constraint_list.add_constraint(1, 1, "memory_usage", [23, 40])
@@ -36,5 +37,5 @@ sub_list = {}
 thread2 = Thread(target=context.run, args=(packet_queue, pub_list, sub_list, broker_list, relations), daemon=True)
 thread2.start()
 
-while (True):
+while True:
     time.sleep(5)
