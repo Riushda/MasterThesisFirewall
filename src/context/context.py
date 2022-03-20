@@ -89,20 +89,10 @@ class NetworkContext(object):
 
                 conforming = False
 
-                '''for key in diff_keys:
-                    infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
-
-                    if not infer and len(diff_keys) == 1:
-                        conforming = True
-                    elif infer and len(diff_keys) > 1:
-                        for i in range(len(infer)):
-                            if infer[i] not in diff_keys:
-                                break'''
-
                 # no state self loop and transition only between states with 1 difference
                 if len(diff_keys) == 1:
                     infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
-                    if infer is None or state_dst[infer[0]] == infer[1]:
+                    if infer is None or state_dst[infer[0][0]] == infer[0][1]:
                         conforming = True
                         # print(str(state_src[key[0]]) + " != " + str(state_dst[key[0]]))
                         self.transitions_change[(str(i), str(j))] = {"change": {
@@ -110,29 +100,20 @@ class NetworkContext(object):
                             "actions": []
                         }
 
-                # 2 different keys between state_src and state_dst, changing one key could infer a change
-                # in the second one resulting in state_dst with 2 different fields without intermediate state
-                elif len(diff_keys) == 2:
-                    infer1 = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
-                    infer2 = self.state_inference.get((diff_keys[1], state_dst[diff_keys[1]]))
+                elif len(diff_keys) > 1:
+                    for key in diff_keys:
+                        infer = self.state_inference.get((key, state_dst[key]))
 
-                    condition1 = infer1 and infer1 == (diff_keys[1], state_dst[diff_keys[1]])
-                    condition2 = infer2 and infer2 == (diff_keys[0], state_dst[diff_keys[0]])
-                    if condition1:
-                        conforming = True
-                        self.transitions_change[(str(i), str(j))] = {"change": {
-                            diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]],
-                            diff_keys[1]: [state_src[diff_keys[1]], state_dst[diff_keys[1]]]},
-                            "actions": []
-                        }
+                        if infer:
+                            diff = [element for element in diff_keys if element != key]
+                            inferred_keys = [element[0] for element in infer]
+                            conforming = set(diff).issubset(set(inferred_keys))
 
-                    if condition2:
-                        conforming = True
-                        self.transitions_change[(str(i), str(j))] = {"change": {
-                            diff_keys[1]: [state_src[diff_keys[1]], state_dst[diff_keys[1]]],
-                            diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]},
-                            "actions": []
-                        }
+                            if conforming:
+                                self.transitions_change[(str(i), str(j))] = {"change": {}, "actions": []}
+                                for element in diff_keys:
+                                    self.transitions_change[(str(i), str(j))]["change"][element] = [state_src[element], state_dst[element]]
+                                break
 
                 if conforming:
                     transition = {'trigger': 'evaluate', 'source': str(i), 'dest': str(j),
@@ -146,9 +127,6 @@ class NetworkContext(object):
 
             i += 1
 
-        # print(self.transitions_change)
-        # print(self.abstract_rules)
-
         self.machine = Machine(model=self, states=self.states, transitions=self.transitions, initial=initial_state_name,
                                send_event=True)
 
@@ -161,14 +139,18 @@ class NetworkContext(object):
 
     def set_transition_action(self, transition, state_src, state_dst):
         changed_element = self.transitions_change[(transition["source"], transition["dest"])]["change"]
-        iterator = iter(changed_element)
-        key1 = next(iterator, None)
-        key2 = next(iterator, None)  # can be None
+        changed_element_keys = list(changed_element.keys())
 
         for rule in self.abstract_rules:
             condition = rule["condition"]
 
-            if key1 in condition or key2 in condition:
+            condition_changed = False
+            for key in changed_element_keys:
+                if key in condition:
+                    condition_changed = True
+                    break
+
+            if condition_changed:
                 action = None
 
                 # if condition of rule does no longer hold
@@ -196,16 +178,22 @@ class NetworkContext(object):
         for state_src in self.states:
             for state_dst in self.states:
                 if state_src.name != state_dst.name:
+
                     changed_element = self.transitions_change.get((state_src.name, state_dst.name))
+
                     if changed_element:  # if transition between both states
                         changed_element = changed_element["change"]
-                        iterator = iter(changed_element)
-                        key1 = next(iterator, None)
-                        key2 = next(iterator, None)  # can be None
+                        changed_element_keys = list(changed_element.keys())
 
                         condition = rule["condition"]
 
-                        if key1 in condition or key2 in condition:
+                        condition_changed = False
+                        for key in changed_element_keys:
+                            if key in condition:
+                                condition_changed = True
+                                break
+
+                        if condition_changed:
                             action = None
 
                             # if condition of rule does no longer hold
@@ -258,11 +246,13 @@ class NetworkContext(object):
         # print("condition: " + str(event.kwargs["data"]))
         data = event.kwargs["data"]
 
-        element = self.transitions_change[(event.transition.source, event.transition.dest)]["change"]
+        elements = self.transitions_change[(event.transition.source, event.transition.dest)]["change"]
 
-        element_key = next(iter(element))
+        for key in elements:
+            if key == data[0] and elements[key][1] == data[1]:
+                return True
 
-        return element_key == data[0] and data[1] == element[element_key][1]
+        return False
 
 
 def test():
@@ -290,15 +280,14 @@ def test():
                            {"thermo.temp": "hot", "heater.status": "on"}]
 
     # infer state of one or multiple devices when a message from another device is received
-    # TODO : make it possible to infer the state of multiples devices from one message
-    #  (array of tuples instead of one tuple in the value), len(diff_keys) will be 2 or greater now
     state_inference = {("thermo.temp", "hot"): [("heater.status", "off")],
                        # for example add ("air_conditioner.status": "on")
                        ("mvt_sensor.lastMessage", "recent"): [("lamp.status", "on")]}
 
     pub_list = {}
     relations = {}
-    check = check_inferences(state_inference, pub_list, relations)
+    check = True
+    #check = check_inferences(state_inference, pub_list, relations)
     if not check:
         return
 
@@ -360,6 +349,7 @@ def check_inferences(state_inference, pub_list, relations):
             publisher = relation.first.src.name
             if publisher == device:
 
+                subscriber = None
                 if not relation.second:
                     subscriber = relation.first.dst.name
                 else:

@@ -111,7 +111,6 @@ class ConstraintList:
 	# check that the packet correctly matches all constraints associated with its mark
 	def match_packet(self, packet):
 		self.mutex.acquire()
-		self.mutex.test()
 
 		for i in range(self.size):
 			constraint : DataConstraint = self.constraints_list[i]
