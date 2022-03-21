@@ -21,7 +21,8 @@ class DeviceState(State):
 
 
 class NetworkContext(object):
-    def __init__(self, publisher_list, relations, initial_state, state_combinations, inconsistent_states, state_inference):
+    def __init__(self, publisher_list, relations, initial_state, state_combinations, inconsistent_states,
+                 state_inference):
 
         self.publisher_list = publisher_list
         self.relations = relations
@@ -32,7 +33,7 @@ class NetworkContext(object):
         self.transitions = []
         self.transitions_change = dict()
 
-        #if self.check_inferences():
+        # if self.check_inferences():
         self.build_fsm(initial_state, state_combinations)
 
     def build_fsm(self, initial_state, state_combinations):
@@ -93,7 +94,7 @@ class NetworkContext(object):
             i += 1
 
         self.machine = Machine(model=self, states=self.states, transitions=self.transitions, initial=initial_state_name,
-                               send_event=True)
+                               prepare_event='forbid_self_loop', send_event=True)
 
     def is_consistent(self, state):
         for inconsistent in self.inconsistent_states:  # no forbidden state
@@ -124,6 +125,12 @@ class NetworkContext(object):
                 return True
 
         return False
+
+    def forbid_self_loop(self, event):
+        data = event.kwargs["data"]
+        state = self.machine.get_state(self.state).state
+        if state[data[0]] == data[1]:
+            raise SelfLoopException()
 
     # check that the inferences keys are publishers and that the values are the subscribers of their key
     def check_inferences(self):
@@ -180,3 +187,7 @@ class NetworkContext(object):
                 element = json[key]
 
         return element
+
+
+class SelfLoopException(Exception):
+    pass

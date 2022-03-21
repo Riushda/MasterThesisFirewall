@@ -2,6 +2,7 @@ from multiprocessing import Queue
 import Pyro4
 import time
 from network_context import NetworkContext
+from network_context import SelfLoopException
 from abstract_rule import AbstractRule
 
 from daemon.member import Member
@@ -75,7 +76,8 @@ def test():
     relations = {}
 
     # last message triggers a timer in the machine fms after the .trigger call ?
-    network_context = NetworkContext(pub_list, relations, initial_state, state_combinations, inconsistent_states, state_inference)
+    network_context = NetworkContext(pub_list, relations, initial_state, state_combinations, inconsistent_states,
+                                     state_inference)
     rules = AbstractRule(abstract_rules, network_context)
 
     rule = {"condition": {"thermo.temp": "hot", "heater.status": "off"},
@@ -86,15 +88,17 @@ def test():
     rule_index = rules.add_rule(rule)
 
     network_context.show_current_state()
-    network_context.evaluate(data=("thermo.temp", "hot"))
+
+    update_context(network_context, ("thermo.temp", "cold"))  # self loop
+    update_context(network_context, ("thermo.temp", "hot"))
     network_context.show_current_state()
-    network_context.evaluate(data=("thermo.temp", "cold"))
+    update_context(network_context, ("thermo.temp", "cold"))
     network_context.show_current_state()
-    network_context.evaluate(data=("heater.status", "on"))
+    update_context(network_context, ("heater.status", "on"))
     network_context.show_current_state()
-    network_context.evaluate(data=("window.status", "open"))
+    update_context(network_context, ("window.status", "open"))
     network_context.show_current_state()
-    network_context.evaluate(data=("window.status", "closed"))
+    update_context(network_context, ("window.status", "closed"))
     network_context.show_current_state()
 
     ''' For efficiency test later
@@ -102,6 +106,16 @@ def test():
     end = time.time()
     print(end - start)
     '''
+
+
+def update_context(network_context: NetworkContext, packet_data):
+    try:
+        network_context.evaluate(data=packet_data)
+    except SelfLoopException:
+        print("self loop")
+        return False
+
+    return True
 
 
 test()
