@@ -1,7 +1,5 @@
 from enum import Enum
 
-MAX_PAYLOAD = 1024
-
 
 class Action(Enum):
     ADD = "add"
@@ -23,22 +21,17 @@ class Code(Enum):
     DISABLE_RELATION = 4
 
 
-class StringConstraint(Enum):
-    NO_CONTEXT = "/"
+class StringConstraintType(Enum):
     SUBJECT = "subject"
     INT = "int"
     STR = "str"
     TIME = "time"
 
 
-class IntegerConstraint(Enum):
+class ConstraintType(Enum):
     SUBJECT = 0
     INT = 1
     STR = 2
-    TIME = 3
-
-
-class DynamicConstraint(Enum):
     TIME = 3
 
 
@@ -57,14 +50,4 @@ class TableType(Enum):
 class Policy(Enum):
     DROP = "drop"
     ACCEPT = "accept"
-
-
-class IntPolicy(Enum):
-    DROP = 0
-    ACCEPT = 1
-
-
-class PolicyJson(Enum):
-    DROP = {"drop": ""}
-    ACCEPT = {"accept": ""}
-    DEFAULT = {"drop": ""}
+    DEFAULT = "default"

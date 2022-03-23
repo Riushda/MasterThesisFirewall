@@ -48,13 +48,17 @@ python client.py member --name C --type broker
 
 python client.py relation --pub A --sub B --broker C
 
-python client.py relation --pub A --sub B --broker C --constraint subject/allo --constraint time/20:00-22:00 --constraint str/name/bob/alice
-
-python client.py relation --pub 192.168.1.1/24 --sub 192.168.1.1/24 --broker 192.168.1.1/24 --constraint subject/allo --constraint time/20:00-22:00 --constraint str/name/bob/alice
+python client.py relation --broker 192.168.33.11 --pub 192.168.33.12 --sub 192.168.33.13  --subject test --constraint time/20:00-22:00 --constraint str/name/bob/alice --constraint int/temp/5/5-10/20-25
 
 # Show the rules
 
 python client.py show
+```
+
+# Mosquitto pub
+
+```sh
+mosquitto_pub -h 192.168.33.11 -t "test" -m "?temp=21&name=bob"
 ```
 
 # Nftables commands

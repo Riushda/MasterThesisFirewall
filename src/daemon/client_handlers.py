@@ -3,11 +3,12 @@ import threading
 import Pyro4
 import schedule
 
-from daemon.constraint import parse_context
+from daemon.constraint import parse_constraints
 from daemon.member import Member, parse_member
 from daemon.relation import Relation
 from daemon.rule import Rule
-from daemon.scheduleThread import ScheduleThread, schedule_job
+from daemon.schedule_thread import ScheduleThread, schedule_job
+from nfqueue.constraint_mapping import MappingEntry
 from nft.nftables_api import NftablesAPI
 from utils.constant import *
 
@@ -15,22 +16,24 @@ api = NftablesAPI()
 api.init_ruleset()
 
 s_mutex = threading.Lock()
-schedule_tread = ScheduleThread(s_mutex, schedule)
-schedule_tread.start()
+schedule_thread = ScheduleThread(s_mutex, schedule)
+schedule_thread.start()
 
 
 def stop_client_handlers():
-    schedule_tread.stop()
+    schedule_thread.stop()
     api.flush_ruleset()
 
 
 class ClientHandlers(object):
-    def __init__(self):
+    def __init__(self, mapping):
+        self.mapping = mapping
         self.api = api
         self.relations = []
         self.broker_list = {}
         self.pub_list = {}
         self.sub_list = {}
+        self.current_mark = 0
 
     @Pyro4.expose
     def add_member(self, name: str, src: str, m_type: MemberType):
@@ -78,7 +81,7 @@ class ClientHandlers(object):
             return "Error: This member does not exist."
 
     @Pyro4.expose
-    def add_relation(self, pub: str, sub: str, broker: str, policy: Policy, context: str):
+    def add_relation(self, pub: str, sub: str, broker: str, policy: Policy, subject: str, constraints: list):
 
         if not pub or not sub:
             return "Error: Please specify a publisher and a subscriber."
@@ -97,9 +100,9 @@ class ClientHandlers(object):
             if not isinstance(sub_member, Member):
                 return sub_member
 
-        constraints = parse_context(context)
-        if not isinstance(constraints, list):
-            return constraints
+        parsed_constraints = parse_constraints(constraints)
+        if not isinstance(parsed_constraints, list):
+            return parsed_constraints
 
         if broker:
             if broker in self.broker_list:
@@ -108,31 +111,35 @@ class ClientHandlers(object):
                 broker_member = parse_member("dev", broker)
                 if not isinstance(broker_member, Member):
                     return broker_member
-            self.add_with_broker(pub_member, sub_member, broker_member, policy, constraints)
+            self.add_with_broker(pub_member, sub_member, broker_member, policy, subject, parsed_constraints)
         else:
-            self.add_without_broker(pub_member, sub_member, policy, constraints)
+            self.add_without_broker(pub_member, sub_member, policy, subject, parsed_constraints)
 
         return "Relation added!"
 
-    def add_without_broker(self, pub: Member, sub: Member, policy, constraints):
-        handle = api.add_rule(pub.ip, pub.port, sub.ip, sub.port,
-                              policy)
+    def add_without_broker(self, pub: Member, sub: Member, policy: Policy, subject: str, constraints: list):
+        handle = api.add_rule(pub.ip, pub.port, sub.ip, sub.port, self.current_mark)
         rule = Rule(pub, sub, handle, policy)
-        relation = Relation(rule, context=constraints)
-        relation.add_jobs(api, schedule, schedule_job())
+        mapping_entry = MappingEntry(subject, constraints, policy)
+        self.mapping.add_mapping(str(self.current_mark), mapping_entry)
+        relation = Relation(rule, constraints=constraints, mark=str(self.current_mark))
+        self.current_mark += 1
+        relation.add_jobs(api, schedule, schedule_job)
         self.relations.append(relation)
 
-    def add_with_broker(self, pub: Member, sub: Member, broker: Member, policy, constraints):
-        handle = api.add_rule(pub.ip, pub.port, broker.ip, broker.port,
-                              policy)
+    def add_with_broker(self, pub: Member, sub: Member, broker: Member, policy: Policy, subject: str,
+                        constraints: list):
+        handle = api.add_rule(pub.ip, pub.port, broker.ip, broker.port, self.current_mark)
         first_rule = Rule(pub, broker, handle, policy)
 
-        handle = api.add_rule(broker.ip, broker.port, sub.ip, sub.port,
-                              policy)
+        handle = api.add_rule(broker.ip, broker.port, sub.ip, sub.port, self.current_mark)
         second_rule = Rule(broker, sub, handle, policy)
 
-        relation = Relation(
-            first_rule, second_rule, context=constraints)
+        mapping_entry = MappingEntry(subject, constraints, policy)
+        self.mapping.add_mapping(str(self.current_mark), mapping_entry)
+        relation = Relation(first_rule, second_rule, constraints=constraints, mark=str(self.current_mark))
+        self.current_mark += 1
+        relation.add_jobs(api, schedule, schedule_job)
         self.relations.append(relation)
 
     @Pyro4.expose
@@ -145,6 +152,8 @@ class ClientHandlers(object):
 
         rule_handle = found_relation.first.handle
         api.del_rule(rule_handle)
+        mark = found_relation.mark
+        self.mapping.del_mapping(str(mark))
 
         if found_relation.second:
             rule_handle = found_relation.second.handle

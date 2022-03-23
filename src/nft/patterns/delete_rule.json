@@ -1,14 +1,14 @@
 {
-    "nftables": [
-        {
-            "delete": {
-                "rule": {
-                    "family": "ip",
-                    "table": "filter",
-                    "chain": "MERGE",
-                    "handle": 0
-                }
-            }
+  "nftables": [
+    {
+      "delete": {
+        "rule": {
+          "family": "ip",
+          "table": "filter",
+          "chain": "merge",
+          "handle": 0
         }
-    ]
+      }
+    }
+  ]
 }

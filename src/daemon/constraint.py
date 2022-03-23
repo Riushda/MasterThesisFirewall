@@ -2,17 +2,13 @@ from utils.constant import *
 
 
 class Constraint:
-    def __init__(self, c_type: MemberType, field: str = "", values=None):
-        self.type = c_type
-        self.field_len = len(field)
+    def __init__(self, c_type: ConstraintType, field: str = "", value=None):
+        self.c_type = c_type
         self.field = field
-        self.n_values = 0
-        if values:
-            self.n_values = len(values)
-        self.values = values
+        self.value = value
 
     def __str__(self):
-        return f"Type: {self.type} | Field: {self.field} | Values: {self.values}"
+        return f"Type: {self.c_type} | Field: {self.field} | Values: {self.value}"
 
 
 def parse_interval(value):
@@ -49,11 +45,11 @@ def parse_time_interval(value):
     return [value[0], value[1]]
 
 
-def parse_context(context):
+def parse_constraints(constraints: list):
     constraint_list = []
     names = []
 
-    for c in context:
+    for c in constraints:
 
         split = c.split("/")
         if split[1] not in names:
@@ -62,10 +58,7 @@ def parse_context(context):
             return f"Error: constraints names must be unique."
 
         match split[0]:
-            case StringConstraint.SUBJECT.value:
-                constraint = Constraint(
-                    IntegerConstraint[split[0].upper()].value, split[1])
-            case StringConstraint.INT.value:
+            case StringConstraintType.INT.value:
                 intervals = []
                 for x in range(2, len(split)):
                     value = split[x].split("-")
@@ -73,16 +66,14 @@ def parse_context(context):
                     if not isinstance(interval, list):
                         return interval
                     intervals.append(interval)
-                constraint = Constraint(
-                    IntegerConstraint[split[0].upper()].value, split[1], intervals)
-            case StringConstraint.STR.value:
+                constraint = Constraint(ConstraintType[split[0].upper()].value, split[1], intervals)
+            case StringConstraintType.STR.value:
                 values = []
                 for x in range(2, len(split)):
                     value = split[x].split("-")
-                    values.append([len(value[0]), value[0]])
-                constraint = Constraint(
-                    IntegerConstraint[split[0].upper()].value, split[1], values)
-            case StringConstraint.TIME.value:
+                    values.append(value[0])
+                constraint = Constraint(ConstraintType[split[0].upper()].value, split[1], values)
+            case StringConstraintType.TIME.value:
                 intervals = []
                 for x in range(1, len(split)):
                     value = split[x].split("-")
@@ -90,10 +81,9 @@ def parse_context(context):
                     if not isinstance(interval, list):
                         return interval
                     intervals.append(interval)
-                constraint = Constraint(
-                    IntegerConstraint[split[0].upper()].value, "", intervals)
+                constraint = Constraint(ConstraintType[split[0].upper()].value, "/", intervals)
             case _:
-                return f"Error: Wrong constraint type, possible values are {[e.value for e in StringConstraint]}."
+                return f"Error: Wrong constraint type, possible values are {[e.value for e in StringConstraintType]}."
 
         constraint_list.append(constraint)
 

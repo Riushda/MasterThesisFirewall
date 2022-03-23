@@ -1,8 +1,6 @@
 import json
 import os
 
-from utils.constant import *
-
 dirname = os.path.dirname(__file__)
 
 
@@ -28,14 +26,6 @@ def get_rule(rule_list, handle):
             return element["rule"]
 
 
-def get_policy_json(policy: Policy):
-    match policy:
-        case Policy.ACCEPT.value:
-            return load_json("accept_policy")
-        case Policy.DROP.value:
-            return load_json("drop_policy")
-
-
 class CommandBuilder:
     def __init__(self):
         self.command = []
@@ -56,9 +46,9 @@ class CommandBuilder:
         self.command = load_json("delete_rule")
         self.command["nftables"][0]["delete"]["rule"]["handle"] = handle
 
-    def enable_rule(self, policy: Policy):
+    def enable_rule(self):
         self.command["expr"].pop()
-        self.command["expr"].append(get_policy_json(policy))
+        self.command["expr"].append(load_json("queue_target"))
         self.command = {"nftables": [{"replace": {"rule": self.command}}]}
 
     def disable_rule(self):
@@ -100,8 +90,9 @@ class CommandBuilder:
         mark_json["mangle"]["value"] = mark
         self.command["nftables"][0]["add"]["rule"]["expr"].append(mark_json)
 
-    def set_policy(self, policy: Policy):
-        self.command["nftables"][0]["add"]["rule"]["expr"].append(get_policy_json(policy))
+    def set_policy(self):
+        queue_json = load_json("queue_target")
+        self.command["nftables"][0]["add"]["rule"]["expr"].append(queue_json)
 
     def list_chain(self):
         self.command = load_json("list_chain")
