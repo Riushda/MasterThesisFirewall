@@ -4,6 +4,7 @@ import time
 from network_context import NetworkContext
 from network_context import SelfLoopException
 from abstract_rule import AbstractRule
+from context_utils import *
 
 from daemon.member import Member
 
@@ -43,15 +44,19 @@ def test():
     global abstract_rules
     init()
 
+    categorizer = Categorizer()
+
+    temp_intervals = [-np.inf, 0, 25, np.inf]
+    temp_labels = ['cold', 'average', 'hot']
+    categorizer.add_mapping("thermo.temp", temp_intervals, temp_labels)
+
     # To input like this
     initial_state_json = {"mvt_sensor": {"lastMessage": "long"}, "lamp": {"status": "off"},
-                          "thermo": {"temp": "hot", "lastMessage": "recent"}, "heater": {"status": "off"},
-                          "window": {"status": "open"}}  # check how to enable/disable  rules from initial state
+                          "thermo": {"temp": "cold", "lastMessage": "recent"}, "heater": {"status": "on"},
+                          "window": {"status": "closed"}}  # check how to enable/disable  rules from initial state
 
     # but will be converted to this
-    initial_state = {"mvt_sensor.lastMessage": "long", "lamp.status": "off",
-                     "thermo.temp": "cold", "thermo.lastMessage": "recent", "heater.status": "on",
-                     "window.status": "closed"}  # check how to enable/disable  rules from initial state
+    initial_state = flatten_state(initial_state_json)
 
     # contains all possible values for all devices fields
     state_combinations = {"thermo.temp": ["cold", "average", "hot"], "mvt_sensor.lastMessage": ["recent", "long"],
@@ -89,16 +94,16 @@ def test():
 
     network_context.show_current_state()
 
-    update_context(network_context, ("thermo.temp", "cold"))  # self loop
-    update_context(network_context, ("thermo.temp", "hot"))
+    update_context(network_context, categorizer, ("thermo.temp", -1))  # self loop
+    update_context(network_context, categorizer, ("thermo.temp", 26))
     network_context.show_current_state()
-    update_context(network_context, ("thermo.temp", "cold"))
+    update_context(network_context, categorizer, ("thermo.temp", -2))
     network_context.show_current_state()
-    update_context(network_context, ("heater.status", "on"))
+    update_context(network_context, categorizer, ("heater.status", "on"))
     network_context.show_current_state()
-    update_context(network_context, ("window.status", "open"))
+    update_context(network_context, categorizer, ("window.status", "open"))
     network_context.show_current_state()
-    update_context(network_context, ("window.status", "closed"))
+    update_context(network_context, categorizer, ("window.status", "closed"))
     network_context.show_current_state()
 
     ''' For efficiency test later
@@ -108,7 +113,12 @@ def test():
     '''
 
 
-def update_context(network_context: NetworkContext, packet_data):
+def update_context(network_context: NetworkContext, categorizer: Categorizer, packet_data):
+
+    if categorizer.has_mapping(packet_data[0]):
+        label = categorizer.map(packet_data[0], packet_data[1])
+        packet_data = (packet_data[0], label)
+
     try:
         network_context.evaluate(data=packet_data)
     except SelfLoopException:
@@ -119,3 +129,4 @@ def update_context(network_context: NetworkContext, packet_data):
 
 
 test()
+
