@@ -1,110 +1,122 @@
 {
-    "nftables": [
-        {
-            "flush": {
-                "ruleset": ""
-            }
-        },
-        {
-            "add": {
-                "table": {
-                    "family": "ip",
-                    "name": "filter"
-                }
-            }
-        },
-        {
-            "add": {
-                "chain": {
-                    "family": "ip",
-                    "table": "filter",
-                    "name": "INPUT"
-                }
-            }
-        },
-        {
-            "add": {
-                "chain": {
-                    "family": "ip",
-                    "table": "filter",
-                    "name": "OUTPUT"
-                }
-            }
-        },
-        {
-            "add": {
-                "chain": {
-                    "family": "ip",
-                    "table": "filter",
-                    "name": "FORWARD"
-                }
-            }
-        },
-        {
-            "add": {
-                "chain": {
-                    "family": "ip",
-                    "table": "filter",
-                    "name": "MERGE"
-                }
-            }
-        },
-        {
-            "add": {
-                "chain": {
-                    "family": "ip",
-                    "table": "filter",
-                    "name": "DISABLE"
-                }
-            }
-        },
-        {
-            "add": {
-                "rule": {
-                    "family": "ip",
-                    "table": "filter",
-                    "chain": "INPUT",
-                    "expr": [
-                        {
-                            "goto": {
-                                "target": "MERGE"
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        {
-            "add": {
-                "rule": {
-                    "family": "ip",
-                    "table": "filter",
-                    "chain": "OUTPUT",
-                    "expr": [
-                        {
-                            "goto": {
-                                "target": "MERGE"
-                            }
-                        }
-                    ]
-                }
-            }
-        },
-        {
-            "add": {
-                "rule": {
-                    "family": "ip",
-                    "table": "filter",
-                    "chain": "FORWARD",
-                    "expr": [
-                        {
-                            "goto": {
-                                "target": "MERGE"
-                            }
-                        }
-                    ]
-                }
-            }
+  "nftables": [
+    {
+      "flush": {
+        "ruleset": ""
+      }
+    },
+    {
+      "add": {
+        "table": {
+          "family": "ip",
+          "name": "filter"
         }
-    ]
+      }
+    },
+    {
+      "add": {
+        "chain": {
+          "family": "ip",
+          "table": "filter",
+          "name": "input",
+          "type": "filter",
+          "hook": "input",
+          "prio": 0,
+          "policy": "accept"
+        }
+      }
+    },
+    {
+      "add": {
+        "chain": {
+          "family": "ip",
+          "table": "filter",
+          "name": "output",
+          "type": "filter",
+          "hook": "output",
+          "prio": 0,
+          "policy": "accept"
+        }
+      }
+    },
+    {
+      "add": {
+        "chain": {
+          "family": "ip",
+          "table": "filter",
+          "name": "forward",
+          "type": "filter",
+          "hook": "forward",
+          "prio": 0,
+          "policy": "accept"
+        }
+      }
+    },
+    {
+      "add": {
+        "chain": {
+          "family": "ip",
+          "table": "filter",
+          "name": "merge"
+        }
+      }
+    },
+    {
+      "add": {
+        "chain": {
+          "family": "ip",
+          "table": "filter",
+          "name": "disabled"
+        }
+      }
+    },
+    {
+      "add": {
+        "rule": {
+          "family": "ip",
+          "table": "filter",
+          "chain": "input",
+          "expr": [
+            {
+              "goto": {
+                "target": "merge"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "add": {
+        "rule": {
+          "family": "ip",
+          "table": "filter",
+          "chain": "output",
+          "expr": [
+            {
+              "goto": {
+                "target": "merge"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "add": {
+        "rule": {
+          "family": "ip",
+          "table": "filter",
+          "chain": "forward",
+          "expr": [
+            {
+              "goto": {
+                "target": "merge"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
 }

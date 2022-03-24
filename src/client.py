@@ -47,6 +47,9 @@ parser.add_argument("--sub", type=str,
 parser.add_argument("--broker", type=str,
                     help="a broker", default=None)
 
+parser.add_argument("--subject", type=str,
+                    help="a subject", default=None)
+
 parser.add_argument("--constraint", action='append',
                     help='a constraint on the context', default=[])
 
@@ -57,19 +60,23 @@ parser.add_argument("--table", type=str, choices=[e.value for e in TableType],
 
 args = parser.parse_args()
 
-match args.command:
-    case Command.MEMBER.value:
-        match args.action:
-            case Action.ADD.value:
-                print(daemon.add_member(args.name, args.src, args.type))
-            case Action.REMOVE.value:
-                print(daemon.remove_member(args.name, args.type))
-    case Command.RELATION.value:
-        match args.action:
-            case Action.ADD.value:
-                print(daemon.add_relation(args.pub, args.sub,
-                                          args.broker, args.policy, args.constraint))
-            case Action.REMOVE.value:
-                print(daemon.remove_relation(args.index))
-    case Command.SHOW.value:
-        print(daemon.show(args.table))
+try:
+    match args.command:
+        case Command.MEMBER.value:
+            match args.action:
+                case Action.ADD.value:
+                    print(daemon.add_member(args.name, args.src, args.type))
+                case Action.REMOVE.value:
+                    print(daemon.remove_member(args.name, args.type))
+        case Command.RELATION.value:
+            match args.action:
+                case Action.ADD.value:
+                    print(daemon.add_relation(args.pub, args.sub,
+                                              args.broker, args.policy, args.subject, args.constraint))
+                case Action.REMOVE.value:
+                    print(daemon.remove_relation(args.index))
+        case Command.SHOW.value:
+            print(daemon.show(args.table))
+except Exception:
+    print("Pyro traceback:")
+    print("".join(Pyro4.util.getPyroTraceback()))
