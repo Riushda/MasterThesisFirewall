@@ -1,0 +1,9 @@
+{
+    "nftables": [
+        {
+            "list": {
+                "ruleset": ""
+            }
+        }
+    ]
+}

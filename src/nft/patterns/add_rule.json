@@ -1,0 +1,31 @@
+{
+  "nftables": [
+    {
+      "add": {
+        "rule": {
+          "family": "ip",
+          "table": "filter",
+          "chain": "merge",
+          "expr": [
+            {
+              "match": {
+                "op": "==",
+                "left": {
+                  "meta": {
+                    "key": "l4proto"
+                  }
+                },
+                "right": {
+                  "set": [
+                    "tcp",
+                    "udp"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

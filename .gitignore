@@ -181,4 +181,7 @@ cython_debug/
 # This project
 build/
 .vscode
-vgcore.*
+.idea
+ruleset.json
+.vagrant
+tmux.sh

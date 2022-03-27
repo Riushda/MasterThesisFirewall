@@ -1,0 +1,57 @@
+import scapy.all as scapy
+from scapy.layers.inet import IP, TCP, UDP
+from scapy.layers.inet6 import IPv6
+
+from nfqueue import protocol
+
+
+class AbstractPacket:
+
+    def __init__(self):
+        self.mark = None
+        self.src = None
+        self.dst = None
+        self.sport = None
+        self.dport = None
+        self.subject = None
+        self.content = None
+
+    def __str__(self) -> str:
+        return "mark:" + str(self.mark) + " src:" + self.src + " dst:" + self.dst \
+               + " sport:" + str(self.sport) + " dport:" + str(
+            self.dport) + " subject:" + self.subject + " content:" + str(self.content)
+
+    def parse_network(self, packet):
+        if packet.haslayer(IP):
+            self.src = packet[IP].src
+            self.dst = packet[IP].dst
+        elif packet.haslayer(IPv6):
+            self.src = packet[IPv6].src
+            self.dst = packet[IPv6].dst
+        else:
+            return False
+        return True
+
+    def parse_transport(self, packet):
+        if packet.haslayer(TCP):
+            self.sport = packet[TCP].sport
+            self.dport = packet[TCP].dport
+        elif packet.haslayer(UDP):
+            self.sport = packet[UDP].sport
+            self.dport = packet[UDP].dport
+        else:
+            return False
+        return True
+
+    def parse_application(self, packet):
+        if packet.haslayer(scapy.Raw):
+            raw_layer = packet[scapy.Raw].load
+            decoded_layer = protocol.decode_packet(self.dport, raw_layer)
+            if decoded_layer:
+                self.subject = decoded_layer[0]
+                self.content = decoded_layer[1]
+                return True
+        return False
+
+    def set_mark(self, mark):
+        self.mark = mark

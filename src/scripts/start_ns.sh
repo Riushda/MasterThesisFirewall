@@ -1,0 +1,1 @@
+python3.10 -m Pyro4.naming > /dev/null &

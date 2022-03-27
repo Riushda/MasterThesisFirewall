@@ -1,0 +1,10 @@
+{
+    "mangle": {
+        "key": {
+            "meta": {
+                "key": "mark"
+            }
+        },
+        "value": 0
+    }
+}
