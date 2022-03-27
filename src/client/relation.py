@@ -1,4 +1,4 @@
-from daemon.rule import Rule
+from client.rule import Rule
 from utils.constant import *
 
 

@@ -9,7 +9,7 @@ import pyximport  # This is part of Cython
 pyximport.install()
 
 from context import context
-from daemon.client_handlers import ClientHandlers, stop_client_handlers
+from client.handlers import Handlers, stop_client_handlers
 from nfqueue import handling_queue
 from nfqueue.constraint_mapping import ConstraintMapping
 
@@ -25,7 +25,7 @@ constraint_mapping = ConstraintMapping()  # This structure contains the constrai
 
 daemon = Pyro4.Daemon()
 ns = Pyro4.locateNS()
-uri = daemon.register(ClientHandlers(constraint_mapping))
+uri = daemon.register(Handlers(constraint_mapping))
 ns.register("ClientHandlers", uri)
 
 daemon_thread = threading.Thread(target=daemon.requestLoop, args=())

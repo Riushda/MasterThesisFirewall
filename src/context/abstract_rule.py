@@ -1,5 +1,5 @@
-from network_context import NetworkContext
-from network_context import DeviceState
+from context.network_context import DeviceState
+from context.network_context import NetworkContext
 
 
 class AbstractRule:

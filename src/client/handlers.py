@@ -3,11 +3,11 @@ import threading
 import Pyro4
 import schedule
 
-from daemon.constraint import parse_constraints
-from daemon.member import Member, parse_member
-from daemon.relation import Relation
-from daemon.rule import Rule
-from daemon.schedule_thread import ScheduleThread, schedule_job
+from client.constraint import parse_constraints
+from client.member import Member, parse_member
+from client.relation import Relation
+from client.rule import Rule
+from client.schedule_thread import ScheduleThread, schedule_job
 from nfqueue.constraint_mapping import MappingEntry
 from nft.nftables_api import NftablesAPI
 from utils.constant import *
@@ -25,7 +25,7 @@ def stop_client_handlers():
     api.flush_ruleset()
 
 
-class ClientHandlers(object):
+class Handlers(object):
     def __init__(self, mapping):
         self.mapping = mapping
         self.api = api

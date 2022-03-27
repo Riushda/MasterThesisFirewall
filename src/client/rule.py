@@ -1,4 +1,4 @@
-from daemon.member import Member
+from client.member import Member
 from utils.constant import *
 
 

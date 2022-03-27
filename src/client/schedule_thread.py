@@ -1,7 +1,7 @@
 import threading
 import time
 
-from daemon.relation import Relation
+from client.relation import Relation
 from nft.nftables_api import NftablesAPI
 from utils.constant import *
 
