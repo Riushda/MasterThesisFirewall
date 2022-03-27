@@ -1,21 +1,22 @@
 from multiprocessing import Queue
-
 import Pyro4
-
-from context.abstract_rule import AbstractRule
+import time
 from context.network_context import NetworkContext
 from context.network_context import SelfLoopException
+from context.abstract_rule import AbstractRule
+from context.context_utils import *
+from daemon.member import Member
 
 daemon = Pyro4.Proxy("PYRONAME:handlers")
 '''
-client functions that will be called 
+daemon functions that will be called 
 
-client.add_member(name, str_ip, str_port, type)
-client.remove_member(name, type)
-client.add_relation(pub, sub, broker, policy, context)
-client.remove_relation(index)
-client.add_rule(src, sport, dst, dport, policy)
-client.remove_rule(index)
+daemon.add_member(name, str_ip, str_port, type)
+daemon.remove_member(name, type)
+daemon.add_relation(pub, sub, broker, policy, context)
+daemon.remove_relation(index)
+daemon.add_rule(src, sport, dst, dport, policy)
+daemon.remove_rule(index)
 '''
 
 

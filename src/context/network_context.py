@@ -1,4 +1,5 @@
 from transitions import Machine, State, EventData
+from context_utils import *
 import itertools as it
 
 
@@ -137,7 +138,7 @@ class NetworkContext(object):
         keys = self.state_inference.keys()
 
         for key in keys:
-            device = self.get_device(key[0])
+            device = get_device(key[0])
 
             # check if keys are publishers
             if device not in self.publisher_list:
@@ -148,7 +149,7 @@ class NetworkContext(object):
             values = self.state_inference[key]
             devices = []
             for value in values:
-                devices.append(self.get_device(value[0]))
+                devices.append(get_device(value[0]))
 
             for relation in self.relations:
                 publisher = relation.first.src.name
@@ -168,25 +169,6 @@ class NetworkContext(object):
                 return False
 
         return True
-
-    def get_device(self, field):
-        key_list = field.split(".")
-        return key_list[0]
-
-    def is_member(self, field, member_list):
-        key_list = field.split(".")
-        return key_list[0] in member_list
-
-    def get_element(self, json, field):
-        element = None
-        key_list = field.split(".")
-        for key in key_list:
-            if element:
-                element = element[key]
-            else:
-                element = json[key]
-
-        return element
 
 
 class SelfLoopException(Exception):
