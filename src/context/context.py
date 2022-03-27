@@ -1,11 +1,10 @@
 from multiprocessing import Queue
+
 import Pyro4
-import time
+
+from context.abstract_rule import AbstractRule
 from context.network_context import NetworkContext
 from context.network_context import SelfLoopException
-from context.abstract_rule import AbstractRule
-from context.context_utils import *
-from daemon.member import Member
 
 daemon = Pyro4.Proxy("PYRONAME:handlers")
 '''

@@ -1,6 +1,6 @@
-from transitions import Machine, State, EventData
-from context_utils import *
 import itertools as it
+
+from transitions import Machine, State
 
 
 class DeviceState(State):
