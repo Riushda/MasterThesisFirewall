@@ -2,6 +2,8 @@ import itertools as it
 
 from transitions import Machine, State
 
+from context.utils import get_device
+
 
 class DeviceState(State):
     def __init__(self, name, state, is_consistent):
@@ -34,6 +36,8 @@ class NetworkContext(object):
         self.transitions = []
         self.transitions_change = dict()
 
+        self.machine: Machine = Machine(None)
+
         # if self.check_inferences():
         self.build_fsm(initial_state, state_combinations)
 
@@ -53,6 +57,9 @@ class NetworkContext(object):
             for state_dst in it.product(*(state_combinations[Name] for Name in state_combinations)):
                 state_dst = dict(zip(state_combinations.keys(), state_dst))
 
+                key_trigger = None
+                value_trigger = None
+
                 # get all keys in state_src and state dst which doesn't have the same value
                 diff_keys = [key for key in state_src.keys() & state_dst if state_src[key] != state_dst[key]]
 
@@ -63,6 +70,10 @@ class NetworkContext(object):
                     infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
                     if infer is None or state_dst[infer[0][0]] == infer[0][1]:
                         conforming = True
+
+                        key_trigger = diff_keys[0]
+                        value_trigger = state_dst[diff_keys[0]]
+
                         self.transitions_change[(str(i), str(j))] = {"change": {
                             diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]},
                             "actions": []
@@ -78,6 +89,9 @@ class NetworkContext(object):
                             conforming = set(diff).issubset(set(inferred_keys))
 
                             if conforming:
+                                key_trigger = key
+                                value_trigger = state_dst[key]
+
                                 self.transitions_change[(str(i), str(j))] = {"change": {}, "actions": []}
                                 for element in diff_keys:
                                     self.transitions_change[(str(i), str(j))]["change"][element] = [state_src[element],
@@ -85,9 +99,9 @@ class NetworkContext(object):
                                 break
 
                 if conforming:
-                    transition = {'trigger': 'evaluate', 'source': str(i), 'dest': str(j),
-                                  'conditions': 'check_transition', 'after': 'action'}
+                    trigger = self.get_transition_trigger(key_trigger, value_trigger)
 
+                    transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'after': 'action'}
                     self.transitions.append(transition)
 
                 j += 1
@@ -95,7 +109,7 @@ class NetworkContext(object):
             i += 1
 
         self.machine = Machine(model=self, states=self.states, transitions=self.transitions, initial=initial_state_name,
-                               prepare_event='forbid_self_loop', send_event=True)
+                               send_event=True)
 
     def is_consistent(self, state):
         for inconsistent in self.inconsistent_states:  # no forbidden state
@@ -104,8 +118,14 @@ class NetworkContext(object):
 
         return True
 
+    def get_transition_trigger(self, key, value):
+        return key + "=" + value
+
     def show_current_state(self):
-        print(self.machine.get_state(self.state).state)
+        print(self.current_state())
+
+    def current_state(self):
+        return self.machine.get_state(self.state).state
 
     def is_current_state_consistent(self):
         return self.machine.get_state(self.state).is_consistent
@@ -113,25 +133,11 @@ class NetworkContext(object):
     def action(self, event):
         # print("action: " + str(event))
         actions = self.transitions_change[(event.transition.source, event.transition.dest)]["actions"]
-        print(actions)
+        print("actions : "+str(actions))
 
-    def check_transition(self, event):
-        # print("condition: " + str(event.kwargs["data"]))
-        data = event.kwargs["data"]
-
-        elements = self.transitions_change[(event.transition.source, event.transition.dest)]["change"]
-
-        for key in elements:
-            if key == data[0] and elements[key][1] == data[1]:
-                return True
-
-        return False
-
-    def forbid_self_loop(self, event):
-        data = event.kwargs["data"]
-        state = self.machine.get_state(self.state).state
-        if state[data[0]] == data[1]:
-            raise SelfLoopException()
+    def self_loop(self, data):
+        state = self.current_state()
+        return state[data[0]] == data[1]
 
     # check that the inferences keys are publishers and that the values are the subscribers of their key
     def check_inferences(self):

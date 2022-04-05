@@ -1,0 +1,11 @@
+[
+  {
+    "condition": {
+      "mvt_sensor": {"lastMessage": "long"},
+      "window": {"status": "closed"}
+    },
+    "action": {
+      "disable": {"src": "window_switch", "dst": "window"}
+    }
+  }
+]

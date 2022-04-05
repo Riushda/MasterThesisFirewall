@@ -1,0 +1,14 @@
+[
+  {
+    "key": ["thermo.temp", "hot"],
+    "value": [
+      ["heater.status", "off"]
+    ]
+  },
+  {
+    "key": ["mvt_sensor.lastMessage", "recent"],
+    "value": [
+      ["lamp.status", "on"]
+    ]
+  }
+]

@@ -31,7 +31,7 @@ class PacketHandler:
             raw_packet.accept()
             return
 
-        print(f"src: {str(abstract_packet.src)} ~ dst: {str(abstract_packet.dst)}")
+        #print(f"src: {str(abstract_packet.src)} ~ dst: {str(abstract_packet.dst)}")
 
         if not abstract_packet.parse_transport(decoded_packet):
             print("Unknown transport layer protocol")

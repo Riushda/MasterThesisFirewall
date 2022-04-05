@@ -23,9 +23,14 @@ constraint_mapping = ConstraintMapping()  # This structure contains the constrai
 # mapping_entry = MappingEntry("test", constraint_list, Policy.ACCEPT.value)
 # constraint_mapping.add_mapping("0", mapping_entry)
 
+pub_list = {}
+sub_list = {}
+broker_list = {}
+relations = []
+
 daemon = Pyro4.Daemon()
 ns = Pyro4.locateNS()
-uri = daemon.register(Handlers(constraint_mapping))
+uri = daemon.register(Handlers(constraint_mapping, pub_list, sub_list, broker_list, relations))
 ns.register("ClientHandlers", uri)
 
 daemon_thread = threading.Thread(target=daemon.requestLoop, args=())
@@ -36,11 +41,6 @@ packet_queue = Queue()
 
 thread1 = Thread(target=handling_queue.run, args=(packet_queue, constraint_mapping,), daemon=True)
 thread1.start()
-
-relations = []
-broker_list = {}
-pub_list = {}
-sub_list = {}
 
 thread2 = Thread(target=context.run, args=(packet_queue, pub_list, sub_list, broker_list, relations), daemon=True)
 thread2.start()

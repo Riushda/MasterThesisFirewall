@@ -1,0 +1,10 @@
+[
+  {
+    "heater": {"status": "on"},
+    "window": {"status": "open"}
+  },
+  {
+    "thermo": {"temp": "hot"},
+    "heater": {"status": "on"}
+  }
+]

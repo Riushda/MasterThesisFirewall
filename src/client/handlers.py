@@ -26,13 +26,13 @@ def stop_client_handlers():
 
 
 class Handlers(object):
-    def __init__(self, mapping):
+    def __init__(self, mapping, pub_list, sub_list, broker_list, relations):
         self.mapping = mapping
         self.api = api
-        self.relations = []
-        self.broker_list = {}
-        self.pub_list = {}
-        self.sub_list = {}
+        self.pub_list = pub_list
+        self.sub_list = sub_list
+        self.broker_list = broker_list
+        self.relations = relations
         self.current_mark = 0
 
     @Pyro4.expose

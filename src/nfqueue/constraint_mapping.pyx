@@ -35,10 +35,9 @@ def match_packet(packet, mapping_entry):
 
     for data in packet.content:
         if len(data) > 1:
-            if not match_constraint(data[0], data[1], mapping_entry.constraints):
+            if len(mapping_entry.constraints)>0 and not match_constraint(data[0], data[1], mapping_entry.constraints):
                 return False
         else:
-
             return False
 
     return True

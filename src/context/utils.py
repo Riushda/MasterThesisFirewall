@@ -1,5 +1,6 @@
 import numpy as np
-
+import json
+import os
 
 def get_device(field):
     key_list = field.split(".")
@@ -52,6 +53,37 @@ def unflatten_state(state):
         unflattened[device][field] = state[key]
 
     return unflattened
+
+
+class InputParser:
+    def __init__(self):
+        self.dirname = os.path.dirname(__file__)
+
+    def input_path(self, input: str):
+        return f"{self.dirname}/input/{input}.json"
+
+    def load_json(self, input: str):
+        return json.load(open(self.input_path(input)))
+
+    def get_input(self):
+        initial_state = flatten_state(self.load_json("initial_state"))
+
+        state_combinations = flatten_state(self.load_json("state_combinations"))
+
+        inconsistent_states = self.load_json("inconsistent_states")
+        for i in range(len(inconsistent_states)):
+            inconsistent_states[i] = flatten_state(inconsistent_states[i])
+
+        inference_array = self.load_json("state_inference")
+        state_inference = {}
+        for inference in inference_array:
+            state_inference[(inference["key"][0], inference["key"][1])] = inference["value"]
+
+        abstract_rules = self.load_json("abstract_rules")
+        for rule in abstract_rules:
+            rule["condition"] = flatten_state(rule["condition"])
+
+        return initial_state, state_combinations, inconsistent_states, state_inference, abstract_rules
 
 
 class Categorizer:

@@ -1,0 +1,7 @@
+{
+    "mvt_sensor": {"lastMessage": "long"},
+    "lamp": {"status": "off"},
+    "thermo": {"temp": "hot", "lastMessage": "recent"},
+    "heater": {"status": "off"},
+    "window": {"status": "open"}
+}
