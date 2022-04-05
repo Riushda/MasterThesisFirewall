@@ -2,14 +2,13 @@ from multiprocessing import Queue
 from _queue import Empty
 
 import Pyro4
-import numpy as np
 from transitions import MachineError
 
 from context.abstract_rule import AbstractRule
 from context.network_context import NetworkContext
 from context.network_context import SelfLoopException
 from nfqueue.abstract_packet import AbstractPacket
-from context.utils import InputParser, Categorizer
+from context.utils import InputParser, Categorizer, is_float
 
 daemon = Pyro4.Proxy("PYRONAME:handlers")
 '''
@@ -27,8 +26,11 @@ daemon.remove_rule(index)
 def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
     input_parser: InputParser = InputParser()
     categorizer: Categorizer = Categorizer()
-    categorizer.add_mapping("thermo.temp", [-np.inf, 0, 25, np.inf], ["cold", "average", "hot"])
-    initial_state, state_combinations, inconsistent_states, state_inference, abstract_rules = input_parser.get_input()
+
+    initial_state, state_combinations, inconsistent_states, state_inference, abstract_rules, categorization = input_parser.get_input()
+
+    categorizer.add_mapping_array(categorization)
+
     network_context = NetworkContext(pub_list, relations, initial_state, state_combinations, inconsistent_states,
                                      state_inference)
 
@@ -39,7 +41,6 @@ def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
             packet: AbstractPacket = packet_queue.get(block=True, timeout=10)
 
             for content in packet.content:
-                print(content)
                 device = get_device_name(packet.src, pub_list)
                 update_context(network_context, device, categorizer, content)
                 network_context.show_current_state()
@@ -53,11 +54,14 @@ def update_context(network_context: NetworkContext, device, categorizer: Categor
 
         field = device + "." + packet_data[0]
 
-        if categorizer.has_mapping(field):
-            value = categorizer.map(field, packet_data[1])
-        else:
-            value = packet_data[1]
+        value = packet_data[1]
+        if is_float(value):
+            value = float(value)
 
+        if categorizer.has_mapping(field):
+            value = categorizer.map(field, value)
+
+        print(field, value)
         trigger = network_context.get_transition_trigger(field, value)
 
         try:

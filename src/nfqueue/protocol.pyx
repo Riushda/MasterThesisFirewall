@@ -3,7 +3,7 @@ import re
 MQTT_PORT = 1883
 MQTT_PUBLISH = 48
 
-pattern = re.compile('\??([\w.]+)[=]?([\w.]+)?&?', re.IGNORECASE) # \??(\w+)=(\w+)&? # \??(\w+)[=]?(\w+)?&?
+pattern = re.compile('\??([\w.-]+)[=]?([\w.-]+)?&?', re.IGNORECASE) # \??(\w+)=(\w+)&? # \??(\w+)[=]?(\w+)?&?
 
 def decode_packet(dport, app_layer):
 	if dport==MQTT_PORT : # if MQTT

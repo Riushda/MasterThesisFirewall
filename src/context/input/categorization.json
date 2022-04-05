@@ -1,0 +1,7 @@
+[
+  [
+    "thermo.temp",
+    ["-inf", "0", "25", "inf"],
+    ["cold", "average", "hot"]
+  ]
+]

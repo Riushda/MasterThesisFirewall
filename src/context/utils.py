@@ -20,6 +20,14 @@ def is_member(field, member_list):
     return key_list[0] in member_list
 
 
+def is_float(string):
+    try:
+        float(string)
+    except ValueError:
+        return False
+    return True
+
+
 def get_element(self, json, field):
     element = None
     key_list = field.split(".")
@@ -83,7 +91,9 @@ class InputParser:
         for rule in abstract_rules:
             rule["condition"] = flatten_state(rule["condition"])
 
-        return initial_state, state_combinations, inconsistent_states, state_inference, abstract_rules
+        categorization = self.load_json("categorization")
+
+        return initial_state, state_combinations, inconsistent_states, state_inference, abstract_rules, categorization
 
 
 class Categorizer:
@@ -95,7 +105,15 @@ class Categorizer:
         d = dict(enumerate(labels, 1))
         self.mapping[field] = {}
         self.mapping[field]["categorizer"] = np.vectorize(d.get)
+
+        for i in range(len(intervals)):
+            intervals[i] = float(intervals[i])
+
         self.mapping[field]["intervals"] = intervals
+
+    def add_mapping_array(self, mapping_array):
+        for mapping in mapping_array:
+            self.add_mapping(mapping[0], mapping[1], mapping[2])
 
     def remove_mapping(self, field):
         self.mapping.pop(field)
