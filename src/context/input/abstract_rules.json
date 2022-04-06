@@ -1,11 +1,29 @@
 [
   {
     "condition": {
+      "heater": {"status": "on"},
+      "window": {"status": "closed"}
+    },
+    "action": {
+      "disable": 0
+    }
+  },
+  {
+    "condition": {
+      "thermo": {"temp": "hot"},
+      "heater": {"status": "off"}
+    },
+    "action": {
+      "disable": 1
+    }
+  },
+  {
+    "condition": {
       "mvt_sensor": {"lastMessage": "long"},
       "window": {"status": "closed"}
     },
     "action": {
-      "disable": {"src": "window_switch", "dst": "window"}
+      "disable": 2
     }
   }
 ]

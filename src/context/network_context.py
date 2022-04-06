@@ -3,6 +3,7 @@ import itertools as it
 from transitions import Machine, State
 
 from context.utils import get_device
+import context.abstract_rule as abstract_rule
 
 
 class DeviceState(State):
@@ -133,7 +134,10 @@ class NetworkContext(object):
     def action(self, event):
         # print("action: " + str(event))
         actions = self.transitions_change[(event.transition.source, event.transition.dest)]["actions"]
-        print("actions : "+str(actions))
+
+        for action in actions:
+            print("action : " + str(action))
+            abstract_rule.run_action(action)
 
     def self_loop(self, data):
         state = self.current_state()
@@ -175,6 +179,62 @@ class NetworkContext(object):
                 return False
 
         return True
+
+    def add_rules(self, rules):
+
+        # add actions of rules in all transitions validating the conditions
+        for state_src in self.states:
+            for state_dst in self.states:
+                state_src: DeviceState = state_src
+                state_dst: DeviceState = state_dst
+
+                if state_src.name != state_dst.name and state_src.is_consistent and state_dst.is_consistent:
+
+                    changed_element = self.transitions_change.get((state_src.name, state_dst.name))
+                    if changed_element:  # if transition between both states
+                        changed_element = changed_element["change"]
+                        changed_element_keys = list(changed_element.keys())
+
+                        for rule in rules:
+                            condition = rule["condition"]
+
+                            condition_changed = False
+                            for key in changed_element_keys:
+                                if key in condition:
+                                    condition_changed = True
+                                    break
+
+                            if condition_changed:
+                                action = None
+
+                                # if condition of rule does no longer hold
+                                if condition.items() <= state_src.state.items():
+                                    action = {"index": rule["index"], "action": rule["action"], "reverse": True}
+
+                                # if condition of rule now holds
+                                if condition.items() <= state_dst.state.items():
+                                    action = {"index": rule["index"], "action": rule["action"], "reverse": False}
+
+                                if action:
+                                    self.transitions_change[(state_src.name, state_dst.name)][
+                                        "actions"].append(action)
+
+    def del_rules(self, rules):
+        # delete actions of rules with index in rule_index in all transitions
+        if len(rules) > 0:
+            for state_src in self.states:
+                for state_dst in self.states:
+                    state_src: DeviceState = state_src
+                    state_dst: DeviceState = state_dst
+
+                    if state_src != state_dst and state_src.is_consistent and state_dst.is_consistent:
+                        changed_element = self.transitions_change.get((state_src.name, state_dst.name))
+                        if changed_element:  # if transition between both states
+                            for action in changed_element["actions"]:
+                                for rule_to_delete in rules:
+                                    if action["index"] == rule_to_delete:
+                                        changed_element["actions"].remove(action)
+                                        break
 
 
 class SelfLoopException(Exception):

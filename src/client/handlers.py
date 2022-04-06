@@ -12,6 +12,7 @@ from nfqueue.constraint_mapping import MappingEntry
 from nft.nftables_api import NftablesAPI
 from utils.constant import *
 
+
 api = NftablesAPI()
 api.init_ruleset()
 
@@ -28,7 +29,6 @@ def stop_client_handlers():
 class Handlers(object):
     def __init__(self, mapping, pub_list, sub_list, broker_list, relations):
         self.mapping = mapping
-        self.api = api
         self.pub_list = pub_list
         self.sub_list = sub_list
         self.broker_list = broker_list
@@ -163,6 +163,42 @@ class Handlers(object):
         del self.relations[index]
 
         return "Relation removed!"
+
+    @Pyro4.expose
+    def enable_relation(self, index: int):
+
+        if index >= len(self.relations):
+            return "Error: This relation does not exist."
+
+        found_relation = self.relations[index]
+
+        rule_handle = found_relation.first.handle
+        api.enable_rule(rule_handle)
+
+        if found_relation.second:
+            rule_handle = found_relation.second.handle
+            api.enable_rule(rule_handle)
+
+        # found_relation.add_jobs(api, schedule, schedule_job)
+        return "Relation enabled!"
+
+    @Pyro4.expose
+    def disable_relation(self, index: int):
+
+        if index >= len(self.relations):
+            return "Error: This relation does not exist."
+
+        found_relation = self.relations[index]
+
+        rule_handle = found_relation.first.handle
+        api.disable_rule(rule_handle)
+
+        if found_relation.second:
+            rule_handle = found_relation.second.handle
+            api.disable_rule(rule_handle)
+
+        # found_relation.cancel_jobs(schedule)
+        return "Relation disabled!"
 
     @Pyro4.expose
     def show(self, table: str):

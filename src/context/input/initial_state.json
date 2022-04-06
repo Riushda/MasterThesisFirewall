@@ -1,5 +1,5 @@
 {
-    "mvt_sensor": {"lastMessage": "long"},
+    "mvt_sensor": {"lastMessage": "recent"},
     "lamp": {"status": "off"},
     "thermo": {"temp": "hot", "lastMessage": "recent"},
     "heater": {"status": "off"},

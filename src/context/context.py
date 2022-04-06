@@ -1,7 +1,6 @@
 from multiprocessing import Queue
 from _queue import Empty
 
-import Pyro4
 from transitions import MachineError
 
 from context.abstract_rule import AbstractRule
@@ -9,18 +8,6 @@ from context.network_context import NetworkContext
 from context.network_context import SelfLoopException
 from nfqueue.abstract_packet import AbstractPacket
 from context.utils import InputParser, Categorizer, is_float
-
-daemon = Pyro4.Proxy("PYRONAME:handlers")
-'''
-daemon functions that will be called 
-
-daemon.add_member(name, str_ip, str_port, type)
-daemon.remove_member(name, type)
-daemon.add_relation(pub, sub, broker, policy, context)
-daemon.remove_relation(index)
-daemon.add_rule(src, sport, dst, dport, policy)
-daemon.remove_rule(index)
-'''
 
 
 def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):

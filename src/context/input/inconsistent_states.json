@@ -6,5 +6,9 @@
   {
     "thermo": {"temp": "hot"},
     "heater": {"status": "on"}
+  },
+  {
+    "mvt_sensor": {"lastMessage": "long"},
+    "window": {"status": "open"}
   }
 ]

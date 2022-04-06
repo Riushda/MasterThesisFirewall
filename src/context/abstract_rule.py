@@ -1,5 +1,19 @@
-from context.network_context import DeviceState
-from context.network_context import NetworkContext
+from context.network_context import DeviceState, NetworkContext
+
+import Pyro4
+
+daemon = Pyro4.Proxy("PYRONAME:ClientHandlers")
+
+
+def run_action(rule):
+    reverse = rule["reverse"]
+    action = next(iter(rule["action"]))
+    index = rule["action"][action]
+
+    if (action == "enable" and not reverse) or (action == "disable" and reverse):
+        daemon.enable_relation(index)
+    elif (action == "disable" and not reverse) or (action == "enable" and reverse):
+        daemon.disable_relation(index)
 
 
 class AbstractRule:
@@ -22,42 +36,7 @@ class AbstractRule:
                 else:
                     index += 1
 
-        # add actions of rules in all transitions validating the conditions
-        for state_src in self.network_context.states:
-            for state_dst in self.network_context.states:
-                state_src: DeviceState = state_src
-                state_dst: DeviceState = state_dst
-
-                if state_src.name != state_dst.name and state_src.is_consistent and state_dst.is_consistent:
-
-                    changed_element = self.network_context.transitions_change.get((state_src.name, state_dst.name))
-                    if changed_element:  # if transition between both states
-                        changed_element = changed_element["change"]
-                        changed_element_keys = list(changed_element.keys())
-
-                        for rule in rules:
-                            condition = rule["condition"]
-
-                            condition_changed = False
-                            for key in changed_element_keys:
-                                if key in condition:
-                                    condition_changed = True
-                                    break
-
-                            if condition_changed:
-                                action = None
-
-                                # if condition of rule does no longer hold
-                                if condition.items() <= state_src.state.items():
-                                    action = {"index": rule["index"], "reverse action": rule["action"]}
-
-                                # if condition of rule now holds
-                                if condition.items() <= state_dst.state.items():
-                                    action = {"index": rule["index"], "action": rule["action"]}
-
-                                if action:
-                                    self.network_context.transitions_change[(state_src.name, state_dst.name)][
-                                        "actions"].append(action)
+        self.network_context.add_rules(rules)
 
         return rules
 
@@ -73,21 +52,7 @@ class AbstractRule:
             if deleted:
                 rules_to_delete.append(rule_index)
 
-        # delete actions of rules with index in rule_index in all transitions
-        if len(rules_to_delete) > 0:
-            for state_src in self.network_context.states:
-                for state_dst in self.network_context.states:
-                    state_src: DeviceState = state_src
-                    state_dst: DeviceState = state_dst
-
-                    if state_src != state_dst and state_src.is_consistent and state_dst.is_consistent:
-                        changed_element = self.network_context.transitions_change.get((state_src.name, state_dst.name))
-                        if changed_element:  # if transition between both states
-                            for action in changed_element["actions"]:
-                                for rule_to_delete in rules_to_delete:
-                                    if action["index"] == rule_to_delete:
-                                        changed_element["actions"].remove(action)
-                                        break
+        self.network_context.del_rules(rules_to_delete)
 
         return rules_to_delete
 
