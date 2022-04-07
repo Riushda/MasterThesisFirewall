@@ -46,6 +46,7 @@ class AbstractPacket:
     def parse_application(self, packet):
         if packet.haslayer(scapy.Raw):
             raw_layer = packet[scapy.Raw].load
+            print(raw_layer)
             decoded_layer = protocol.decode_packet(self.dport, raw_layer)
             if decoded_layer:
                 self.subject = decoded_layer[0]
