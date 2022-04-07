@@ -23,6 +23,8 @@ def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
 
     rules = AbstractRule(abstract_rules, network_context)  # pass this to the client later
 
+    network_context.draw_fsm()
+
     while True:
         try:
             packet: AbstractPacket = packet_queue.get(block=True, timeout=10)
@@ -31,6 +33,7 @@ def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
                 device = get_device_name(packet.src, pub_list)
                 update_context(network_context, device, categorizer, content)
                 network_context.show_current_state()
+                network_context.draw_fsm()
 
         except Empty:
             pass

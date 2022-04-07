@@ -1,6 +1,7 @@
 import itertools as it
 
 from transitions import Machine, State
+from transitions.extensions import GraphMachine
 
 from context.utils import get_device
 import context.abstract_rule as abstract_rule
@@ -37,7 +38,7 @@ class NetworkContext(object):
         self.transitions = []
         self.transitions_change = dict()
 
-        self.machine: Machine = Machine(None)
+        self.machine: Machine = GraphMachine(None)
 
         # if self.check_inferences():
         self.build_fsm(initial_state, state_combinations)
@@ -109,8 +110,11 @@ class NetworkContext(object):
 
             i += 1
 
-        self.machine = Machine(model=self, states=self.states, transitions=self.transitions, initial=initial_state_name,
+        self.machine = GraphMachine(model=self, states=self.states, transitions=self.transitions, initial=initial_state_name,
                                send_event=True)
+
+    def draw_fsm(self):
+        self.get_graph(title=str(self.current_state()), show_roi=True).draw('my_state_diagram.png', prog='dot')
 
     def is_consistent(self, state):
         for inconsistent in self.inconsistent_states:  # no forbidden state
