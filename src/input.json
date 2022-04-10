@@ -1,0 +1,37 @@
+{
+  "labels": {
+    "hot": {
+      "type": "int",
+      "value": [
+        21,
+        30
+      ]
+    },
+    "average": {
+      "type": "int",
+      "value": [
+        16,
+        20
+      ]
+    },
+    "cold": {
+      "type": "int",
+      "value": [
+        5,
+        15
+      ]
+    }
+  },
+  "fields": {
+    "temp": "int",
+    "name": "str"
+  },
+  "relations": [
+    {
+      "name": "trigger_heater",
+      "broker": "192.168.33.11:1883",
+      "publisher": "192.168.33.12",
+      "subscriber": "192.168.33.13"
+    }
+  ]
+}
