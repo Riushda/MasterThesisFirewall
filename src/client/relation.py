@@ -3,12 +3,12 @@ from utils.constant import *
 
 
 class Relation:
-    def __init__(self, first: Rule, second: Rule = None, constraints: list = [], mark: str = "0"):
-        self.has_broker = 0
-        if second:
-            self.has_broker = 1
+    def __init__(self, first: Rule, second: Rule = None, constraints: list = [], mark: str = "0", name: str = "",
+                 subject: str = ""):
+        self.name = name
         self.first = first
         self.second = second
+        self.subject = subject
         self.constraints = constraints
         self.mark = mark
         self.jobs = []

@@ -6,6 +6,9 @@ from scapy.layers.inet import IP
 from nfqueue.abstract_packet import AbstractPacket
 from nfqueue.packet_state import PacketState
 from nfqueue.protocol_decoder import ProtocolDecoder
+
+from nfqueue.constraint_mapping import ConstraintMapping
+
 from utils.constant import *
 
 
@@ -74,13 +77,19 @@ class PacketHandler:
         self.apply_default(raw_packet)
 
 
-def run(queue: Queue, mapping):
-    packet_queue = queue
-    packet_handler = PacketHandler(packet_queue, mapping)
+class HandlingQueue:
+    def __init__(self):
+        self.packet_queue = Queue()
+        self.nf_queue = NetfilterQueue()
+        self.constraint_mapping = ConstraintMapping()
+        self.packet_handler = PacketHandler(self.packet_queue, self.constraint_mapping)
+        self.keep_running = True
 
-    nfqueue = NetfilterQueue()
-    nfqueue.bind(0, packet_handler.handle_packet)
-    try:
-        nfqueue.run()
-    except KeyboardInterrupt:
-        nfqueue.unbind()
+    def run(self):
+        self.nf_queue.bind(0, self.packet_handler.handle_packet)
+        while self.keep_running:
+            self.nf_queue.run(block=False)
+        self.nf_queue.unbind()
+
+    def stop(self):
+        self.keep_running = False

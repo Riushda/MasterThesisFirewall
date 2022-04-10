@@ -47,15 +47,15 @@ def parse_time_interval(value):
 
 def parse_constraints(constraints: list):
     constraint_list = []
-    names = []
+    fields = []
 
     for c in constraints:
 
         split = c.split("/")
-        if split[1] not in names:
-            names.append(split[1])
+        if split[1] not in fields:
+            fields.append(split[1])
         else:
-            return f"Error: constraints names must be unique."
+            return f"Error: Please merge constraints using the same field."
 
         match split[0]:
             case StringConstraintType.INT.value:

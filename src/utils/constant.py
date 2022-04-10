@@ -22,14 +22,12 @@ class Code(Enum):
 
 
 class StringConstraintType(Enum):
-    SUBJECT = "subject"
     INT = "int"
     STR = "str"
     TIME = "time"
 
 
 class ConstraintType(Enum):
-    SUBJECT = 0
     INT = 1
     STR = 2
     TIME = 3
@@ -51,3 +49,8 @@ class Policy(Enum):
     DROP = "drop"
     ACCEPT = "accept"
     DEFAULT = "default"
+
+
+class FieldType(Enum):
+    INT = "int"
+    STR = "str"

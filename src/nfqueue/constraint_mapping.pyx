@@ -1,5 +1,5 @@
-from utils.LockDictionary import LockDictionary
 from utils.constant import *
+from utils.lock_dictionary import LockDictionary
 
 
 class MappingEntry:
@@ -27,7 +27,6 @@ def match_constraint(field: str, value: str, constraints: list):
             elif c.c_type == ConstraintType.TIME.value:
                 continue
     return False
-
 
 def match_packet(packet, mapping_entry):
     if packet.subject != mapping_entry.subject:
