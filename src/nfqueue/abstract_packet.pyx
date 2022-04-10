@@ -2,7 +2,7 @@ import scapy.all as scapy
 from scapy.layers.inet import IP, TCP, UDP
 from scapy.layers.inet6 import IPv6
 
-from nfqueue import protocol
+from nfqueue.protocol_decoder import ProtocolDecoder
 
 
 class AbstractPacket:
@@ -13,6 +13,8 @@ class AbstractPacket:
         self.dst = None
         self.sport = None
         self.dport = None
+        self.proto = None
+        self.header = None
         self.subject = None
         self.content = None
 
@@ -43,16 +45,25 @@ class AbstractPacket:
             return False
         return True
 
-    def parse_application(self, packet):
+    def parse_application(self, packet, protocol_decoder: ProtocolDecoder):
         if packet.haslayer(scapy.Raw):
             raw_layer = packet[scapy.Raw].load
-            print(raw_layer)
-            decoded_layer = protocol.decode_packet(self.dport, raw_layer)
+            decoded_layer = protocol_decoder.decode_packet(self.sport, self.dport, raw_layer)
             if decoded_layer:
-                self.subject = decoded_layer[0]
-                self.content = decoded_layer[1]
+                self.proto = decoded_layer[0]
+                self.header = decoded_layer[1]
+                self.subject = decoded_layer[2]
+                self.content = decoded_layer[3]
                 return True
         return False
 
     def set_mark(self, mark):
         self.mark = mark
+
+    # WARNING : only call these two methods on pull protocols !
+
+    def is_request(self):
+        pass
+
+    def is_response(self):
+        pass
