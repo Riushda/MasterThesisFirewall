@@ -4,7 +4,7 @@ from netfilterqueue import NetfilterQueue, Packet
 from scapy.layers.inet import IP
 
 from nfqueue.abstract_packet import AbstractPacket
-from nfqueue.request_state import RequestState
+from nfqueue.packet_state import PacketState
 from nfqueue.protocol_decoder import ProtocolDecoder
 from utils.constant import *
 
@@ -14,7 +14,7 @@ class PacketHandler:
         self.packet_queue = queue
         self.default_policy = Policy.ACCEPT.value
         self.mapping = mapping
-        self.pull_protocol_handler = RequestState() # stateful object for pull protocols
+        self.request_state= PacketState() # stateful object for maintaining request/response state
         self.protocol_decoder = ProtocolDecoder() # protocol decoder supporting many different protocols
 
     def set_default(self, policy):
@@ -42,9 +42,9 @@ class PacketHandler:
 
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
 
-            #forbidden_pull_packet = self.pull_protocol_handler.handle_packet(abstract_packet)
+            #complete, allowed_packet = self.request_state.handle_packet(abstract_packet, self.protocol_decoder)
 
-            #if not forbidden_pull_packet: # if packet from a push protocol or a rightful pull packet
+            #if allowed_packet: # if packet is legitimate (request or response linked to a previously made request)
 
             abstract_packet.set_mark(str(raw_packet.get_mark()))
             decision = self.mapping.decision(abstract_packet)
@@ -60,7 +60,7 @@ class PacketHandler:
                 print("Default!")
                 self.apply_default(raw_packet)
                 return
-
+            #if complete: # if packet response of a previously made request or just a push message (with complete information)
             self.packet_queue.put(abstract_packet)
             return
 

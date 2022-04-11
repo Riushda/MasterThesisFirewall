@@ -41,6 +41,9 @@ def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
 
 def update_context(network_context: NetworkContext, device, categorizer: Categorizer, packet_data):
     try:
+        if device is None:
+            print("Unknown publisher !")
+            return
 
         field = device + "." + packet_data[0]
 

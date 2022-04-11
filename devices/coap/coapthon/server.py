@@ -5,7 +5,7 @@ from coapthon.resources.resource import Resource
 class CoAPServer(CoAP):
     def __init__(self, host, port):
         CoAP.__init__(self, (host, port))
-        self.add_resource('basic/test', BasicResource())
+        self.add_resource('basic/test', BasicResource(coap_server=self))
 
 
 class BasicResource(Resource):
@@ -13,6 +13,7 @@ class BasicResource(Resource):
         super(BasicResource, self).__init__(name, coap_server, visible=True,
                                             observable=True, allow_children=True)
         self.payload = "Basic Resource"
+        self.server = coap_server
 
     def render_GET(self, request):
         print(request)
@@ -26,6 +27,10 @@ class BasicResource(Resource):
         res = BasicResource()
         res.location_query = request.uri_query
         res.payload = request.payload
+
+        #server: CoAPServer = self._coap_server
+        #server.notify(self.name)
+        print(self.name)
         return res
 
     def render_DELETE(self, request):

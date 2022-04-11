@@ -42,7 +42,11 @@ class CoAPDecoder:
 	#   +-------------------------------+
 
 	def __init__(self):
+		self.protocol_name = "coap"
 		self.port = 5683
+
+	def match_protocol(self, sport, dport):
+		return sport == self.port or dport == self.port
 
 	def decode(self, app_layer):
 
@@ -102,7 +106,7 @@ class CoAPDecoder:
 
 		offset += 8 # skip the 11111111 byte marker
 
-		payload = None
+		payload = []
 
 		# handle payload
 		if offset < len(buffer):
@@ -159,8 +163,30 @@ class CoAPDecoder:
 
 		return 0
 
+	# functions for pull packets
+
 	def is_pull_packet(self, packet):
-		return False # mqtt is push only
+		pass
+
+	def is_request(self, packet):
+		pass
+
+	def is_response(self, packet):
+		pass
+
+	def get_msg_id(self, packet):
+		return 0
+
+	def match_request(self, packet, request_packet):
+		pass
+
+	# function for push packets
+
+	def is_push_packet(self, packet):
+		pass
+
+	def match_subscription(self, packet, subscription_packet):
+		pass
 
 class CoAPDelta(MultiValueEnum):
 	RESERVED = 0, 128, 132, 136, 140

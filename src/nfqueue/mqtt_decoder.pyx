@@ -9,8 +9,12 @@ class MQTTDecoder:
 	# |________|_________|___________|___________________|____________________________________|
 
 	def __init__(self):
+		self.protocol_name = "mqtt"
 		self.port = 1883
 		self.MQTT_PUBLISH = 48
+
+	def match_protocol(self, sport, dport):
+		return dport==self.port
 
 	def decode(self, app_layer):
 
@@ -28,10 +32,22 @@ class MQTTDecoder:
 
 			payload_len = msg_len - 2 - topic_len
 			payload = app_layer[offset:offset+payload_len].decode("utf-8")
+			if payload is None:
+				payload = []
 
 			return ["mqtt", control_header, topic, payload]
 
 		return None
 
+	# functions for pull packets
+
 	def is_pull_packet(self, packet):
 		return False # mqtt is push only
+
+	# function for push packets
+
+	def is_push_packet(self, packet):
+		return True # mqtt is push only
+
+	def match_subscription(self, packet, subscription_packet):
+		pass

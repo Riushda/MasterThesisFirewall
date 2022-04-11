@@ -6,7 +6,7 @@ ext = [Extension(name="lib.handling_queue", sources=["handling_queue.pyx"]),
        Extension(name="lib.protocol_decoder", sources=["protocol_decoder.pyx"]),
        Extension(name="lib.mqtt_decoder", sources=["mqtt_decoder.pyx"]),
        Extension(name="lib.coap_decoder", sources=["coap_decoder.pyx"]),
-       Extension(name="lib.request_state", sources=["request_state.pyx"]),
+       Extension(name="lib.packet_state", sources=["packet_state.pyx"]),
        Extension(name="lib.abstract_packet", sources=["abstract_packet.pyx"]),
        Extension(name="lib.constraint_mapping", sources=["constraint_mapping.pyx"])]
 

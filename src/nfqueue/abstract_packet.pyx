@@ -59,11 +59,3 @@ class AbstractPacket:
 
     def set_mark(self, mark):
         self.mark = mark
-
-    # WARNING : only call these two methods on pull protocols !
-
-    def is_request(self):
-        pass
-
-    def is_response(self):
-        pass

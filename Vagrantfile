@@ -44,7 +44,8 @@ Vagrant.configure("2") do |config|
             else 
             	config.vm.provision :shell, path: "./bootstrap/device_bootstrap.sh"
             end	
-            config.vm.box = "generic/alpine38"
+            #config.vm.box = "generic/alpine38"
+            config.vm.box = "fedora/35-cloud-base"
             config.vm.hostname = opts[:name]
             config.vm.network :private_network, ip: opts[:eth1]
 
