@@ -34,25 +34,9 @@ class ProtocolDecoder:
 	def ask_protocol(self, packet, function, **kwargs):
 		for decoder in self.decoder_list:
 			if packet.proto==decoder.protocol_name:
-
-				# functions for pull packets
-				if function=="is_pull_packet":
-					return decoder.is_pull_packet(packet)
-				elif function=="is_request":
-					return decoder.is_request(packet)
-				elif function=="is_response":
-					return decoder.is_response(packet)
-				elif function=="get_msg_id":
-					return decoder.get_msg_id(packet)
-				elif function=="match_request":
-					return decoder.match_request(packet, kwargs["request_packet"])
-
-				# function for push packets
-				elif function=="is_push_packet":
-					return decoder.is_push_packet(packet)
-				elif function=="match_subscription":
-					return decoder.match_subscription(packet, kwargs["subscription_packet"])
+				if hasattr(decoder, function):
+					return getattr(decoder, function)(packet, kwargs)
 				else:
-					pass
+					break
 
 		return False

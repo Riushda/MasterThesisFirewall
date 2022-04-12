@@ -129,6 +129,7 @@ class CoAPDecoder:
 			elif CoAPDelta(delta) == CoAPDelta.OBSERVE:
 				options["observe"] = int.from_bytes(app_layer[offset:offset + length], byteorder='big')
 				return length * 8
+
 			elif CoAPDelta(delta) == CoAPDelta.URI_PORT:
 				pass
 			elif CoAPDelta(delta) == CoAPDelta.LOCATION_PATH:
@@ -141,6 +142,7 @@ class CoAPDecoder:
 			elif CoAPDelta(delta) == CoAPDelta.URI_PATH:
 				options["path"].append(app_layer[offset:offset + length].decode("utf-8"))
 				return length*8
+
 			elif CoAPDelta(delta) == CoAPDelta.CONTENT_FORMAT:
 				pass
 			elif CoAPDelta(delta) == CoAPDelta.MAX_AGE:
@@ -148,6 +150,7 @@ class CoAPDecoder:
 			elif CoAPDelta(delta) == CoAPDelta.URI_QUERY:
 				options["args"].append(app_layer[offset:offset + length].decode("utf-8"))
 				return length*8
+
 			elif CoAPDelta(delta) == CoAPDelta.ACCEPT:
 				pass
 			elif CoAPDelta(delta) == CoAPDelta.LOCATION_QUERY:
@@ -166,52 +169,55 @@ class CoAPDecoder:
 	# functions for pull packets
 
 	def is_pull_packet(self, packet):
-		pass
+		return packet.header["options"].get("observe", None) is None
 
 	def is_request(self, packet):
-		pass
+		return CoAPRequestCode.has_code(packet.header["Code"]) and \
+			   (CoAPType(packet.header["T"]) == CoAPType.CONFIRMABLE or
+				CoAPType(packet.header["T"]) == CoAPType.NON_CONFIRMABLE)
 
 	def is_response(self, packet):
-		pass
+
+		response = CoAPResponseCode.has_code(packet.header["Code"])
+
+		sync_response = response and CoAPType(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT
+
+		async_response = response and CoAPType(packet.header["T"]) == CoAPType.NON_CONFIRMABLE
+
+		return sync_response or async_response
+
+	def is_signaling(self, packet):
+		return CoAPType(packet.header["T"]) in [CoAPType.ACKNOWLEDGMENT, CoAPType.RESET]
+
+	def is_complete(self, packet):
+		return CoAPRequestCode.is_complete(CoAPRequestCode(packet.header["Code"]))
 
 	def get_msg_id(self, packet):
-		return 0
+		return packet.header["msg_id"]
 
+	# make further verification, specific to the protocol
 	def match_request(self, packet, request_packet):
-		pass
+		return CoAPType(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT and \
+			   packet.header["token"] == request_packet.header["token"]
 
-	# function for push packets
+	# functions for push packets
 
 	def is_push_packet(self, packet):
-		pass
+		return packet.header["options"].get("observe", None) is not None
 
+	# make further verification, specific to the protocol
 	def match_subscription(self, packet, subscription_packet):
-		pass
+		return packet.header["token"] == subscription_packet.header["token"]
 
-class CoAPDelta(MultiValueEnum):
-	RESERVED = 0, 128, 132, 136, 140
-	IF_MATCH = 1
-	URI_HOST = 3
-	ETAG = 4
-	IF_NONE_MATCH = 5
-	OBSERVE = 6, 10 # 6 is observer in the coapthon library, 10 is lifetime option (see https://tools.ietf.org/id/draft-ietf-core-observe-01.html#option)
-	URI_PORT = 7
-	LOCATION_PATH = 8
-	URI_PATH = 11
-	CONTENT_FORMAT = 12
-	MAX_AGE = 14
-	URI_QUERY = 15
-	ACCEPT = 17
-	LOCATION_QUERY = 20
-	PROXY_URI = 35
-	PROXY_SCHEME = 39
-	SIZE1 = 60
+	# this can trigger function in the packet_state class depending on the type of the packet
+	def ask_trigger(self, packet):
+		return "None" # no trigger for the moment
 
 # for methods code :
 # https://datatracker.ietf.org/doc/html/rfc7252#section-12.1.1 and https://datatracker.ietf.org/doc/html/rfc7252#section-12.1.2
 # for responses code :
 # https://tools.ietf.org/id/draft-ietf-core-coap-12.html#coap-code-registry-methods and https://tools.ietf.org/id/draft-ietf-core-coap-12.html#coap-code-registry-responses
-class CoAPCode(Enum):
+class CoAPRequestCode(Enum):
 
 	# Request code
 	GET = 1 # 0.01
@@ -219,6 +225,15 @@ class CoAPCode(Enum):
 	PUT = 3 # 0.03
 	DELETE = 4 # 0.04
 
+	@classmethod
+	def has_code(cls, code):
+		return code in cls._value2member_map_
+
+	@classmethod
+	def is_complete(cls, code):
+		return code in [cls.POST, cls.PUT, cls.DELETE] # packet codes which contain full information, GET only contains the path
+
+class CoAPResponseCode(Enum):
 	# Response code
 	CREATED = 65 # 2.01
 	DELETED = 66 # 2.02
@@ -242,8 +257,31 @@ class CoAPCode(Enum):
 	GATEWAY_TIMEOUT = 164 # 5.04
 	PROXYING_NOT_SUPPORTED = 165 # 5.05
 
+	@classmethod
+	def has_code(cls, code):
+		return code in cls._value2member_map_
+
 class CoAPType(Enum):
 	CONFIRMABLE = 0 # CON
 	NON_CONFIRMABLE = 1 # NON
 	ACKNOWLEDGMENT = 2 # ACK
 	RESET = 3 # RST
+
+class CoAPDelta(MultiValueEnum):
+	RESERVED = 0, 128, 132, 136, 140
+	IF_MATCH = 1
+	URI_HOST = 3
+	ETAG = 4
+	IF_NONE_MATCH = 5
+	OBSERVE = 6, 10  # 6 is observer in the coapthon library, 10 is lifetime option (see https://tools.ietf.org/id/draft-ietf-core-observe-01.html#option)
+	URI_PORT = 7
+	LOCATION_PATH = 8
+	URI_PATH = 11
+	CONTENT_FORMAT = 12
+	MAX_AGE = 14
+	URI_QUERY = 15
+	ACCEPT = 17
+	LOCATION_QUERY = 20
+	PROXY_URI = 35
+	PROXY_SCHEME = 39
+	SIZE1 = 60

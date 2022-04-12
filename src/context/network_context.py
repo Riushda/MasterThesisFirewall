@@ -124,7 +124,7 @@ class NetworkContext(object):
         return True
 
     def get_transition_trigger(self, key, value):
-        return key + "=" + value
+        return key + "=" + str(value)
 
     def show_current_state(self):
         print(self.current_state())

@@ -14,8 +14,8 @@ class PacketHandler:
         self.packet_queue = queue
         self.default_policy = Policy.ACCEPT.value
         self.mapping = mapping
-        self.request_state= PacketState() # stateful object for maintaining request/response state
         self.protocol_decoder = ProtocolDecoder() # protocol decoder supporting many different protocols
+        self.request_state = PacketState(self.protocol_decoder)  # stateful object for maintaining request/response state
 
     def set_default(self, policy):
         self.default_policy = policy
@@ -42,7 +42,7 @@ class PacketHandler:
 
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
 
-            #complete, allowed_packet = self.request_state.handle_packet(abstract_packet, self.protocol_decoder)
+            #allowed_packet, context = self.request_state.handle_packet(abstract_packet, self.protocol_decoder)
 
             #if allowed_packet: # if packet is legitimate (request or response linked to a previously made request)
 
@@ -60,12 +60,14 @@ class PacketHandler:
                 print("Default!")
                 self.apply_default(raw_packet)
                 return
-            #if complete: # if packet response of a previously made request or just a push message (with complete information)
+
+            #if context: # if packet response of a previously made request or just a push message (with complete information)
             self.packet_queue.put(abstract_packet)
+
             return
 
             #else:
-            #    raw_packet.drop()
+                #raw_packet.drop()
 
         self.apply_default(raw_packet)
 

@@ -4,7 +4,6 @@ from scapy.layers.inet6 import IPv6
 
 from nfqueue.protocol_decoder import ProtocolDecoder
 
-
 class AbstractPacket:
 
     def __init__(self):
@@ -46,6 +45,7 @@ class AbstractPacket:
         return True
 
     def parse_application(self, packet, protocol_decoder: ProtocolDecoder):
+
         if packet.haslayer(scapy.Raw):
             raw_layer = packet[scapy.Raw].load
             decoded_layer = protocol_decoder.decode_packet(self.sport, self.dport, raw_layer)
