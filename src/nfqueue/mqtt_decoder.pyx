@@ -21,9 +21,10 @@ class MQTTDecoder:
 	def __init__(self):
 		self.protocol_name = "mqtt"
 		self.port = 1883
+		self.broker_list = []
 
 	def match_protocol(self, sport, dport):
-		return dport==self.port
+		return sport==self.port or dport==self.port
 
 	def decode(self, app_layer):
 		header = {}
@@ -179,8 +180,12 @@ class MQTTDecoder:
 	def match_subscription(self, packet, subscription_packet):
 		return True # if ip and subject matches, then no further verification possible
 
+	def toward_broker(self, packet):
+		return packet.dst in self.broker_list
+
 	# this can trigger function in the packet_state class depending on the type of the packet
 	def update_packet_state(self, packet, packet_state):
+		packet_state = packet_state[0]
 		if self.is_unsubscribe_packet(packet):
 			packet_state.remove_subscription(packet)
 		elif self.is_disconnect_packet(packet):
@@ -188,8 +193,6 @@ class MQTTDecoder:
 			packet_state.remove_client_subscriptions(packet)
 		elif self.is_connect_packet(packet):
 			pass # Nothing to do for the moment
-
-		return "None" # do not trigger anything
 
 class MQTTMessageType(Enum):
 	RESERVED = 0

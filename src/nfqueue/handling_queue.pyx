@@ -15,6 +15,7 @@ class PacketHandler:
         self.default_policy = Policy.ACCEPT.value
         self.mapping = mapping
         self.protocol_decoder = ProtocolDecoder() # protocol decoder supporting many different protocols
+        self.protocol_decoder.add_broker("192.168.33.11", "mqtt")
         self.request_state = PacketState(self.protocol_decoder)  # stateful object for maintaining request/response state
 
     def set_default(self, policy):
@@ -42,32 +43,33 @@ class PacketHandler:
 
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
             print(abstract_packet)
-            #allowed_packet, context = self.request_state.handle_packet(abstract_packet, self.protocol_decoder)
+            allowed_packet, context = self.request_state.handle_packet(abstract_packet)
 
-            #if allowed_packet: # if packet is legitimate (request or response linked to a previously made request)
+            if allowed_packet: # if packet is legitimate (request or response linked to a previously made request)
 
-            abstract_packet.set_mark(str(raw_packet.get_mark()))
-            decision = self.mapping.decision(abstract_packet)
+                abstract_packet.set_mark(str(raw_packet.get_mark()))
+                decision = self.mapping.decision(abstract_packet)
 
-            if decision == Policy.ACCEPT.value:
-                print("Accept!")
-                raw_packet.accept()
-            elif decision == Policy.DROP.value:
-                print("Drop!")
+                if decision == Policy.ACCEPT.value:
+                    print("Accept!")
+                    raw_packet.accept()
+                elif decision == Policy.DROP.value:
+                    print("Drop!")
+                    raw_packet.drop()
+                    return
+                elif decision == Policy.DEFAULT.value:
+                    print("Default!")
+                    self.apply_default(raw_packet)
+                    return
+
+                if context: # if packet response of a previously made request or just a push message (with complete information)
+                    self.packet_queue.put(abstract_packet)
+
+                return
+
+            else:
                 raw_packet.drop()
                 return
-            elif decision == Policy.DEFAULT.value:
-                print("Default!")
-                self.apply_default(raw_packet)
-                return
-
-            #if context: # if packet response of a previously made request or just a push message (with complete information)
-            self.packet_queue.put(abstract_packet)
-
-            return
-
-            #else:
-                #raw_packet.drop()
 
         self.apply_default(raw_packet)
 

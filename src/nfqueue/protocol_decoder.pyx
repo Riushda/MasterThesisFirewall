@@ -30,12 +30,22 @@ class ProtocolDecoder:
 
 		return groups
 
-	def ask_protocol(self, packet, function, **kwargs):
+	def ask_protocol(self, packet, function, *args):
 		for decoder in self.decoder_list:
 			if packet.proto==decoder.protocol_name:
 				if hasattr(decoder, function):
-					return getattr(decoder, function)(packet, kwargs)
+					if len(args) == 0:
+						return getattr(decoder, function)(packet)
+					else:
+						return getattr(decoder, function)(packet, args)
 				else:
 					break
 
 		return False
+
+	def add_broker(self, ip, proto):
+		for decoder in self.decoder_list:
+			if proto==decoder.protocol_name:
+				if hasattr(decoder, "broker_list"):
+					decoder.broker_list.append(ip)
+				break

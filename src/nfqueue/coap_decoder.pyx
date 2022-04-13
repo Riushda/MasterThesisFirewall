@@ -212,6 +212,7 @@ class CoAPDecoder:
 		return CoAPType(packet.header["T"]) in [CoAPType.ACKNOWLEDGMENT, CoAPType.RESET]
 
 	def is_request_successful(self, packet, request_packet):
+		request_packet = request_packet[0]
 		request_code = CoAPRequestCode(request_packet.header["Code"])
 		response_code = CoAPRequestCode(packet.header["Code"])
 
@@ -230,6 +231,7 @@ class CoAPDecoder:
 
 	# make further verification, specific to the protocol
 	def match_request(self, packet, request_packet):
+		request_packet = request_packet[0]
 		if CoAPRequestCode(request_packet.header["Code"]) == CoAPRequestCode.GET:
 			packet.subject = request_packet.subject # for get request, response doesn't have the path (needed because context is updated with response)
 
@@ -243,12 +245,16 @@ class CoAPDecoder:
 
 	# make further verification, specific to the protocol
 	def match_subscription(self, packet, subscription_packet):
+		subscription_packet = subscription_packet[0]
 		packet.subject = subscription_packet.subject # in coap, the push messages doesn't contain the path (needed because context is updated with response)
 		return packet.header["token"] == subscription_packet.header["token"]
 
+	def toward_broker(self, packet):
+		return False # CoAP doesn't have brokers
+
 	# this can trigger function in the packet_state class depending on the type of the packet
-	def ask_trigger(self, packet):
-		return "None" # no trigger for the moment
+	def update_packet_state(self, packet, packet_state):
+		pass # no trigger for the moment
 
 # for methods code :
 # https://datatracker.ietf.org/doc/html/rfc7252#section-12.1.1 and https://datatracker.ietf.org/doc/html/rfc7252#section-12.1.2
