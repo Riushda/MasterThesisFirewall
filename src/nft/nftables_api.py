@@ -1,7 +1,6 @@
 import nftables
 
 from nft.command_builder import *
-from utils.constant import *
 
 
 class NftablesAPI:
@@ -73,7 +72,7 @@ class NftablesAPI:
 
         self.send_command(builder.get_command())
 
-    def enable_rule(self, handle, policy: Policy = Policy.ACCEPT.value):
+    def enable_rule(self, handle):
         builder = CommandBuilder()
         builder.list_chain()
         rule_list = self.send_command(builder.get_command())

@@ -27,7 +27,7 @@ python -m Pyro4.naming
 This should be done in another terminal. Now you can start the daemon, The client will communicate with it.
 
 ```sh
-python main.py
+python old_main.py
 python client.py {COMMAND}
 ```
 

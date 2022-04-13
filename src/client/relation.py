@@ -3,28 +3,30 @@ from utils.constant import *
 
 
 class Relation:
-    def __init__(self, first: Rule, second: Rule = None, constraints: list = [], mark: str = "0", name: str = "",
-                 subject: str = ""):
-        self.name = name
+    def __init__(self, subject: str, mark: int, first: Rule, second: Rule = None, constraints: list = None):
+        self.subject = subject
+        self.mark = mark
         self.first = first
         self.second = second
-        self.subject = subject
         self.constraints = constraints
-        self.mark = mark
         self.jobs = []
 
     def __str__(self):
+        result = f"subject: {self.subject} | mark: {self.mark} | "
         constraint_str = ""
         for c in self.constraints:
             constraint_str += f"{c} ; "
+        result += "rules: "
         if self.second:
-            return f"{self.first} ~ {self.second} \n {constraint_str}"
+            result += f"{self.first} ~ {self.second}"
         else:
-            return f"{self.first} \n {constraint_str}"
+            result += f"{self.first}"
+        result += f"\n constraints: {constraint_str}"
+        return result
 
     def add_jobs(self, api, schedule, task):
         for c in self.constraints:
-            if c.c_type == ConstraintType.TIME.value:
+            if c.c_type == TriggerType.TIME.value:
                 for v in c.value:
                     job = schedule.every().day.at(v[0]).do(
                         task, api, Code.ENABLE_RELATION.value, self)

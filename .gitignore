@@ -185,3 +185,4 @@ build/
 ruleset.json
 .vagrant
 tmux.sh
+my_state_diagram

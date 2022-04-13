@@ -1,37 +1,118 @@
 {
-  "labels": {
-    "hot": {
-      "type": "int",
-      "value": [
-        21,
-        30
+  "label": {
+    "temp": [
+      [
+        "0",
+        "10",
+        "20",
+        "30"
+      ],
+      [
+        "cold",
+        "average",
+        "hot"
+      ]
+    ]
+  },
+  "member": {
+    "broker": {
+      "src": "192.168.33.11:1883"
+    },
+    "thermo": {
+      "src": "192.168.33.12",
+      "field": {
+        "temp": {
+          "type": "int",
+          "label": "temp",
+          "initial": "average"
+        },
+        "name": {
+          "type": "str",
+          "value": [
+            "alice",
+            "bob"
+          ],
+          "initial": "alice"
+        }
+      }
+    },
+    "heater": {
+      "src": "192.168.33.13",
+      "field": {
+        "status": {
+          "type": "str",
+          "value": [
+            "on",
+            "off"
+          ],
+          "initial": "off"
+        }
+      }
+    },
+    "window": {
+      "src": "192.168.33.14",
+      "field": {
+        "status": {
+          "type": "str",
+          "value": [
+            "open",
+            "closed"
+          ],
+          "initial": "closed"
+        }
+      }
+    }
+  },
+  "relation": {
+    "trigger_heater": {
+      "subject": "th",
+      "broker": "broker",
+      "publisher": "thermo",
+      "subscriber": "heater",
+      "constraints": [
+        {
+          "field": "temp",
+          "value": [
+            "cold",
+            "hot"
+          ]
+        },
+        {
+          "field": "name",
+          "value": [
+            "bob"
+          ]
+        }
       ]
     },
-    "average": {
-      "type": "int",
-      "value": [
-        16,
-        20
-      ]
-    },
-    "cold": {
-      "type": "int",
-      "value": [
-        5,
-        15
+    "trigger_window": {
+      "subject": "tw",
+      "broker": "broker",
+      "publisher": "thermo",
+      "subscriber": "window",
+      "constraints": [
+        {
+          "field": "temp",
+          "value": [
+            "cold",
+            "hot"
+          ]
+        }
       ]
     }
   },
-  "fields": {
-    "temp": "int",
-    "name": "str"
-  },
-  "relations": [
-    {
-      "name": "trigger_heater",
-      "broker": "192.168.33.11:1883",
-      "publisher": "192.168.33.12",
-      "subscriber": "192.168.33.13"
-    }
+  "trigger": [
+    [
+      {
+        "condition": {
+          "thermo": {
+            "temp": "hot"
+          }
+        },
+        "action": {
+          "disable": "trigger_heater"
+        }
+      }
+    ]
   ]
 }

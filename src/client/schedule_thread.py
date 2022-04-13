@@ -1,10 +1,6 @@
 import threading
 import time
 
-from client.relation import Relation
-from nft.nftables_api import NftablesAPI
-from utils.constant import *
-
 
 class ScheduleThread:
     def __init__(self, s_mutex, schedule):
@@ -33,15 +29,3 @@ class ScheduleThread:
         self.keep_running = False
         self.k_mutex.release()
         self.thread.join()
-
-
-def schedule_job(api: NftablesAPI, code: Code, relation: Relation):
-    match code:
-        case Code.ENABLE_RELATION.value:
-            api.enable_rule(relation.first.handle, relation.first.policy)
-            if relation.second:
-                api.enable_rule(relation.second.handle, relation.second.policy)
-        case Code.DISABLE_RELATION_RELATION.value:
-            api.disable_rule(relation.first.handle)
-            if relation.second:
-                api.disable_rule(relation.second.handle)

@@ -21,36 +21,21 @@ class Code(Enum):
     DISABLE_RELATION = 4
 
 
-class StringConstraintType(Enum):
-    INT = "int"
-    STR = "str"
-    TIME = "time"
-
-
-class ConstraintType(Enum):
-    INT = 1
-    STR = 2
-    TIME = 3
-
-
-class MemberType(Enum):
-    DEVICE = "device"
-    BROKER = "broker"
-    PUB = "pub"
-    SUB = "sub"
-
-
-class TableType(Enum):
-    RULES = "rules"
-    RELATIONS = "relations"
-
-
 class Policy(Enum):
     DROP = "drop"
     ACCEPT = "accept"
     DEFAULT = "default"
 
 
+class ConstraintType(Enum):
+    INT = "int"
+    STR = "str"
+
+
 class FieldType(Enum):
     INT = "int"
     STR = "str"
+
+
+class TriggerType(Enum):
+    TIME = "time"

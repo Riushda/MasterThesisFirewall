@@ -1,83 +1,30 @@
-import ipaddress
-
-from utils.constant import *
-
-
 class Member:
-    def __init__(self, name: str, ip: str = None, n_ip: bool = False, port: int = None, n_port: bool = False,
-                 m_type: MemberType = MemberType.PUB.value):
-        self.name = name
-        self.m_type = m_type
+    def __init__(self, ip: str = None, port: int = None, field=None):
         self.ip = ip
-        self.n_ip = n_ip
         self.port = port
-        self.n_port = n_port
+        if field is None:
+            self.field = {}
+        else:
+            self.field = field
 
     def __str__(self):
-        string = ""
+        result = "source: "
 
-        if self.n_ip:
-            string += "!"
         if self.ip:
-            string += self.ip + ":"
+            result += self.ip + ":"
         else:
-            string += "*:"
+            result += "*:"
 
-        if self.n_port:
-            string += "!"
         if self.port:
-            string += str(self.port)
+            result += str(self.port)
         else:
-            string += "*"
+            result += "*"
 
-        return string
-
-
-def parse_member(name: str, src: str, m_type: MemberType = MemberType.DEVICE):
-    if not name:
-        return "Error: You must specify a name."
-
-    ip = None
-    n_ip = False
-    port = None
-    n_port = False
-
-    if src:
-        split = src.split(":")
-        ip_part = split[0].split("/")
-
-        if len(split) > 1:
-            port_part = split[1]
+        result += " | fields: "
+        if self.field:
+            for field, content in self.field.items():
+                result += f"{content}"
         else:
-            port_part = None
+            result += "none"
 
-        if len(ip_part) > 2:
-            return "Error: Incorrect ip format, correct format is IP{/BITMASK}."
-
-        if len(ip_part) > 1:
-            bitmask = int(ip_part[1])
-            if bitmask > 32:
-                return "Error: Bitmask max value is 32."
-
-        try:
-            if ip_part[0][0] == "n":
-                ipaddress.IPv4Address(ip_part[0][1:])
-                ip = split[0][1:]
-                n_ip = True
-            else:
-                ipaddress.IPv4Address(ip_part[0])
-                ip = split[0]
-        except ipaddress.AddressValueError:
-            return "Error: Incorrect ip format, correct format is IP{/BITMASK}."
-
-        if port_part:
-            if port_part[0] == "n":
-                port = int(port_part[1:])
-                n_port = True
-            else:
-                port = int(port_part)
-
-    if isinstance(port, int) and port > 65535:
-        return "Error: Port max value is 65535."
-
-    return Member(name, ip, n_ip, port, n_port, m_type)
+        return result
