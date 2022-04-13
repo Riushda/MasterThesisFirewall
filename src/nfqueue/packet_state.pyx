@@ -14,19 +14,17 @@ class PacketState:
 
             if self.protocol_decoder.ask_protocol(self, packet, "is_request"):
                 self.add_request(packet)
-                # ask if the information in the packet is complete, that we shouldn't wait for the content of the response to update the context
-                # for instance, post message in coap already contains all the information but not the get message
-                return True, self.protocol_decoder.ask_protocol(self, packet, "is_complete")
+                # do not update context, with pull protocol response is always needed to check if request was successful
+                return True, False
 
             elif self.protocol_decoder.ask_protocol(self, packet, "is_response"):
 
                 request_packet = self.has_request(packet)
                 if packet is not None and self.protocol_decoder.ask_protocol(self, packet, "match_request", request_packet = request_packet):
-                    packet.subject = request_packet.subject # in some pull protocols (like coap) the subject is not present in the response
                     self.remove_request(packet)
 
-                    # allow and update context if request wasn't complete
-                    return True, not self.protocol_decoder.ask_protocol(self, request_packet, "is_complete")
+                    # allow and update context if request was successful
+                    return True, not self.protocol_decoder.ask_protocol(self, packet, "is_request_successful", request_packet)
                 else:
                     return False, False # if response doesn't match any previous request, drop it
 

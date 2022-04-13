@@ -211,14 +211,28 @@ class CoAPDecoder:
 	def is_signaling(self, packet):
 		return CoAPType(packet.header["T"]) in [CoAPType.ACKNOWLEDGMENT, CoAPType.RESET]
 
-	def is_complete(self, packet):
-		return CoAPRequestCode.is_complete(CoAPRequestCode(packet.header["Code"]))
+	def is_request_successful(self, packet, request_packet):
+		request_code = CoAPRequestCode(request_packet.header["Code"])
+		response_code = CoAPRequestCode(packet.header["Code"])
+
+		successful_get = request_code == CoAPRequestCode.GET and CoAPResponseCode.is_get_successful(response_code)
+
+		successful_post = request_code == CoAPRequestCode.POST and CoAPResponseCode.is_post_successful(response_code)
+
+		successful_put = request_code == CoAPRequestCode.PUT and CoAPResponseCode.is_put_successful(response_code)
+
+		successful_del = request_code == CoAPRequestCode.DELETE and CoAPResponseCode.is_del_successful(response_code)
+
+		return successful_get or successful_post or successful_put or successful_del
 
 	def get_msg_id(self, packet):
 		return packet.header["msg_id"]
 
 	# make further verification, specific to the protocol
 	def match_request(self, packet, request_packet):
+		if CoAPRequestCode(request_packet.header["Code"]) == CoAPRequestCode.GET:
+			packet.subject = request_packet.subject # for get request, response doesn't have the path (needed because context is updated with response)
+
 		return CoAPType(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT and \
 			   packet.header["token"] == request_packet.header["token"]
 
@@ -229,6 +243,7 @@ class CoAPDecoder:
 
 	# make further verification, specific to the protocol
 	def match_subscription(self, packet, subscription_packet):
+		packet.subject = subscription_packet.subject # in coap, the push messages doesn't contain the path (needed because context is updated with response)
 		return packet.header["token"] == subscription_packet.header["token"]
 
 	# this can trigger function in the packet_state class depending on the type of the packet
@@ -250,10 +265,6 @@ class CoAPRequestCode(Enum):
 	@classmethod
 	def has_code(cls, code):
 		return code in cls._value2member_map_
-
-	@classmethod
-	def is_complete(cls, code):
-		return code in [cls.POST, cls.PUT, cls.DELETE] # packet codes which contain full information, GET only contains the path
 
 class CoAPResponseCode(Enum):
 	# Response code
@@ -282,6 +293,22 @@ class CoAPResponseCode(Enum):
 	@classmethod
 	def has_code(cls, code):
 		return code in cls._value2member_map_
+
+	@classmethod
+	def is_get_successful(cls, code):
+		return code in [cls.CONTENT, cls.VALID]
+
+	@classmethod
+	def is_post_successful(cls, code):
+		return code in [cls.CREATED, cls.CHANGED, cls.DELETED]
+
+	@classmethod
+	def is_put_successful(cls, code):
+		return code in [cls.CREATED, cls.CHANGED]
+
+	@classmethod
+	def is_del_successful(cls, code):
+		return code == cls.CREATED
 
 class CoAPType(Enum):
 	CONFIRMABLE = 0 # CON
