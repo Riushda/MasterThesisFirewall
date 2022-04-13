@@ -19,8 +19,9 @@ class AbstractPacket:
 
     def __str__(self) -> str:
         return "mark:" + str(self.mark) + " src:" + self.src + " dst:" + self.dst \
-               + " sport:" + str(self.sport) + " dport:" + str(
-            self.dport) + " subject:" + self.subject + " content:" + str(self.content)
+               + " sport:" + str(self.sport) + " dport:" + str(self.dport) \
+               + "\n    proto:" + self.proto + " header:" + str(self.header) \
+               + "\n    subject:" + str(self.subject) + " content:" + str(self.content) + "\n"
 
     def parse_network(self, packet):
         if packet.haslayer(IP):

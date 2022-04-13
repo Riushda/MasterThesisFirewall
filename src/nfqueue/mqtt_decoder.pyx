@@ -28,33 +28,127 @@ class MQTTDecoder:
 	def decode(self, app_layer):
 		header = {}
 
+		# fixed header
+
+		if len(app_layer) < 2:
+			return None # app_layer too small
+
 		control_header = app_layer[0]
+
+		msg_len: int = app_layer[1]
+
+		offset = 2
+
+		if len(app_layer) < offset + msg_len:
+			return None  # app_layer too small
 
 		header["control_header_type"] = control_header >> 4
 		header["control_header_flag"] = control_header & 15
 
-		if MQTTMessageType(header["control_header_type"]) == MQTTMessageType.PUBLISH :
+		if not MQTTMessageType.has_type(header["control_header_type"]):
+			return None # unknown message type
 
+		if MQTTMessageType(header["control_header_type"]) == MQTTMessageType.PUBLISH:
 			header["DUP"] = header["control_header_flag"] & 8
 			header["QOS"] = header["control_header_flag"] & 6
 			header["RETAIN"] = header["control_header_flag"] & 1
 
-			msg_len : int = app_layer[1]
-			topic_len : int = int.from_bytes(app_layer[2:4], byteorder='big')
+		# variable header
+		## packet_identifier
 
-			offset = 4
+		if MQTTMessageType.has_packet_identifier(MQTTMessageType(header["control_header_type"]), header.get("QOS", None)):
+			if len(app_layer) < offset + 2:
+				return None  # app_layer too small
 
+			header["packet_identifier"] = int.from_bytes(app_layer[offset:offset + 2], byteorder='big')
+			offset += 2
+
+		## connect fields
+
+		if MQTTMessageType(header["control_header_type"]) == MQTTMessageType.CONNECT:
+			decoded_length = self.decode_connect_variable_header(header, app_layer, offset)
+			if decoded_length:
+				offset += decoded_length
+			else:
+				return None
+
+		topic_len = 0
+		topic = None
+		if MQTTMessageType.has_topic(MQTTMessageType(header["control_header_type"])):
+			if len(app_layer) < offset + 2:
+				return None  # app_layer too small
+			topic_len : int = int.from_bytes(app_layer[offset:offset+2], byteorder='big')
+			offset += 2
+
+			if len(app_layer) < offset + topic_len:
+				return None  # app_layer too small
 			topic = app_layer[offset:offset+topic_len].decode("utf-8")
 			offset += topic_len
 
-			payload_len = msg_len - 2 - topic_len
+		payload = []
+		if MQTTMessageType.has_payload(MQTTMessageType(header["control_header_type"])):
+			payload_len = 2 + msg_len - offset # 2 first bytes header (always present)
+
+			if len(app_layer) < offset +  payload_len:
+				return None  # app_layer too small
+
 			payload = app_layer[offset:offset+payload_len].decode("utf-8")
 			if payload is None:
 				payload = []
 
-			return ["mqtt", header, topic, payload]
+		return ["mqtt", header, topic, payload]
 
-		return None
+	def decode_connect_variable_header(self, header, app_layer, offset):
+		connect_variable_header = {}
+		offset = offset
+
+		# Protocol Name
+
+		if len(app_layer) < offset + 2:
+			return None  # app_layer too small
+		protocol_name_length = int.from_bytes(app_layer[offset:offset + 2],
+											  byteorder='big')  # maybe change to little here (not sure)
+		offset += 2
+
+		if len(app_layer) < offset + protocol_name_length:
+			return None  # app_layer too small
+		connect_variable_header["protocol_name"] = app_layer[offset:offset + protocol_name_length].decode("utf-8")
+		offset += protocol_name_length
+
+		# Protocol version
+
+		if len(app_layer) < offset + 1:
+			return None  # app_layer too small
+		connect_variable_header["protocol_version"] = app_layer[offset]
+		offset += 1
+
+		# Connect flags
+
+		flag_byte = app_layer[offset]
+		offset += 1
+
+		connect_variable_header["flags"] = {}
+		connect_variable_header["flags"]["user_name_flag"] = flag_byte & 128
+		connect_variable_header["flags"]["password_flag"] = flag_byte & 64
+		connect_variable_header["flags"]["will_retain"] = flag_byte & 32
+		connect_variable_header["flags"]["will_qos"] = flag_byte & 24
+		connect_variable_header["flags"]["will_flag"] = flag_byte & 4
+		connect_variable_header["flags"]["clean_start"] = flag_byte & 2
+		connect_variable_header["flags"]["reserved"] = flag_byte & 1
+
+		# Keep Alive
+
+		if len(app_layer) < offset + 2:
+			return None  # app_layer too small
+		connect_variable_header["keep_alive"] = int.from_bytes(app_layer[offset:offset + 2], byteorder='big')  # maybe change to little here (not sure)
+		offset += 2
+
+		# connect properties
+		# TODO
+
+		header["connect_variable_header"] = connect_variable_header
+
+		return offset
 
 	# functions for pull packets
 
@@ -86,12 +180,12 @@ class MQTTDecoder:
 		return True # if ip and subject matches, then no further verification possible
 
 	# this can trigger function in the packet_state class depending on the type of the packet
-	def ask_trigger(self, packet):
+	def update_packet_state(self, packet, packet_state):
 		if self.is_unsubscribe_packet(packet):
-			return "remove_subscription"
+			packet_state.remove_subscription(packet)
 		elif self.is_disconnect_packet(packet):
 			# if disconnected, client unsubscribe from all topics, this behavior can be changed
-			return "remove_client_subscriptions"
+			packet_state.remove_client_subscriptions(packet)
 		elif self.is_connect_packet(packet):
 			pass # Nothing to do for the moment
 
@@ -114,3 +208,22 @@ class MQTTMessageType(Enum):
 	PINGRESP = 13
 	DISCONNECT = 14
 	AUTH = 15
+
+	@classmethod
+	def has_type(cls, type):
+		return type in cls._value2member_map_
+
+	@classmethod
+	def has_packet_identifier(cls, type, qos):
+		condition1 = type in [cls.PUBACK, cls.PUBREC, cls.PUBREL, cls.PUBCOMP, cls.SUBSCRIBE, cls.SUBACK, cls.UNSUBSCRIBE, cls.UNSUBACK]
+		condition2 = type == cls.PUBLISH and qos > 0
+
+		return condition1 or condition2
+
+	@classmethod
+	def has_topic(cls, type):
+		return type in [cls.PUBLISH, cls.SUBSCRIBE]
+
+	@classmethod
+	def has_payload(cls, type):
+		return type in [cls.CONNECT, cls.PUBLISH, cls.SUBSCRIBE, cls.SUBACK, cls.UNSUBSCRIBE, cls.UNSUBACK]

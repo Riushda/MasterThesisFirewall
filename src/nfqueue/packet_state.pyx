@@ -32,7 +32,9 @@ class PacketState:
 
             else:
                 # neither a request nor a response
-                self.protocol_trigger(packet) # action can be triggered by the protocol when it sees a certain signaling packet
+
+                # action can be triggered by the protocol when it sees a certain signaling packet
+                self.protocol_decoder.ask_protocol(self, packet, "update_packet_state", self)
                 return True, False
 
         elif self.protocol_decoder.ask_protocol(self, packet, "is_push_packet"):
@@ -55,7 +57,9 @@ class PacketState:
 
             else:
                 # neither subscribe message nor publish message
-                self.protocol_trigger(packet) # action can be triggered by the protocol when it sees a certain signaling packet
+
+                # action can be triggered by the protocol when it sees a certain signaling packet
+                self.protocol_decoder.ask_protocol(self, packet, "update_packet_state", self)
                 return True, False
         else:
             pass # should never reach there
@@ -82,11 +86,6 @@ class PacketState:
         for key in list(self.subscriptions.keys()):
             if key[1]==packet.src:
                 del self.subscriptions[key]
-
-    def protocol_trigger(self, packet):
-        function = self.protocol_decoder.ask_protocol(self, packet, "ask_trigger")
-        if hasattr(self, function):
-            getattr(self, function)(packet)
 
     # pull packet matching
 

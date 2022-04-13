@@ -50,6 +50,9 @@ class CoAPDecoder:
 
 	def decode(self, app_layer):
 
+		if len(app_layer) < 3:
+			return None # packet smaller than header size
+
 		header = {}
 		buffer = list(bin(int.from_bytes(app_layer, byteorder='big')))
 		buffer = buffer[1:]
@@ -64,6 +67,9 @@ class CoAPDecoder:
 
 		offset = 32
 
+		if len(app_layer) < (offset/8) + header["TKL"]:
+			return None # app_layer too small
+
 		if header["TKL"] > 0:
 			header["token"] = int(buffer[32:32+header["TKL"]*8], 2)
 			offset += header["TKL"]*8
@@ -74,6 +80,9 @@ class CoAPDecoder:
 
 		previous_delta = 0
 		while offset<len(buffer) and int(buffer[offset:offset+8], 2)!=255:
+
+			if len(app_layer) < (offset/8) + 1:
+				return None  # app_layer too small
 
 			option_delta = int(buffer[offset:offset+4], 2)
 			offset += 4
@@ -87,6 +96,10 @@ class CoAPDecoder:
 			# extended delta if any
 			if option_delta == 13 or option_delta==14:
 				delta_size = delta - 12
+
+				if len(app_layer) < (offset / 8) + delta_size:
+					return None  # app_layer too small
+
 				delta = int(buffer[offset:offset+delta_size*8], 2) + delta
 				offset += delta_size*8
 			elif option_delta==15:
@@ -94,13 +107,22 @@ class CoAPDecoder:
 
 			# extended length if any
 			if length==13:
+				if len(app_layer) < (offset / 8) + 1:
+					return None  # app_layer too small
+
 				length = int(buffer[offset:offset + 8], 2) + 13
 				offset += 8
 			elif length==14:
+				if len(app_layer) < (offset / 8) + 2:
+					return None  # app_layer too small
+
 				length = int(buffer[offset:offset + 16], 2) + 269
 				offset += 16
 			elif length==15:
 				return None # error, message not valid
+
+			if len(app_layer) < (offset / 8) + length:
+				return None  # app_layer too small
 
 			offset += self.handle_option(header["options"], app_layer, int(offset/8), delta, length)
 

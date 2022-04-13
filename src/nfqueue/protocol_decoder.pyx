@@ -16,10 +16,9 @@ class ProtocolDecoder:
 				decoded = decoder.decode(app_layer)
 				break
 
-		if decoded is not None and len(decoded[-1])>0:
+		if decoded is not None and len(decoded) > 0 and len(decoded[-1]) > 0:
 			decoded[-1] = self.decode_payload(decoded[-1])
 
-		print(decoded)
 		return decoded
 
 	def decode_payload(self, payload):

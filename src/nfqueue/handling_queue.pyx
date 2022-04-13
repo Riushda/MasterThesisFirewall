@@ -41,7 +41,7 @@ class PacketHandler:
             print("Unknown transport layer protocol")
 
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
-
+            print(abstract_packet)
             #allowed_packet, context = self.request_state.handle_packet(abstract_packet, self.protocol_decoder)
 
             #if allowed_packet: # if packet is legitimate (request or response linked to a previously made request)
