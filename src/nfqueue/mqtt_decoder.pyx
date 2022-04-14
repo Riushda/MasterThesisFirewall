@@ -162,23 +162,35 @@ class MQTTDecoder:
 		return True # mqtt is push only
 
 	def is_subscribe_packet(self, packet):
-		return MQTTMessageType(packet.header["control_header_type"]) == MQTTMessageType.SUBSCRIBE
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.SUBSCRIBE
 
 	def is_publish_packet(self, packet):
-		return MQTTMessageType(packet.header["control_header_type"]) == MQTTMessageType.PUBLISH
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.PUBLISH
 
 	def is_unsubscribe_packet(self, packet):
-		return MQTTMessageType(packet.header["control_header_type"]) == MQTTMessageType.UNSUBSCRIBE
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.UNSUBSCRIBE
 
 	def is_connect_packet(self, packet):
-		return MQTTMessageType(packet.header["control_header_type"]) == MQTTMessageType.CONNECT
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.CONNECT
 
 	def is_disconnect_packet(self, packet):
-		return MQTTMessageType(packet.header["control_header_type"]) == MQTTMessageType.DISCONNECT
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.DISCONNECT
 
-	# make further verification, specific to the protocol
-	def match_subscription(self, packet, subscription_packet):
-		return True # if ip and subject matches, then no further verification possible
+	def add_subscription(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		packet_state.add_subscription(packet, packet.subject)
+
+	def remove_subscription(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		packet_state.remove_subscription(packet, packet.subject)
+
+	def match_subscription(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		subscription_packet = packet_state.has_subscription(packet, packet.subject)
+		return subscription_packet
 
 	def toward_broker(self, packet):
 		return packet.dst in self.broker_list
@@ -187,7 +199,7 @@ class MQTTDecoder:
 	def update_packet_state(self, packet, packet_state):
 		packet_state = packet_state[0]
 		if self.is_unsubscribe_packet(packet):
-			packet_state.remove_subscription(packet)
+			self.remove_subscription(packet, (packet_state,))
 		elif self.is_disconnect_packet(packet):
 			# if disconnected, client unsubscribe from all topics, this behavior can be changed
 			packet_state.remove_client_subscriptions(packet)
@@ -230,3 +242,10 @@ class MQTTMessageType(Enum):
 	@classmethod
 	def has_payload(cls, type):
 		return type in [cls.CONNECT, cls.PUBLISH, cls.SUBSCRIBE, cls.SUBACK, cls.UNSUBSCRIBE, cls.UNSUBACK]
+
+	@classmethod
+	def enum(cls, code):
+		try:
+			return cls(code)
+		except ValueError:
+			return None

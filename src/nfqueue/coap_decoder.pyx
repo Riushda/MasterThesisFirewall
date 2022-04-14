@@ -213,8 +213,9 @@ class CoAPDecoder:
 
 	def is_request_successful(self, packet, request_packet):
 		request_packet = request_packet[0]
-		request_code = CoAPRequestCode(request_packet.header["Code"])
-		response_code = CoAPRequestCode(packet.header["Code"])
+
+		request_code = CoAPRequestCode.enum(request_packet.header["Code"])
+		response_code = CoAPResponseCode.enum(packet.header["Code"])
 
 		successful_get = request_code == CoAPRequestCode.GET and CoAPResponseCode.is_get_successful(response_code)
 
@@ -226,33 +227,76 @@ class CoAPDecoder:
 
 		return successful_get or successful_post or successful_put or successful_del
 
-	def get_msg_id(self, packet):
-		return packet.header["msg_id"]
+	def add_request(self, packet, packet_state):
+		packet_state = packet_state[0]
 
-	# make further verification, specific to the protocol
-	def match_request(self, packet, request_packet):
-		request_packet = request_packet[0]
-		if CoAPRequestCode(request_packet.header["Code"]) == CoAPRequestCode.GET:
-			packet.subject = request_packet.subject # for get request, response doesn't have the path (needed because context is updated with response)
+		packet_state.add_request(packet, packet.header["msg_id"])
 
-		return CoAPType(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT and \
-			   packet.header["token"] == request_packet.header["token"]
+	def remove_request(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		packet_state.remove_request(packet, packet.header["msg_id"])
+
+	def match_request(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		request_packet = packet_state.has_request(packet, packet.header["msg_id"])
+
+		if request_packet:
+			if CoAPRequestCode.enum(request_packet.header["Code"]) == CoAPRequestCode.GET:
+				packet.subject = request_packet.subject # for get request, response doesn't have the path (needed because context is updated with response)
+
+			valid = CoAPType(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT and \
+					packet.header["token"] == request_packet.header["token"]
+
+			if valid:
+				self.remove_request(request_packet, (packet_state,))
+				return request_packet
+
+		return None
 
 	# functions for push packets
 
 	def is_push_packet(self, packet):
 		return packet.header["options"].get("observe", None) is not None
 
-	# make further verification, specific to the protocol
-	def match_subscription(self, packet, subscription_packet):
-		subscription_packet = subscription_packet[0]
-		packet.subject = subscription_packet.subject # in coap, the push messages doesn't contain the path (needed because context is updated with response)
-		return packet.header["token"] == subscription_packet.header["token"]
+	def is_subscribe_packet(self, packet):
+		request = CoAPRequestCode.enum(packet.header["Code"])
+		return request == CoAPRequestCode.GET
+
+	def is_publish_packet(self, packet):
+		notify = CoAPResponseCode.enum(packet.header["Code"])
+		return CoAPResponseCode.is_get_successful(notify)
+
+	def is_unsubscribe_packet(self, packet):
+		response = CoAPResponseCode.enum(packet.header["Code"])
+		# should unsubscribe when observation time reaches MAX_AGE without refreshing or a code 4.xx or 5.xx is received
+		# TODO trigger packet_state.unsubscribe when MAX_AGE is reached (in this class) or trigger it when response after MAX_AGE arrives (in this function then)
+		return CoAPResponseCode.is_unsuccessful(response)
+
+	def add_subscription(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		packet_state.add_subscription(packet, packet.header["token"])
+
+	def remove_subscription(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		packet_state.remove_subscription(packet, packet.header["token"])
+
+	def match_subscription(self, packet, packet_state):
+		packet_state = packet_state[0]
+
+		subscription_packet = packet_state.has_subscription(packet, packet.header["token"])
+		if subscription_packet:
+			# in coap, the push messages doesn't contain the path (needed because context is updated with response)
+			packet.subject = subscription_packet.subject
+		return subscription_packet
 
 	def toward_broker(self, packet):
 		return False # CoAP doesn't have brokers
 
-	# this can trigger function in the packet_state class depending on the type of the packet
+	# this can trigger function in the packet_state class depending on the type of the packet (other than subscribe and publish)
 	def update_packet_state(self, packet, packet_state):
 		pass # no trigger for the moment
 
@@ -271,6 +315,13 @@ class CoAPRequestCode(Enum):
 	@classmethod
 	def has_code(cls, code):
 		return code in cls._value2member_map_
+
+	@classmethod
+	def enum(cls, code):
+		try:
+			return cls(code)
+		except ValueError:
+			return None
 
 class CoAPResponseCode(Enum):
 	# Response code
@@ -315,6 +366,17 @@ class CoAPResponseCode(Enum):
 	@classmethod
 	def is_del_successful(cls, code):
 		return code == cls.CREATED
+
+	@classmethod
+	def is_unsuccessful(cls, code):
+		return code not in [cls.CREATED, cls.DELETED, cls.VALID, cls.CHANGED, cls.CONTENT]
+
+	@classmethod
+	def enum(cls, code):
+		try:
+			return cls(code)
+		except ValueError:
+			return None
 
 class CoAPType(Enum):
 	CONFIRMABLE = 0 # CON
