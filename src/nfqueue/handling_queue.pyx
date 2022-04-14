@@ -39,21 +39,27 @@ class PacketHandler:
 
             if allowed_packet:  # if packet is legitimate (request or response linked to a previously made request)
 
-                abstract_packet.set_mark(raw_packet.get_mark())
-                decision = self.mapping.decision(abstract_packet)
+                if context:  # if packet response of a previously made request or just a push message (with complete information)
 
-                # The packet has an app layer which matches
-                if decision == Policy.ACCEPT:
+                    abstract_packet.set_mark(raw_packet.get_mark())
+                    decision = self.mapping.decision(abstract_packet)
+
+                    # The packet has an app layer which matches
+                    if decision == Policy.ACCEPT:
+                        print("Packet accepted!")
+                        raw_packet.accept()
+                    # The packet has an app layer which does not match
+                    else:
+                        print("Packet dropped!")
+                        raw_packet.drop()
+                        return
+
+                    self.packet_queue.put(abstract_packet)
+
+                else:
+                    # accept packet which doesn't trigger context without constraint matching
                     print("Packet accepted!")
                     raw_packet.accept()
-                # The packet has an app layer which does not match
-                else:
-                    print("Packet dropped!")
-                    raw_packet.drop()
-                    return
-
-                if context:  # if packet response of a previously made request or just a push message (with complete information)
-                    self.packet_queue.put(abstract_packet)
 
                 return
             else:

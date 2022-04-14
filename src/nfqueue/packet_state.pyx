@@ -80,6 +80,7 @@ class PacketState:
         self.requests.pop((packet.src, packet.dst, packet.proto, key))
 
     def add_subscription(self, packet: AbstractPacket, key):
+        print("add_subscription: " + str((packet.src, packet.dst, packet.proto, key)))
         print("subscription added : "+str((packet.src, packet.dst, packet.proto, key)))
         self.subscriptions[(packet.src, packet.dst, packet.proto, key)] = packet
 
@@ -107,6 +108,7 @@ class PacketState:
     def has_subscription(self, packet, key):
 
         # src and dst inverted because check done with publish
+        print("has_subscription: "+str((packet.dst, packet.src, packet.proto, key)))
         packet_subscription: AbstractPacket = self.subscriptions.get((packet.dst, packet.src, packet.proto, key))
         if packet_subscription:
             return packet_subscription
