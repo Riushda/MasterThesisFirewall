@@ -17,8 +17,15 @@ class Handler:
         self.mark = 0
         self.nf_api.init_ruleset()
 
+    def add_rule(self, src, dst):
+        handle = self.nf_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark)
+        forward_rule = Rule(src, dst, handle)
+        handle = self.nf_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark)
+        backward_rule = Rule(dst, src, handle)
+
+        return [forward_rule, backward_rule]
+
     def add_relation(self, name, relation):
-        mark = self.mark
         subject = relation["subject"]
         broker = relation["broker"]
         pub = relation["publisher"]
@@ -26,21 +33,19 @@ class Handler:
         constraints = relation["constraints"]
 
         if broker:
-            handle = self.nf_api.add_rule(pub.ip, pub.port, broker.ip, broker.port, mark)
-            first_rule = Rule(pub, broker, handle)
-            handle = self.nf_api.add_rule(broker.ip, broker.port, sub.ip, sub.port, mark)
-            second_rule = Rule(broker, sub, handle)
-            relation = Relation(subject=subject, mark=mark, first=first_rule, second=second_rule,
-                                constraints=constraints)
+            first = self.add_rule(pub, broker)
+            second = self.add_rule(broker, pub)
 
+            relation = Relation(subject=subject, mark=self.mark, first=first,
+                                second=second,
+                                constraints=constraints)
         else:
-            handle = self.nf_api.add_rule(pub.ip, pub.port, sub.ip, sub.port, mark)
-            rule = Rule(pub, sub, handle)
-            relation = Relation(subject=subject, mark=mark, first=rule,
+            first = self.add_rule(pub, sub)
+            relation = Relation(subject=subject, mark=self.mark, first=first,
                                 constraints=constraints)
 
         mapping_entry = MappingEntry(subject, constraints)
-        self.constraint_mapping.add_mapping(mark, mapping_entry)
+        self.constraint_mapping.add_mapping(self.mark, mapping_entry)
         self.relations[name] = relation
         self.mark += 1
 

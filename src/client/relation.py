@@ -1,9 +1,8 @@
-from client.rule import Rule
 from utils.constant import *
 
 
 class Relation:
-    def __init__(self, subject: str, mark: int, first: Rule, second: Rule = None, constraints: list = None):
+    def __init__(self, subject: str, mark: int, first: list, second: list = None, constraints: list = None):
         self.subject = subject
         self.mark = mark
         self.first = first
@@ -18,9 +17,9 @@ class Relation:
             constraint_str += f"{c} ; "
         result += "rules: "
         if self.second:
-            result += f"{self.first} ~ {self.second}"
+            result += f"{self.first[0]} ~ {self.second[0]}"
         else:
-            result += f"{self.first}"
+            result += f"{self.first[0]}"
         result += f"\n constraints: {constraint_str}"
         return result
 

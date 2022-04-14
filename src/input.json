@@ -24,7 +24,7 @@
         "temp": {
           "type": "int",
           "label": "temp",
-          "initial": "average"
+          "init": "average"
         },
         "name": {
           "type": "str",
@@ -32,7 +32,7 @@
             "alice",
             "bob"
           ],
-          "initial": "alice"
+          "init": "alice"
         }
       }
     },
@@ -45,7 +45,7 @@
             "on",
             "off"
           ],
-          "initial": "off"
+          "init": "off"
         }
       }
     },
@@ -58,7 +58,7 @@
             "open",
             "closed"
           ],
-          "initial": "closed"
+          "init": "closed"
         }
       }
     }

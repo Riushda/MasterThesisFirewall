@@ -101,20 +101,26 @@ class JsonParser:
                     if f_type == FieldType.INT.value:
                         try:
                             label = f["label"]
-                        except KeyError:
-                            raise KeyError("Error: A int field must be defined with a label.")
+                            init_value = f["init"]
+                        except KeyError as err:
+                            raise KeyError(f"Error: A int field must be defined with a {err.args[0]}.")
                         if label not in self.parsed_labels:
                             raise ValueError("Error: A label must be defined before using it.")
+                        if init_value not in self.converted_labels[label].keys():
+                            raise ValueError("Error: Int field initial value unknown.")
                     elif f_type == FieldType.STR.value:
                         try:
                             value = f["value"]
-                        except KeyError:
-                            raise KeyError("Error: A str field must be defined with a value.")
+                            init_value = f["init"]
+                        except KeyError as err:
+                            raise KeyError(f"Error: A str field must be defined with a {err.args[0]}.")
                         if not isinstance(value, list):
                             raise KeyError("Error: A str field value must be a list.")
                         for v in value:
                             if not isinstance(v, str):
                                 raise KeyError("Error: A str field value must only contain strings.")
+                        if init_value not in value:
+                            raise ValueError("Error: Str field initial value unknown.")
 
             parsed_member = parse_member(src=src, field=field)
 
