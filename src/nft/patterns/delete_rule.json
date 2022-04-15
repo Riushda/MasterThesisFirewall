@@ -3,7 +3,7 @@
     {
       "delete": {
         "rule": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "chain": "merge",
           "handle": 0

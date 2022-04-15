@@ -19,9 +19,11 @@ class Handler:
         self.nf_api.init_ruleset()
 
     def add_rule(self, src, dst):
-        handle = self.nf_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark)
+        is_ip6 = src.is_ip6
+
+        handle = self.nf_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark, is_ip6)
         forward_rule = Rule(src, dst, handle)
-        handle = self.nf_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark)
+        handle = self.nf_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark, is_ip6)
         backward_rule = Rule(dst, src, handle)
 
         return [forward_rule, backward_rule]

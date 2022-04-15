@@ -25,13 +25,13 @@ class ContextInput:
         for member_key, member in members.items():
             self.state_combinations[member_key] = {}
             self.initial_state[member_key] = {}
-            for field_key, field in member.field.items():
-                if field["type"] == FieldType.INT.value:
-                    label = field["label"]
+            for field_key, field in member.fields.items():
+                if field.f_type == FieldType.INT:
+                    label = field.value
                     name = f"{member_key}.{label}"
                     category = [name, labels[label]]
                     self.categorization.append(category)
                     self.state_combinations[member_key][field_key] = labels[label][1]
-                elif field["type"] == FieldType.STR.value:
-                    self.state_combinations[member_key][field_key] = field["value"]
-                self.initial_state[member_key][field_key] = field["init"]
+                elif field.f_type == FieldType.STR:
+                    self.state_combinations[member_key][field_key] = field.value
+                self.initial_state[member_key][field_key] = field.init

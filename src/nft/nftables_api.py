@@ -48,12 +48,13 @@ class NftablesAPI:
         builder.init_ruleset()
         self.send_command(builder.get_command())
 
-    def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None, mark: int = 0):
+    def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None, mark: int = 0,
+                 is_ip6: bool = False):
 
         builder = CommandBuilder()
         builder.add_rule()
-        builder.set_ip(src, "saddr")
-        builder.set_ip(dst, "daddr")
+        builder.set_ip(src, "saddr", is_ip6)
+        builder.set_ip(dst, "daddr", is_ip6)
         builder.set_port(sport, "sport")
         builder.set_port(dport, "dport")
         builder.set_mark(mark)

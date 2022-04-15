@@ -12,6 +12,7 @@ from client.context_input import ContextInput
 
 if __name__ == "__main__":
     parser = JsonParser("input.json")
+    # print(parser)
 
     handling_queue = HandlingQueue()
 

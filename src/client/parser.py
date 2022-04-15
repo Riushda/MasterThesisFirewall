@@ -1,6 +1,7 @@
 import json
 
 from client.constraint import Constraint
+from client.field import Field
 from client.member import Member
 from client.utils import parse_member
 from utils.constant import *
@@ -48,27 +49,29 @@ class JsonParser:
             label_dic = self.json["label"]
         except KeyError:
             return
-        for key in label_dic.keys():
+
+        for label_key, label in label_dic.items():
             converted_label = {}
             try:
-                value = label_dic[key][0]
-                label = label_dic[key][1]
+                values = label[0]
+                categories = label[1]
             except KeyError:
-                raise KeyError("Error: Wrong categorization format.")
-            int_v = []
-            if len(value) != len(label) + 1:
-                raise ValueError("Error: Wrong categorization format.")
-            for v in value:
+                raise KeyError("Error in label parsing: Categorization must contain values and categories.")
+
+            int_value = []
+            if len(values) != len(categories) + 1:
+                raise ValueError("Error in label parsing: Wrong categorization format.")
+            for value in values:
                 try:
-                    int_v.append(float(v))
+                    int_value.append(float(value))
                 except ValueError:
-                    raise ValueError("Error: Wrong categorization format.")
-            for i in range(len(label)):
-                if not isinstance(label[i], str):
-                    raise ValueError("Error: Wrong categorization format.")
-                converted_label[label[i]] = [int_v[i], int_v[i + 1]]
-            self.converted_labels[key] = converted_label
-            self.parsed_labels[key] = label_dic[key]
+                    raise ValueError("Error in label parsing: Wrong categorization format.")
+            for i in range(len(categories)):
+                if not isinstance(categories[i], str):
+                    raise ValueError("Error in label parsing: Wrong categorization format.")
+                converted_label[categories[i]] = [int_value[i], int_value[i + 1]]
+            self.converted_labels[label_key] = converted_label
+            self.parsed_labels[label_key] = label_dic[label_key]
 
     def parse_member(self):
         try:
@@ -76,98 +79,93 @@ class JsonParser:
         except KeyError:
             return
 
-        for key in member_dict.keys():
-            field = None
+        for member_key, member in member_dict.items():
             try:
-                src = member_dict[key]["src"]
+                src = member["src"]
             except KeyError as err:
-                raise KeyError(f"Error: A member must contain {err.args[0]}.")
+                raise KeyError(f"Error in member parsing: A member must contain {err.args[0]}.")
+
+            json_field = None
 
             try:
-                field = member_dict[key]["field"]
-                if not isinstance(field, dict):
-                    raise ValueError("Error: Field must be a dictionary.")
+                json_field = member["field"]
             except KeyError:
                 pass
 
-            if field:
-                for k, f in field.items():
+            parsed_fields = {}
+
+            if json_field:
+                for field_key, field in json_field.items():
                     try:
-                        f_type = f["type"]
+                        f_type = field["type"]
+                        value = field["value"]
+                        init_value = field["init"]
                         if f_type not in [e.value for e in FieldType]:
-                            raise ValueError("Error: Unknown field type.")
-                    except KeyError:
-                        raise KeyError("Error: A field must contain a type.")
+                            raise ValueError("Error in field parsing: Unknown field type.")
+                    except KeyError as err:
+                        raise KeyError(f"Error in field parsing: A field must contain a {err.args[0]}.")
 
                     if f_type == FieldType.INT.value:
-                        try:
-                            label = f["label"]
-                            init_value = f["init"]
-                        except KeyError as err:
-                            raise KeyError(f"Error: A int field must be defined with a {err.args[0]}.")
-                        if label not in self.parsed_labels:
-                            raise ValueError("Error: A label must be defined before using it.")
-                        if init_value not in self.converted_labels[label].keys():
-                            raise ValueError("Error: Int field initial value unknown.")
+                        if value not in self.parsed_labels:
+                            raise ValueError("Error in field parsing: A label must be defined before usage.")
+                        if init_value not in self.converted_labels[value].keys():
+                            raise ValueError("Error in field parsing: Int field initial value unknown.")
                     elif f_type == FieldType.STR.value:
-                        try:
-                            value = f["value"]
-                            init_value = f["init"]
-                        except KeyError as err:
-                            raise KeyError(f"Error: A str field must be defined with a {err.args[0]}.")
                         if not isinstance(value, list):
-                            raise KeyError("Error: A str field value must be a list.")
+                            raise KeyError("Error in field parsing: A str field value must be a list.")
                         for v in value:
                             if not isinstance(v, str):
-                                raise KeyError("Error: A str field value must only contain strings.")
+                                raise KeyError("Error in field parsing: A str field value must only contain strings.")
                         if init_value not in value:
-                            raise ValueError("Error: Str field initial value unknown.")
+                            raise ValueError("Error in field parsing: Str field initial value unknown.")
 
-            parsed_member = parse_member(src=src, field=field)
+                    parsed_fields[field_key] = Field(FieldType(f_type), value, init_value)
 
-            self.parsed_members[key] = parsed_member
+            parsed_member = parse_member(src=src, field=parsed_fields)
+            self.parsed_members[member_key] = parsed_member
 
     def parse_constraint(self, publisher: Member, constraints: list):
         constraint_list = []
         fields = []
 
-        pub_fields = publisher.field
+        pub_fields = publisher.fields
 
         for constraint in constraints:
 
             try:
-                field = constraint["field"]
+                field_key = constraint["field"]
                 value = constraint["value"]
             except KeyError:
-                raise KeyError("Error: A constraint must contain a field and a value.")
+                raise KeyError("Error in constraint parsing: A constraint must contain a field and a value.")
 
             try:
-                f_type = pub_fields[field]["type"]
+                f_type = pub_fields[field_key].f_type
             except KeyError:
-                raise KeyError("Error: The publisher must contain the constrained field.")
+                raise KeyError("Error in constraint parsing: The publisher must contain the constrained field.")
 
-            if f_type == FieldType.INT.value:
-                label = pub_fields[field]["label"]
-                value_list = []
+            if f_type == FieldType.INT:
+                label = pub_fields[field_key].value
+                category_list = []
                 for v in value:
                     try:
                         converted_value = self.converted_labels[label][v]
                     except KeyError:
-                        raise KeyError("Error: Invalid value specified for int constraint.")
-                    value_list.append(converted_value)
-                constraint_list.append(Constraint(ConstraintType(f_type), field, value_list))
+                        raise KeyError("Error in constraint parsing: Invalid value specified for int constraint.")
+                    category_list.append(converted_value)
+                value = category_list
 
-            elif f_type == FieldType.STR.value:
-                field_value = pub_fields[field]["value"]
+            elif f_type == FieldType.STR:
+                field_value = pub_fields[field_key].value
                 for v in value:
                     if v not in field_value:
-                        raise ValueError("Error: Invalid value specified for str constraint.")
-                constraint_list.append(Constraint(ConstraintType(f_type), field, value))
+                        raise ValueError("Error in constraint parsing: Invalid value specified for str constraint.")
 
-            if field not in fields:
-                fields.append(field)
+            constraint_list.append(Constraint(f_type, field_key, value))
+
+            if field_key not in fields:
+                fields.append(field_key)
             else:
-                raise ValueError(f"Error: Please merge constraints using the same field.")
+                raise ValueError(f"Error in constraint parsing: Merge constraints using the same field.")
 
         return constraint_list
 
@@ -182,37 +180,38 @@ class JsonParser:
                 condition = trigger["condition"]
                 action = trigger["action"]
             except KeyError:
-                raise KeyError("Error: A trigger must contain a condition and an action.")
+                raise KeyError("Error in trigger parsing: A trigger must contain a condition and an action.")
 
-            for key, trigger_member in condition.items():
-                if key not in self.parsed_members:
-                    raise KeyError("Error: A trigger must contain valid members.")
-                found_member = self.parsed_members[key]
-                member_fields = found_member.field
-                for field_key, content in trigger_member.items():
+            for member_key, conditioned_fields in condition.items():
+                if member_key not in self.parsed_members:
+                    raise KeyError("Error in trigger parsing: A trigger must contain valid member(s).")
+                found_member = self.parsed_members[member_key]
+                member_fields = found_member.fields
 
+                for field_key, field_value in conditioned_fields.items():
                     if field_key in member_fields:
                         found_field = member_fields[field_key]
                     else:
-                        raise KeyError("Error: Unknown field in trigger.")
+                        raise KeyError("Error in trigger parsing: Unknown field.")
 
-                    if found_field["type"] == FieldType.INT.value:
-                        label = found_field["label"]
-                        if content not in self.converted_labels[label]:
-                            raise ValueError("Error: Wrong value for int field in trigger.")
-                    elif found_field["type"] == FieldType.STR.value:
-                        if not isinstance(content, str):
-                            raise ValueError("Error: Wrong value for str field in trigger.")
-                        if content not in found_field["value"]:
-                            raise ValueError("Error: Wrong value for str field in trigger.")
+                    value = found_field.value
+
+                    if found_field.f_type == FieldType.INT:
+                        if field_value not in self.converted_labels[value]:
+                            raise ValueError("Error in trigger parsing: Wrong value for int field.")
+                    elif found_field.f_type == FieldType.STR:
+                        if not isinstance(field_value, str):
+                            raise ValueError("Error in trigger parsing: Wrong value for str field.")
+                        if field_value not in found_field.value:
+                            raise ValueError("Error in trigger parsing: Wrong value for str field.")
 
             if Action.ENABLE.value in action:
                 if action[Action.ENABLE.value] not in self.parsed_relations:
-                    raise ValueError("Error: Unknown relation in trigger.")
+                    raise ValueError("Error in trigger parsing: Unknown action.")
 
             if Action.DISABLE.value in action:
                 if action[Action.DISABLE.value] not in self.parsed_relations:
-                    raise ValueError("Error: Unknown relation in trigger.")
+                    raise ValueError("Error in trigger parsing: Unknown action.")
 
             self.parsed_triggers.append(trigger)
 
@@ -222,13 +221,13 @@ class JsonParser:
         except KeyError:
             return
 
-        for name, relation in relations_list.items():
+        for relation_key, relation in relations_list.items():
             try:
                 subject = relation["subject"]
                 publisher_key = relation["publisher"]
                 subscriber_key = relation["subscriber"]
             except KeyError as err:
-                raise KeyError(f"Error: A relation must contain a {err.args[0]}.")
+                raise KeyError(f"Error in relation parsing: A relation must contain a {err.args[0]}.")
 
             broker = None
 
@@ -237,7 +236,7 @@ class JsonParser:
                 if broker_str in self.parsed_members:
                     broker = self.parsed_members[broker_str]
                 else:
-                    raise ValueError("Error: Unknown member.")
+                    raise ValueError("Error in relation parsing: Unknown member.")
             except KeyError:
                 pass
 
@@ -245,7 +244,14 @@ class JsonParser:
                 publisher = self.parsed_members[publisher_key]
                 subscriber = self.parsed_members[subscriber_key]
             else:
-                raise ValueError("Error: Unknown member.")
+                raise ValueError("Error in relation parsing: Unknown member.")
+
+            for m1 in [broker, publisher, subscriber]:
+                for m2 in [broker, publisher, subscriber]:
+                    if not broker:
+                        continue
+                    if m1.is_ip6 ^ m2.is_ip6:
+                        raise ValueError("Error in relation parsing: All members must have the same address family.")
 
             constraints = None
 
@@ -257,6 +263,6 @@ class JsonParser:
             if constraints:
                 constraints = self.parse_constraint(publisher, constraints)
 
-            self.parsed_relations[name] = {"subject": subject, "broker": broker, "publisher": publisher,
-                                           "subscriber": subscriber,
-                                           "constraints": constraints}
+            self.parsed_relations[relation_key] = {"subject": subject, "broker": broker, "publisher": publisher,
+                                                   "subscriber": subscriber,
+                                                   "constraints": constraints}

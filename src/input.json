@@ -16,14 +16,14 @@
   },
   "member": {
     "broker": {
-      "src": "192.168.33.11:1883"
+      "src": "192.168.33.11;1883"
     },
     "thermo": {
       "src": "192.168.33.12",
       "field": {
         "temp": {
           "type": "int",
-          "label": "temp",
+          "value": "temp",
           "init": "average"
         },
         "name": {

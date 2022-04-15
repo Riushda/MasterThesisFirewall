@@ -3,7 +3,7 @@
     "op": "==",
     "left": {
       "payload": {
-        "protocol": "ip",
+        "protocol": "ip6",
         "field": ""
       }
     },
