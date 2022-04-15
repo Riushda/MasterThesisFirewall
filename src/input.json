@@ -102,17 +102,15 @@
     }
   },
   "trigger": [
-    [
-      {
-        "condition": {
-          "thermo": {
-            "temp": "hot"
-          }
-        },
-        "action": {
-          "disable": "trigger_heater"
+    {
+      "condition": {
+        "thermo": {
+          "temp": "hot"
         }
+      },
+      "action": {
+        "disable": "trigger_heater"
       }
-    ]
+    }
   ]
 }

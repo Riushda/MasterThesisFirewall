@@ -2,18 +2,19 @@ from client.parser import JsonParser
 from client.relation import Relation
 from client.rule import Rule
 from nfqueue.constraint_mapping import MappingEntry
+from nfqueue.handling_queue import HandlingQueue
 from nft.nftables_api import NftablesAPI
 
 
 class Handler:
-    def __init__(self, constraint_mapping, packet_handler, labels, members, relations, context):
+    def __init__(self, handling_queue: HandlingQueue):
         self.nf_api = NftablesAPI()
-        self.constraint_mapping = constraint_mapping
-        self.packet_handler = packet_handler
-        self.labels = labels
-        self.members = members
-        self.relations = relations
-        self.context = context
+        self.constraint_mapping = handling_queue.constraint_mapping
+        self.packet_handler = handling_queue.packet_handler
+        self.labels = {}
+        self.members = {}
+        self.relations = {}
+        self.triggers = []
         self.mark = 0
         self.nf_api.init_ruleset()
 
@@ -34,7 +35,7 @@ class Handler:
 
         if broker:
             first = self.add_rule(pub, broker)
-            second = self.add_rule(broker, pub)
+            second = self.add_rule(broker, sub)
 
             relation = Relation(subject=subject, mark=self.mark, first=first,
                                 second=second,
@@ -56,7 +57,7 @@ class Handler:
             self.add_relation(name, relation)
         # for name, relation in self.relations.items():
         #    print(relation)
-        self.context = parser.parsed_triggers
+        self.triggers = parser.parsed_triggers
 
     def enable_relation(self, key):
 

@@ -14,7 +14,7 @@ class JsonParser:
         self.converted_labels = {}
         self.parsed_members = {}
         self.parsed_relations = {}
-        self.parsed_triggers = {}
+        self.parsed_triggers = []
 
         self.parse_json()
 
@@ -35,6 +35,7 @@ class JsonParser:
             self.parse_label()
             self.parse_member()
             self.parse_relation()
+            self.parse_trigger()
         except FileNotFoundError:
             return f"Error: File {self.path} not found."
         except Exception as err:
@@ -170,7 +171,12 @@ class JsonParser:
 
         return constraint_list
 
-    def parse_trigger(self, triggers):
+    def parse_trigger(self):
+        try:
+            triggers = self.json["trigger"]
+        except KeyError:
+            return
+
         for trigger in triggers:
             try:
                 condition = trigger["condition"]
@@ -178,8 +184,37 @@ class JsonParser:
             except KeyError:
                 raise KeyError("Error: A trigger must contain a condition and an action.")
 
-            for name, member in condition.items():
-                pass
+            for key, trigger_member in condition.items():
+                if key not in self.parsed_members:
+                    raise KeyError("Error: A trigger must contain valid members.")
+                found_member = self.parsed_members[key]
+                member_fields = found_member.field
+                for field_key, content in trigger_member.items():
+
+                    if field_key in member_fields:
+                        found_field = member_fields[field_key]
+                    else:
+                        raise KeyError("Error: Unknown field in trigger.")
+
+                    if found_field["type"] == FieldType.INT.value:
+                        label = found_field["label"]
+                        if content not in self.converted_labels[label]:
+                            raise ValueError("Error: Wrong value for int field in trigger.")
+                    elif found_field["type"] == FieldType.STR.value:
+                        if not isinstance(content, str):
+                            raise ValueError("Error: Wrong value for str field in trigger.")
+                        if content not in found_field["value"]:
+                            raise ValueError("Error: Wrong value for str field in trigger.")
+
+            if Action.ENABLE.value in action:
+                if action[Action.ENABLE.value] not in self.parsed_relations:
+                    raise ValueError("Error: Unknown relation in trigger.")
+
+            if Action.DISABLE.value in action:
+                if action[Action.DISABLE.value] not in self.parsed_relations:
+                    raise ValueError("Error: Unknown relation in trigger.")
+
+            self.parsed_triggers.append(trigger)
 
     def parse_relation(self):
         try:
