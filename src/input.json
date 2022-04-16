@@ -1,11 +1,11 @@
 {
-  "label": {
+  "categorization": {
     "temp": [
       [
-        "0",
+        "-inf",
         "10",
         "20",
-        "30"
+        "inf"
       ],
       [
         "cold",
@@ -110,6 +110,30 @@
       },
       "action": {
         "disable": "trigger_heater"
+      }
+    }
+  ],
+  "inference": [
+    {
+      "condition": {
+        "thermo": {
+          "temp": "cold"
+        }
+      },
+      "implication": {
+        "window": {
+          "status": "closed"
+        }
+      }
+    }
+  ],
+  "inconsistency": [
+    {
+      "thermo": {
+        "temp": "hot"
+      },
+      "heater": {
+        "status": "on"
       }
     }
   ]

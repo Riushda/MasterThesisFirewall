@@ -11,32 +11,41 @@ class JsonParser:
     def __init__(self, path: str):
         self.path = path
         self.json = None
-        self.parsed_labels = {}
-        self.converted_labels = {}
+        self.parsed_categorization = {}
+        self.converted_categorization = {}
         self.parsed_members = {}
         self.parsed_relations = {}
         self.parsed_triggers = []
+        self.parsed_inferences = []
+        self.parsed_inconsistencies = []
 
         self.parse_json()
 
     def __str__(self):
-        result = f"Labels: {str(self.parsed_labels)}\n\n"
-        result += f"Converted labels: {str(self.converted_labels)}\n\n"
+        result = f"Categorization: {self.parsed_categorization}\n\n"
+        result += f"Converted categorization: {self.converted_categorization}\n\n"
         result += "Members: "
         for key, value in self.parsed_members.items():
             result += f"[{key}: {value}]"
         result += "\n\n"
         result += "Relations: "
         result += str(list(self.parsed_relations.keys()))
+        result += "\n\n"
+        result += f"Inferences: {self.parsed_inferences}"
+        result += "\n\n"
+        result += f"Inconsistencies: {self.parsed_inconsistencies}"
+        result += "\n"
         return result
 
     def parse_json(self):
         try:
             self.json = json.load(open(self.path))
-            self.parse_label()
+            self.parse_categorization()
             self.parse_member()
             self.parse_relation()
             self.parse_trigger()
+            self.parse_inference()
+            self.parse_inconsistency()
         except FileNotFoundError:
             return f"Error: File {self.path} not found."
         except Exception as err:
@@ -44,34 +53,39 @@ class JsonParser:
             return err.args[0]
         return "Input parsed!"
 
-    def parse_label(self):
+    def parse_categorization(self):
         try:
-            label_dic = self.json["label"]
+            categorization_dic = self.json["categorization"]
         except KeyError:
             return
 
-        for label_key, label in label_dic.items():
-            converted_label = {}
+        for categorization_key, category in categorization_dic.items():
+            converted_categorization = {}
             try:
-                values = label[0]
-                categories = label[1]
+                intervals = category[0]
+                labels = category[1]
             except KeyError:
-                raise KeyError("Error in label parsing: Categorization must contain values and categories.")
+                raise KeyError("Error in categorization parsing: A categorization must contain intervals and labels.")
 
             int_value = []
-            if len(values) != len(categories) + 1:
-                raise ValueError("Error in label parsing: Wrong categorization format.")
-            for value in values:
+            if len(intervals) != len(labels) + 1:
+                raise ValueError("Error in categorization parsing: Wrong categorization format.")
+            if len(intervals) < 2:
+                raise ValueError("Error in categorization parsing: Wrong categorization format.")
+            for i in range(len(intervals)):
                 try:
-                    int_value.append(float(value))
+                    int_value.append(float(intervals[i]))
+                    if (i == 0 and intervals[i] == "inf") or (i == len(intervals) - 1 and intervals[i] == "-inf"):
+                        raise ValueError
                 except ValueError:
-                    raise ValueError("Error in label parsing: Wrong categorization format.")
-            for i in range(len(categories)):
-                if not isinstance(categories[i], str):
-                    raise ValueError("Error in label parsing: Wrong categorization format.")
-                converted_label[categories[i]] = [int_value[i], int_value[i + 1]]
-            self.converted_labels[label_key] = converted_label
-            self.parsed_labels[label_key] = label_dic[label_key]
+                    raise ValueError("Error in categorization parsing: Wrong categorization format.")
+
+            for i in range(len(labels)):
+                if not isinstance(labels[i], str):
+                    raise ValueError("Error in categorization parsing: Wrong categorization format.")
+                converted_categorization[labels[i]] = [int_value[i], int_value[i + 1]]
+            self.converted_categorization[categorization_key] = converted_categorization
+            self.parsed_categorization[categorization_key] = categorization_dic[categorization_key]
 
     def parse_member(self):
         try:
@@ -106,9 +120,9 @@ class JsonParser:
                         raise KeyError(f"Error in field parsing: A field must contain a {err.args[0]}.")
 
                     if f_type == FieldType.INT.value:
-                        if value not in self.parsed_labels:
-                            raise ValueError("Error in field parsing: A label must be defined before usage.")
-                        if init_value not in self.converted_labels[value].keys():
+                        if value not in self.parsed_categorization:
+                            raise ValueError("Error in field parsing: A categorization must be defined before usage.")
+                        if init_value not in self.converted_categorization[value].keys():
                             raise ValueError("Error in field parsing: Int field initial value unknown.")
                     elif f_type == FieldType.STR.value:
                         if not isinstance(value, list):
@@ -144,11 +158,11 @@ class JsonParser:
                 raise KeyError("Error in constraint parsing: The publisher must contain the constrained field.")
 
             if f_type == FieldType.INT:
-                label = pub_fields[field_key].value
+                category = pub_fields[field_key].value
                 category_list = []
                 for v in value:
                     try:
-                        converted_value = self.converted_labels[label][v]
+                        converted_value = self.converted_categorization[category][v]
                     except KeyError:
                         raise KeyError("Error in constraint parsing: Invalid value specified for int constraint.")
                     category_list.append(converted_value)
@@ -169,6 +183,30 @@ class JsonParser:
 
         return constraint_list
 
+    def check_conditions(self, conditions, parsing):
+        for member_key, conditioned_fields in conditions.items():
+            if member_key not in self.parsed_members:
+                raise KeyError(f"Error in {parsing} parsing: A(n) {parsing} must contain valid member(s).")
+            found_member = self.parsed_members[member_key]
+            member_fields = found_member.fields
+
+            for field_key, field_value in conditioned_fields.items():
+                if field_key in member_fields:
+                    found_field = member_fields[field_key]
+                else:
+                    raise KeyError(f"Error in {parsing} parsing: Unknown field.")
+
+                value = found_field.value
+
+                if found_field.f_type == FieldType.INT:
+                    if field_value not in self.converted_categorization[value]:
+                        raise ValueError(f"Error in {parsing} parsing: Wrong value for int field.")
+                elif found_field.f_type == FieldType.STR:
+                    if not isinstance(field_value, str):
+                        raise ValueError(f"Error in {parsing} parsing: Wrong value for str field.")
+                    if field_value not in found_field.value:
+                        raise ValueError(f"Error in {parsing} parsing: Wrong value for str field.")
+
     def parse_trigger(self):
         try:
             triggers = self.json["trigger"]
@@ -177,33 +215,12 @@ class JsonParser:
 
         for trigger in triggers:
             try:
-                condition = trigger["condition"]
+                conditions = trigger["condition"]
                 action = trigger["action"]
             except KeyError:
                 raise KeyError("Error in trigger parsing: A trigger must contain a condition and an action.")
 
-            for member_key, conditioned_fields in condition.items():
-                if member_key not in self.parsed_members:
-                    raise KeyError("Error in trigger parsing: A trigger must contain valid member(s).")
-                found_member = self.parsed_members[member_key]
-                member_fields = found_member.fields
-
-                for field_key, field_value in conditioned_fields.items():
-                    if field_key in member_fields:
-                        found_field = member_fields[field_key]
-                    else:
-                        raise KeyError("Error in trigger parsing: Unknown field.")
-
-                    value = found_field.value
-
-                    if found_field.f_type == FieldType.INT:
-                        if field_value not in self.converted_labels[value]:
-                            raise ValueError("Error in trigger parsing: Wrong value for int field.")
-                    elif found_field.f_type == FieldType.STR:
-                        if not isinstance(field_value, str):
-                            raise ValueError("Error in trigger parsing: Wrong value for str field.")
-                        if field_value not in found_field.value:
-                            raise ValueError("Error in trigger parsing: Wrong value for str field.")
+            self.check_conditions(conditions, "trigger")
 
             if Action.ENABLE.value in action:
                 if action[Action.ENABLE.value] not in self.parsed_relations:
@@ -215,13 +232,43 @@ class JsonParser:
 
             self.parsed_triggers.append(trigger)
 
-    def parse_relation(self):
+    def parse_inference(self):
         try:
-            relations_list = self.json["relation"]
+            inference_list = self.json["inference"]
         except KeyError:
             return
 
-        for relation_key, relation in relations_list.items():
+        for inference in inference_list:
+            try:
+                condition = inference["condition"]
+                implications = inference["implication"]
+            except KeyError:
+                raise KeyError("Error in inference parsing: An inference must contain a condition and an implication.")
+
+            if (len(condition.keys())) != 1:
+                raise KeyError("Error in inference parsing: A condition must contain a single member field.")
+
+            self.check_conditions(condition, "inference")
+            self.check_conditions(implications, "inference")
+            self.parsed_inferences.append(inference)
+
+    def parse_inconsistency(self):
+        try:
+            inconsistency_list = self.json["inconsistency"]
+        except KeyError:
+            return
+
+        for inconsistency in inconsistency_list:
+            self.check_conditions(inconsistency, "inconsistency")
+            self.parsed_inconsistencies.append(inconsistency)
+
+    def parse_relation(self):
+        try:
+            relations_dic = self.json["relation"]
+        except KeyError:
+            return
+
+        for relation_key, relation in relations_dic.items():
             try:
                 subject = relation["subject"]
                 publisher_key = relation["publisher"]

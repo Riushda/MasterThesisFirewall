@@ -11,10 +11,12 @@ class Handler:
         self.nf_api = NftablesAPI()
         self.constraint_mapping = handling_queue.constraint_mapping
         self.packet_handler = handling_queue.packet_handler
-        self.labels = {}
+        self.categorization = {}
         self.members = {}
         self.relations = {}
         self.triggers = []
+        self.inferences = []
+        self.inconsistencies = []
         self.mark = 0
         self.nf_api.init_ruleset()
 
@@ -53,13 +55,13 @@ class Handler:
         self.mark += 1
 
     def add_parser(self, parser: JsonParser):
-        self.labels = parser.parsed_labels
+        self.categorization = parser.parsed_categorization
         self.members = parser.parsed_members
         for name, relation in parser.parsed_relations.items():
             self.add_relation(name, relation)
-        # for name, relation in self.relations.items():
-        #    print(relation)
         self.triggers = parser.parsed_triggers
+        self.inferences = parser.parsed_inferences
+        self.inconsistencies = parser.parsed_inconsistencies
 
     def enable_relation(self, key):
 
