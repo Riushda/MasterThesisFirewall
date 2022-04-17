@@ -1,11 +1,11 @@
 {
-  "label": {
+  "categorization": {
     "temp": [
       [
-        "0",
+        "-inf",
         "10",
         "20",
-        "30"
+        "inf"
       ],
       [
         "cold",
@@ -16,14 +16,14 @@
   },
   "member": {
     "broker": {
-      "src": "192.168.33.11:1883"
+      "src": "192.168.33.11;1883"
     },
     "thermo": {
       "src": "192.168.33.12",
       "field": {
         "temp": {
           "type": "int",
-          "label": "temp",
+          "value": "temp",
           "init": "average"
         },
         "name": {
@@ -102,17 +102,39 @@
     }
   },
   "trigger": [
-    [
-      {
-        "condition": {
-          "thermo": {
-            "temp": "hot"
-          }
-        },
-        "action": {
-          "disable": "trigger_heater"
+    {
+      "condition": {
+        "thermo": {
+          "temp": "hot"
+        }
+      },
+      "action": {
+        "disable": "trigger_heater"
+      }
+    }
+  ],
+  "inference": [
+    {
+      "condition": {
+        "thermo": {
+          "temp": "cold"
+        }
+      },
+      "implication": {
+        "window": {
+          "status": "closed"
         }
       }
-    ]
+    }
+  ],
+  "inconsistency": [
+    {
+      "thermo": {
+        "temp": "hot"
+      },
+      "heater": {
+        "status": "on"
+      }
+    }
   ]
 }

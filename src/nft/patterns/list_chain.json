@@ -3,7 +3,7 @@
     {
       "list": {
         "chain": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "name": "merge"
         }

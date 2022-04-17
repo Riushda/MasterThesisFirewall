@@ -8,7 +8,7 @@
     {
       "add": {
         "table": {
-          "family": "ip",
+          "family": "inet",
           "name": "filter"
         }
       }
@@ -16,7 +16,7 @@
     {
       "add": {
         "chain": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "name": "input",
           "type": "filter",
@@ -29,7 +29,7 @@
     {
       "add": {
         "chain": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "name": "output",
           "type": "filter",
@@ -42,7 +42,7 @@
     {
       "add": {
         "chain": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "name": "forward",
           "type": "filter",
@@ -55,7 +55,7 @@
     {
       "add": {
         "chain": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "name": "merge"
         }
@@ -64,7 +64,7 @@
     {
       "add": {
         "chain": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "name": "disabled"
         }
@@ -73,7 +73,7 @@
     {
       "add": {
         "rule": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "chain": "input",
           "expr": [
@@ -89,7 +89,7 @@
     {
       "add": {
         "rule": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "chain": "output",
           "expr": [
@@ -105,7 +105,7 @@
     {
       "add": {
         "rule": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "chain": "forward",
           "expr": [

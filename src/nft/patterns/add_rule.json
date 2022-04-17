@@ -3,7 +3,7 @@
     {
       "add": {
         "rule": {
-          "family": "ip",
+          "family": "inet",
           "table": "filter",
           "chain": "merge",
           "expr": [

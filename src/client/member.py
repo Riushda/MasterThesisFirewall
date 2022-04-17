@@ -1,11 +1,12 @@
 class Member:
-    def __init__(self, ip: str = None, port: int = None, field=None):
+    def __init__(self, ip: str = None, port: int = None, fields=None, is_ip6: bool = False):
         self.ip = ip
+        self.is_ip6 = is_ip6
         self.port = port
-        if field is None:
-            self.field = {}
+        if fields is None:
+            self.fields = {}
         else:
-            self.field = field
+            self.fields = fields
 
     def __str__(self):
         result = "source: "
@@ -21,8 +22,8 @@ class Member:
             result += "*"
 
         result += " | fields: "
-        if self.field:
-            for field, content in self.field.items():
+        if self.fields:
+            for field, content in self.fields.items():
                 result += f"{content}"
         else:
             result += "none"

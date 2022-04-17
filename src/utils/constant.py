@@ -4,6 +4,8 @@ from enum import Enum
 class Action(Enum):
     ADD = "add"
     REMOVE = "rm"
+    ENABLE = "enable"
+    DISABLE = "disable"
 
 
 class Command(Enum):

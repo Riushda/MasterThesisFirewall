@@ -2,25 +2,30 @@ from client.parser import JsonParser
 from client.relation import Relation
 from client.rule import Rule
 from nfqueue.constraint_mapping import MappingEntry
+from nfqueue.handling_queue import HandlingQueue
 from nft.nftables_api import NftablesAPI
 
 
 class Handler:
-    def __init__(self, constraint_mapping, packet_handler, labels, members, relations, context):
+    def __init__(self, handling_queue: HandlingQueue):
         self.nf_api = NftablesAPI()
-        self.constraint_mapping = constraint_mapping
-        self.packet_handler = packet_handler
-        self.labels = labels
-        self.members = members
-        self.relations = relations
-        self.context = context
+        self.constraint_mapping = handling_queue.constraint_mapping
+        self.packet_handler = handling_queue.packet_handler
+        self.categorization = {}
+        self.members = {}
+        self.relations = {}
+        self.triggers = []
+        self.inferences = []
+        self.inconsistencies = []
         self.mark = 0
         self.nf_api.init_ruleset()
 
     def add_rule(self, src, dst):
-        handle = self.nf_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark)
+        is_ip6 = src.is_ip6
+
+        handle = self.nf_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark, is_ip6)
         forward_rule = Rule(src, dst, handle)
-        handle = self.nf_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark)
+        handle = self.nf_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark, is_ip6)
         backward_rule = Rule(dst, src, handle)
 
         return [forward_rule, backward_rule]
@@ -34,7 +39,7 @@ class Handler:
 
         if broker:
             first = self.add_rule(pub, broker)
-            second = self.add_rule(broker, pub)
+            second = self.add_rule(broker, sub)
 
             relation = Relation(subject=subject, mark=self.mark, first=first,
                                 second=second,
@@ -50,13 +55,13 @@ class Handler:
         self.mark += 1
 
     def add_parser(self, parser: JsonParser):
-        self.labels = parser.parsed_labels
+        self.categorization = parser.parsed_categorization
         self.members = parser.parsed_members
         for name, relation in parser.parsed_relations.items():
             self.add_relation(name, relation)
-        # for name, relation in self.relations.items():
-        #    print(relation)
-        self.context = parser.parsed_triggers
+        self.triggers = parser.parsed_triggers
+        self.inferences = parser.parsed_inferences
+        self.inconsistencies = parser.parsed_inconsistencies
 
     def enable_relation(self, key):
 

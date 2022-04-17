@@ -58,10 +58,14 @@ class CommandBuilder:
 
         self.command = {"nftables": [{"replace": {"rule": self.command}}]}
 
-    def set_ip(self, ip, direction):
+    def set_ip(self, ip, direction, is_ip6):
         if not ip:
             return
-        ip_json = load_json("ip_matching")
+
+        if is_ip6:
+            ip_json = load_json("ip6_matching")
+        else:
+            ip_json = load_json("ip_matching")
 
         ip_json["match"]["left"]["payload"]["field"] = direction
 
@@ -75,7 +79,7 @@ class CommandBuilder:
 
         self.command["nftables"][0]["add"]["rule"]["expr"].insert(0, ip_json)
 
-    def set_port(self, port: str, direction: str):
+    def set_port(self, port: int, direction: str):
         if not port:
             return
         port_json = load_json("port_matching")
