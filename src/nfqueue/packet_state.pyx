@@ -12,7 +12,7 @@ class PacketState:
         if self.protocol_decoder.ask_protocol(packet, "is_pull_packet"):
 
             if self.protocol_decoder.ask_protocol(packet, "is_request"):
-                self.protocol_decoder.ask_protocol(packet, "add_request", self)
+                self.protocol_decoder.ask_protocol(packet, "add_request", self) # TODO add valid field to wait for ack if needed (maybe do it for response also and store response temporarily)
                 print("request added")
                 # do not update context, with pull protocol response is always needed to check if request was successful
                 return True, False
@@ -35,12 +35,12 @@ class PacketState:
                 # action can be triggered by the protocol when it sees a certain signaling packet
                 self.protocol_decoder.ask_protocol(packet, "update_packet_state", self)
                 print("pull packet signaling")
-                return True, False
+                return True, False # TODO check with ask_protocol if signaling packet should be accepted
 
         elif self.protocol_decoder.ask_protocol(packet, "is_push_packet"):
 
             if self.protocol_decoder.ask_protocol(packet, "is_subscribe_packet"):
-                self.protocol_decoder.ask_protocol(packet, "add_subscription", self)
+                self.protocol_decoder.ask_protocol(packet, "add_subscription", self) # TODO add valid field to wait for ack if needed (maybe do it for publish also and store response temporarily)
                 print("subscription added")
                 return True, False
 
@@ -65,7 +65,7 @@ class PacketState:
                 # action can be triggered by the protocol when it sees a certain signaling packet
                 self.protocol_decoder.ask_protocol(packet, "update_packet_state", self)
                 print("push packet signaling")
-                return True, False
+                return True, False # TODO check with ask_protocol if signaling packet should be accepted
         else:
             pass # should never reach there
 
