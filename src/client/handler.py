@@ -63,33 +63,30 @@ class Handler:
         self.inferences = parser.parsed_inferences
         self.inconsistencies = parser.parsed_inconsistencies
 
-    def enable_relation(self, key):
+    def enable_disable(self, key, action):
 
         if key in self.relations:
             found_relation = self.relations[key]
         else:
             return
 
-        first_handle = found_relation.first.handle
-        self.nf_api.enable_rule(first_handle)
+        handles = [found_relation.first[0].handle, found_relation.first[1].handle]
 
         if found_relation.second:
-            second_handle = found_relation.second.handle
-            self.nf_api.enable_rule(second_handle)
+            handles.append(found_relation.second[0].handle)
+            handles.append(found_relation.second[1].handle)
+
+        for handle in handles:
+            if action:
+                self.nf_api.enable_rule(handle)
+            else:
+                self.nf_api.disable_rule(handle)
+
+    def enable_relation(self, key):
+        self.enable_disable(key, True)
 
     def disable_relation(self, key):
-
-        if key in self.relations:
-            found_relation = self.relations[key]
-        else:
-            return
-
-        first_handle = found_relation.first.handle
-        self.nf_api.disable_rule(first_handle)
-
-        if found_relation.second:
-            second_handle = found_relation.second.handle
-            self.nf_api.disable_rule(second_handle)
+        self.enable_disable(key, False)
 
     def revert_relation_mapping(self):
         revert_mapping = {}
