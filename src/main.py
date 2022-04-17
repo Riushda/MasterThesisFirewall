@@ -9,10 +9,10 @@ from client.handler import Handler
 from client.parser import JsonParser
 from nfqueue.handling_queue import HandlingQueue
 from client.context_input import ContextInput
+from context import context
 
 if __name__ == "__main__":
     parser = JsonParser("input.json")
-    # print(parser)
 
     handling_queue = HandlingQueue()
 
@@ -24,19 +24,17 @@ if __name__ == "__main__":
 
     context_input = ContextInput(handler)
 
+    context_thread = Thread(target=context.run,
+                            args=(handling_queue.packet_queue, context_input))
+    context_thread.start()
 
-    # print(context_input)
-
-    # context_thread = Thread(target=context.run,
-    #                        args=(handling_queue.packet_queue, pub_list, sub_list, broker_list, relations),
-    #                        daemon=True)
-    # context_thread.start()
 
     def signal_handler(sig, frame):
         print('You pressed Ctrl+C!')
         handling_queue.stop()
         handling_queue_thread.join()
-        # context_thread.join()
+        context.stop()
+        context_thread.join()
 
 
     signal.signal(signal.SIGINT, signal_handler)

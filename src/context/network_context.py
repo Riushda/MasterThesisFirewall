@@ -3,8 +3,9 @@ import itertools as it
 from transitions import Machine, State
 from transitions.extensions import GraphMachine
 
-from context.utils import get_device
 import context.abstract_rule as abstract_rule
+from client.context_input import ContextInput
+from context.utils import get_device
 
 
 class DeviceState(State):
@@ -26,13 +27,12 @@ class DeviceState(State):
 
 
 class NetworkContext(object):
-    def __init__(self, publisher_list, relations, initial_state, state_combinations, inconsistent_states,
-                 state_inference):
+    def __init__(self, context_input: ContextInput):
 
-        self.publisher_list = publisher_list
-        self.relations = relations
-        self.inconsistent_states = inconsistent_states
-        self.state_inference = state_inference
+        self.members = context_input.members
+        self.relations = context_input.relations
+        self.inconsistent_states = context_input.inconsistent_states
+        self.state_inference = context_input.state_inference
 
         self.states = []
         self.transitions = []
@@ -41,7 +41,7 @@ class NetworkContext(object):
         self.machine: Machine = GraphMachine(None)
 
         # if self.check_inferences():
-        self.build_fsm(initial_state, state_combinations)
+        self.build_fsm(context_input.initial_state, context_input.state_combinations)
 
     def build_fsm(self, initial_state, state_combinations):
         initial_state_name = ""
@@ -110,8 +110,9 @@ class NetworkContext(object):
 
             i += 1
 
-        self.machine = GraphMachine(model=self, states=self.states, transitions=self.transitions, initial=initial_state_name,
-                               send_event=True)
+        self.machine = GraphMachine(model=self, states=self.states, transitions=self.transitions,
+                                    initial=initial_state_name,
+                                    send_event=True)
 
     def draw_fsm(self):
         self.get_graph(title=str(self.current_state()), show_roi=True).draw('my_state_diagram.png', prog='dot')
@@ -155,7 +156,7 @@ class NetworkContext(object):
             device = get_device(key[0])
 
             # check if keys are publishers
-            if device not in self.publisher_list:
+            if device not in self.members:
                 print(device + " : keys in inferences must be publishers !")
                 return False
 
@@ -165,7 +166,7 @@ class NetworkContext(object):
             for value in values:
                 devices.append(get_device(value[0]))
 
-            for relation in self.relations:
+            for _, relation in self.relations.items():
                 publisher = relation.first.src.name
                 if publisher == device:
 

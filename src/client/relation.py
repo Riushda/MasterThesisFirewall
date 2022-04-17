@@ -25,7 +25,7 @@ class Relation:
 
     def add_jobs(self, api, schedule, task):
         for c in self.constraints:
-            if c.c_type == TriggerType.TIME.value:
+            if c.f_type == TriggerType.TIME.value:
                 for v in c.value:
                     job = schedule.every().day.at(v[0]).do(
                         task, api, Code.ENABLE_RELATION.value, self)

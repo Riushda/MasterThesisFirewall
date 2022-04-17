@@ -64,6 +64,7 @@ def convert_inference(member_key, member):
 
 class ContextInput:
     def __init__(self, handler: Handler):
+        self.handler = handler
         self.abstract_rules = []
         self.categorization = Categorization()
         self.initial_state = {}

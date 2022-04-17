@@ -11,14 +11,14 @@ class MappingEntry:
 def match_constraint(field: str, value: str, constraints: list):
     for c in constraints:
         if field == c.field:
-            if c.c_type == ConstraintType.INT:
+            if c.f_type == FieldType.INT:
                 for interval in c.value:
                     try:
                         if interval[0] <= int(value) <= interval[1]:
                             return True
                     except ValueError:
                         return False
-            elif c.c_type == ConstraintType.STR:
+            elif c.f_type == FieldType.STR:
                 if value in c.value:
                     return True
                 else:

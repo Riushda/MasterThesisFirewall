@@ -1,37 +1,36 @@
-from multiprocessing import Queue
 from _queue import Empty
+from multiprocessing import Queue
 
 from transitions import MachineError
 
+from client.context_input import ContextInput, Categorization
 from context.abstract_rule import AbstractRule
 from context.network_context import NetworkContext
 from context.network_context import SelfLoopException
+from context.utils import is_float
 from nfqueue.abstract_packet import AbstractPacket
-from context.utils import InputParser, Categorizer, is_float
+
+keep_running = True
 
 
-def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
-    input_parser: InputParser = InputParser()
-    categorizer: Categorizer = Categorizer()
+def run(packet_queue: Queue, context_input: ContextInput):
+    network_context: NetworkContext = NetworkContext(context_input)
 
-    initial_state, state_combinations, inconsistent_states, state_inference, abstract_rules, categorization = input_parser.get_input()
-
-    categorizer.add_mapping_array(categorization)
-
-    network_context = NetworkContext(pub_list, relations, initial_state, state_combinations, inconsistent_states,
-                                     state_inference)
-
-    rules = AbstractRule(abstract_rules, network_context)  # pass this to the client later
+    members = context_input.members
+    categorization = context_input.categorization
+    rules = AbstractRule(context_input.abstract_rules, network_context,
+                         context_input.handler)  # pass this to the client later
 
     network_context.draw_fsm()
+    global keep_running
 
-    while True:
+    while keep_running:
         try:
             packet: AbstractPacket = packet_queue.get(block=True, timeout=10)
 
             for content in packet.content:
-                device = get_device_name(packet.src, pub_list)
-                update_context(network_context, device, categorizer, content)
+                device = get_device_name(packet.src, members)
+                update_context(network_context, device, categorization, content)
                 network_context.show_current_state()
                 network_context.draw_fsm()
 
@@ -39,7 +38,7 @@ def run(packet_queue: Queue, pub_list, sub_list, broker_list, relations):
             pass
 
 
-def update_context(network_context: NetworkContext, device, categorizer: Categorizer, packet_data):
+def update_context(network_context: NetworkContext, device, categorization: Categorization, packet_data):
     try:
         if device is None:
             print("Unknown publisher !")
@@ -51,8 +50,8 @@ def update_context(network_context: NetworkContext, device, categorizer: Categor
         if is_float(value):
             value = float(value)
 
-        if categorizer.has_mapping(field):
-            value = categorizer.map(field, value)
+        if categorization.has_mapping(field):
+            value = categorization.map(field, value)
 
         print(field, value)
         trigger = network_context.get_transition_trigger(field, value)
@@ -77,12 +76,17 @@ def update_context(network_context: NetworkContext, device, categorizer: Categor
     return True
 
 
-def get_device_name(ip, pub_list):
-    for pub in pub_list:
-        if pub_list[pub].ip == ip:
-            return pub_list[pub].name
+def get_device_name(ip, members):
+    for device_key, device in members.items():
+        if device.ip == ip:
+            return device_key
 
     return None
+
+
+def stop():
+    global keep_running
+    keep_running = False
 
 
 def test():
