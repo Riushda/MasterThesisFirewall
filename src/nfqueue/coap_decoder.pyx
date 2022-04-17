@@ -274,10 +274,22 @@ class CoAPDecoder:
 		# TODO trigger packet_state.unsubscribe when MAX_AGE is reached (in this class) or trigger it when response after MAX_AGE arrives (in this function then)
 		return CoAPResponseCode.is_unsuccessful(response)
 
+	def revert_direction(self, packet):
+		src = packet.src
+		packet.src = packet.dst
+		packet.dst = src
+
 	def add_subscription(self, packet, packet_state):
 		packet_state = packet_state[0]
 
 		packet_state.add_subscription(packet, packet.header["token"])
+
+		# set valid if non-confirmable
+		self.revert_direction(packet)
+		subscription_packet = packet_state.has_subscription(packet, packet.header["token"])
+		self.revert_direction(packet)
+		if CoAPResponseCode.enum(packet.header["T"]) == CoAPType.NON_CONFIRMABLE:
+			subscription_packet["valid"] = True
 
 	def remove_subscription(self, packet, packet_state):
 		packet_state = packet_state[0]
@@ -288,17 +300,30 @@ class CoAPDecoder:
 		packet_state = packet_state[0]
 
 		subscription_packet = packet_state.has_subscription(packet, packet.header["token"])
-		if subscription_packet:
+		if subscription_packet and subscription_packet["valid"]:
 			# in coap, the push messages doesn't contain the path (needed because context is updated with response)
 			packet.subject = subscription_packet.subject
-		return subscription_packet
+			return subscription_packet
+
+		return None
+
+	def from_broker(self, packet):
+		return False # CoAP doesn't have brokers
 
 	def toward_broker(self, packet):
 		return False # CoAP doesn't have brokers
 
 	# this can trigger function in the packet_state class depending on the type of the packet (other than subscribe and publish)
 	def update_packet_state(self, packet, packet_state):
-		pass # no trigger for the moment
+		packet_code = CoAPResponseCode.enum(packet.header["Code"])
+		if self.is_push_packet(packet) and CoAPResponseCode.enum(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT:
+			successful_get = CoAPResponseCode.is_get_successful(packet_code)
+
+			subscription_packet = packet_state.has_subscription(packet, packet.header["token"])
+			if subscription_packet and not subscription_packet["valid"]:
+				# we set the valid flag to the subscription since we see the ack of the observe request
+				subscription_packet["valid"] = True
+
 
 # for methods code :
 # https://datatracker.ietf.org/doc/html/rfc7252#section-12.1.1 and https://datatracker.ietf.org/doc/html/rfc7252#section-12.1.2

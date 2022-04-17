@@ -12,7 +12,7 @@ class PacketState:
         if self.protocol_decoder.ask_protocol(packet, "is_pull_packet"):
 
             if self.protocol_decoder.ask_protocol(packet, "is_request"):
-                self.protocol_decoder.ask_protocol(packet, "add_request", self) # TODO add valid field to wait for ack if needed (maybe do it for response also and store response temporarily)
+                self.protocol_decoder.ask_protocol(packet, "add_request", self)
                 print("request added")
                 # do not update context, with pull protocol response is always needed to check if request was successful
                 return True, False
@@ -40,7 +40,7 @@ class PacketState:
         elif self.protocol_decoder.ask_protocol(packet, "is_push_packet"):
 
             if self.protocol_decoder.ask_protocol(packet, "is_subscribe_packet"):
-                self.protocol_decoder.ask_protocol(packet, "add_subscription", self) # TODO add valid field to wait for ack if needed (maybe do it for publish also and store response temporarily)
+                self.protocol_decoder.ask_protocol(packet, "add_subscription", self)
                 print("subscription added")
                 return True, False
 
@@ -49,12 +49,14 @@ class PacketState:
                 subscription_packet = self.protocol_decoder.ask_protocol(packet, "match_subscription", self)
                 if subscription_packet:
                     print("publish matched")
-                    return True, True # update the context only with publish message for push protocols
+                    # update context only if publish don't come from a broker (avoid updating the context many times with same publish)
+                    print(self.protocol_decoder.ask_protocol(packet, "from_broker"))
+                    return True, not self.protocol_decoder.ask_protocol(packet, "from_broker")
                 else:
                     if self.protocol_decoder.ask_protocol(packet, "toward_broker"):
                         # if publish toward a broker, accept it
-                        print("publish toward broker")
-                        return True, False
+                        print("publish toward broker") # update the context only with publish message from publisher to broker
+                        return True, True
                     else:
                         print("publish not matched")
                         return False, False # if publish toward client which doesn't match any subscription, drop it
@@ -81,8 +83,7 @@ class PacketState:
 
     def add_subscription(self, packet: AbstractPacket, key):
         print("add_subscription: " + str((packet.src, packet.dst, packet.proto, key)))
-        print("subscription added : "+str((packet.src, packet.dst, packet.proto, key)))
-        self.subscriptions[(packet.src, packet.dst, packet.proto, key)] = packet
+        self.subscriptions[(packet.src, packet.dst, packet.proto, key)] = {"valid": False, "can_remove": False, "packet": packet}
 
     def remove_subscription(self, packet: AbstractPacket, key):
         print("subscription removed")
