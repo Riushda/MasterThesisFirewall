@@ -49,5 +49,5 @@ class ProtocolDecoder:
 		for decoder in self.decoder_list:
 			if proto==decoder.protocol_name:
 				if hasattr(decoder, "broker_list"):
-					decoder.broker_list.append(ip)
+					decoder.broker_list.add(ip)
 				break

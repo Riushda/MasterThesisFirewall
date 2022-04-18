@@ -50,7 +50,6 @@ class PacketState:
                 if subscription_packet:
                     print("publish matched")
                     # update context only if publish don't come from a broker (avoid updating the context many times with same publish)
-                    print(self.protocol_decoder.ask_protocol(packet, "from_broker"))
                     return True, not self.protocol_decoder.ask_protocol(packet, "from_broker")
                 else:
                     if self.protocol_decoder.ask_protocol(packet, "toward_broker"):
@@ -65,9 +64,8 @@ class PacketState:
                 # neither subscribe message nor publish message
 
                 # action can be triggered by the protocol when it sees a certain signaling packet
-                self.protocol_decoder.ask_protocol(packet, "update_packet_state", self)
                 print("push packet signaling")
-                return True, False # TODO check with ask_protocol if signaling packet should be accepted
+                return self.protocol_decoder.ask_protocol(packet, "update_packet_state", self), False
         else:
             pass # should never reach there
 
