@@ -35,11 +35,11 @@ class PacketHandler:
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
             print(abstract_packet)
 
-            allowed_packet, context = self.packet_state.handle_packet(abstract_packet)
+            allowed_packet, constraint, context = self.packet_state.handle_packet(abstract_packet)
 
             if allowed_packet:  # if packet is legitimate (request or response linked to a previously made request)
 
-                if context:  # if packet response of a previously made request or just a push message (with complete information)
+                if constraint:  # if packet response of a previously made request or just a push message (with complete information)
 
                     abstract_packet.set_mark(raw_packet.get_mark())
                     decision = self.mapping.decision(abstract_packet)
@@ -54,7 +54,8 @@ class PacketHandler:
                         raw_packet.drop()
                         return
 
-                    self.packet_queue.put(abstract_packet)
+                    if context:
+                        self.packet_queue.put(abstract_packet)
 
                 else:
                     # accept packet which doesn't trigger context without constraint matching
@@ -86,3 +87,6 @@ class HandlingQueue:
 
     def stop(self):
         self.keep_running = False
+
+
+#"broker": "broker",

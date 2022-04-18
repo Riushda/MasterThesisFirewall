@@ -50,6 +50,14 @@ class SeparateLargeResource(resource.Resource):
         return aiocoap.Message(payload=payload)
 
 
+class ThResource(resource.Resource):
+
+    async def render_get(self, request):
+
+        payload = "?temp=50".encode('ascii')
+        return aiocoap.Message(payload=payload)
+
+
 class TimeResource(resource.ObservableResource):
     """Example resource that can be observed. The `notify` method keeps
     scheduling itself, and calles `update_state` to trigger sending
@@ -77,8 +85,9 @@ class TimeResource(resource.ObservableResource):
             self.handle = None
 
     async def render_get(self, request):
-        payload = datetime.datetime.now(). \
-            strftime("%Y-%m-%d %H:%M").encode('ascii')
+        #payload = datetime.datetime.now(). \
+        #   strftime("%Y-%m-%d %H:%M").encode('ascii')
+        payload = "?temp=50".encode('ascii')
         return aiocoap.Message(payload=payload)
 
 
@@ -111,7 +120,8 @@ async def main():
 
     root.add_resource(['.well-known', 'core'],
                       resource.WKCResource(root.get_resources_as_linkheader))
-    root.add_resource(['time'], TimeResource())
+    root.add_resource(['th'], TimeResource())
+    #root.add_resource(['th'], ThResource())
     root.add_resource(['other', 'block'], BlockResource())
     root.add_resource(['other', 'separate'], SeparateLargeResource())
     root.add_resource(['whoami'], WhoAmI())

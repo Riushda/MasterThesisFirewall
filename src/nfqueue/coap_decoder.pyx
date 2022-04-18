@@ -288,7 +288,8 @@ class CoAPDecoder:
 		self.revert_direction(packet)
 		subscription_packet = packet_state.has_subscription(packet, packet.header["token"])
 		self.revert_direction(packet)
-		if CoAPResponseCode.enum(packet.header["T"]) == CoAPType.NON_CONFIRMABLE:
+
+		if CoAPType.enum(subscription_packet["packet"].header["T"]) == CoAPType.NON_CONFIRMABLE:
 			subscription_packet["valid"] = True
 
 	def remove_subscription(self, packet, packet_state):
@@ -302,7 +303,7 @@ class CoAPDecoder:
 		subscription_packet = packet_state.has_subscription(packet, packet.header["token"])
 		if subscription_packet and subscription_packet["valid"]:
 			# in coap, the push messages doesn't contain the path (needed because context is updated with response)
-			packet.subject = subscription_packet.subject
+			packet.subject = subscription_packet["packet"].subject
 			return subscription_packet
 
 		return None
@@ -323,6 +324,8 @@ class CoAPDecoder:
 			if subscription_packet and not subscription_packet["valid"]:
 				# we set the valid flag to the subscription since we see the ack of the observe request
 				subscription_packet["valid"] = True
+
+		return True
 
 
 # for methods code :
@@ -408,6 +411,13 @@ class CoAPType(Enum):
 	NON_CONFIRMABLE = 1 # NON
 	ACKNOWLEDGMENT = 2 # ACK
 	RESET = 3 # RST
+
+	@classmethod
+	def enum(cls, code):
+		try:
+			return cls(code)
+		except ValueError:
+			return None
 
 class CoAPDelta(MultiValueEnum):
 	RESERVED = 0, 128, 132, 136, 140
