@@ -4,8 +4,8 @@ from netfilterqueue import NetfilterQueue, Packet
 from scapy.layers.inet import IP
 
 from nfqueue.abstract_packet import AbstractPacket
-from nfqueue.packet_state import PacketState
 from nfqueue.constraint_mapping import ConstraintMapping
+from nfqueue.packet_state import PacketState
 from nfqueue.protocol_decoder import ProtocolDecoder
 from utils.constant import *
 
@@ -14,7 +14,7 @@ class PacketHandler:
     def __init__(self, queue: Queue, constraint_mapping):
         self.packet_queue = queue
         self.mapping = constraint_mapping
-        self.protocol_decoder = ProtocolDecoder() # protocol decoder supporting many different protocols
+        self.protocol_decoder = ProtocolDecoder()  # protocol decoder supporting many different protocols
         self.protocol_decoder.add_broker("192.168.33.11", "mqtt")
         self.packet_state = PacketState(self.protocol_decoder)  # stateful object for maintaining request/response state
 

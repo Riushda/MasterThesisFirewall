@@ -1,5 +1,5 @@
 from client.handler import Handler
-from context.network_context import NetworkContext
+from context.network import NetworkContext
 
 handler: Handler = None
 

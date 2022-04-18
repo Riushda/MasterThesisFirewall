@@ -3,7 +3,7 @@ import nftables
 from nft.command_builder import *
 
 
-class NftablesAPI:
+class NftAPI:
     def __init__(self):
         nft = nftables.Nftables()
         nft.set_json_output(True)

@@ -1,6 +1,3 @@
-import ipaddress
-
-from client.member import Member
 from utils.constant import *
 
 
@@ -48,52 +45,3 @@ def schedule_job(api, code, relation):
             api.disable_rule(relation.first.handle)
             if relation.second:
                 api.disable_rule(relation.second.handle)
-
-
-def parse_member(src: str, field: dict = None):
-    ip = None
-    port = None
-
-    is_ip4 = False
-    is_ip6 = False
-
-    if src:
-        split = src.split(";")
-
-        if len(split) > 1:
-            port_part = split[1]
-        else:
-            port_part = None
-
-        try:
-            ipaddress.IPv4Network(split[0])
-            ip = split[0]
-            is_ip4 = True
-        except ipaddress.AddressValueError:
-            pass
-        except ValueError:
-            raise ValueError("Error: Incorrect ip format, host bits set.")
-
-        if not is_ip4:
-            try:
-                ipaddress.IPv6Network(split[0])
-                ip = split[0]
-                is_ip6 = True
-            except ipaddress.AddressValueError:
-                pass
-            except ValueError:
-                raise ValueError("Error: Incorrect ip format, host bits set.")
-
-        if not (is_ip4 or is_ip6):
-            raise ValueError("Error: Incorrect ip format, correct format is IP{/BITMASK}{;PORT}.")
-
-        if port_part:
-            try:
-                port = int(port_part)
-            except ValueError:
-                raise ValueError("Error: Port value must an integer.")
-
-            if not 0 <= port <= 65535:
-                raise ValueError("Error: Port value must be between 0 and 65535.")
-
-    return Member(ip=ip, port=port, fields=field, is_ip6=is_ip6)
