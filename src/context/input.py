@@ -1,17 +1,8 @@
 import numpy as np
 
 from client.handler import Handler
+from context.utils import flatten_state
 from utils.constant import *
-
-
-def flatten_state(state):
-    flattened = {}
-    for device in state:
-        for field in state[device]:
-            flat_field = device + "." + field
-            flattened[flat_field] = state[device][field]
-
-    return flattened
 
 
 class Categorization:

@@ -1,13 +1,10 @@
 import json
 
-from client.constraint import Constraint
-from client.field import Field
-from client.member import Member
-from client.utils import parse_member
+from client.relation import Constraint, Field, Member, parse_member
 from utils.constant import *
 
 
-class JsonParser:
+class Parser:
     def __init__(self, path: str):
         self.path = path
         self.json = None

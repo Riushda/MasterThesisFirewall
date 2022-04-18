@@ -1,14 +1,13 @@
-from client.parser import JsonParser
-from client.relation import Relation
-from client.rule import Rule
+from client.parser import Parser
+from client.relation import Relation, Rule
 from nfqueue.constraint_mapping import MappingEntry
 from nfqueue.handling_queue import HandlingQueue
-from nft.nftables_api import NftablesAPI
+from nft.api import NftAPI
 
 
 class Handler:
     def __init__(self, handling_queue: HandlingQueue):
-        self.nf_api = NftablesAPI()
+        self.nft_api = NftAPI()
         self.constraint_mapping = handling_queue.constraint_mapping
         self.packet_handler = handling_queue.packet_handler
         self.categorization = {}
@@ -18,14 +17,14 @@ class Handler:
         self.inferences = []
         self.inconsistencies = []
         self.mark = 0
-        self.nf_api.init_ruleset()
+        self.nft_api.init_ruleset()
 
     def add_rule(self, src, dst):
         is_ip6 = src.is_ip6
 
-        handle = self.nf_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark, is_ip6)
+        handle = self.nft_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark, is_ip6)
         forward_rule = Rule(src, dst, handle)
-        handle = self.nf_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark, is_ip6)
+        handle = self.nft_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark, is_ip6)
         backward_rule = Rule(dst, src, handle)
 
         return [forward_rule, backward_rule]
@@ -54,7 +53,7 @@ class Handler:
         self.relations[name] = relation
         self.mark += 1
 
-    def add_parser(self, parser: JsonParser):
+    def add_parser(self, parser: Parser):
         self.categorization = parser.parsed_categorization
         self.members = parser.parsed_members
         for name, relation in parser.parsed_relations.items():
@@ -78,9 +77,9 @@ class Handler:
 
         for handle in handles:
             if action:
-                self.nf_api.enable_rule(handle)
+                self.nft_api.enable_rule(handle)
             else:
-                self.nf_api.disable_rule(handle)
+                self.nft_api.disable_rule(handle)
 
     def enable_relation(self, key):
         self.enable_disable(key, True)

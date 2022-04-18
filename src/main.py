@@ -6,13 +6,13 @@ import pyximport  # This is part of Cython
 pyximport.install()
 
 from client.handler import Handler
-from client.parser import JsonParser
+from client.parser import Parser
 from nfqueue.handling_queue import HandlingQueue
-from client.context_input import ContextInput
-from context import context
+from context.input import ContextInput
+from context.context import Context
 
 if __name__ == "__main__":
-    parser = JsonParser("input.json")
+    parser = Parser("input.json")
 
     handling_queue = HandlingQueue()
 
@@ -23,9 +23,9 @@ if __name__ == "__main__":
     handling_queue_thread.start()
 
     context_input = ContextInput(handler)
+    context = Context(handling_queue.packet_queue, context_input)
 
-    context_thread = Thread(target=context.run,
-                            args=(handling_queue.packet_queue, context_input))
+    context_thread = Thread(target=context.run)
     context_thread.start()
 
 

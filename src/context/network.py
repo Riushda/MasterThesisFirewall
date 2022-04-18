@@ -1,11 +1,15 @@
 import itertools as it
 
-from transitions import Machine, State
+from transitions import State
 from transitions.extensions import GraphMachine
 
 import context.abstract_rule as abstract_rule
-from client.context_input import ContextInput
+from context.input import ContextInput
 from context.utils import get_device
+
+
+class SelfLoopException(Exception):
+    pass
 
 
 class DeviceState(State):
@@ -26,38 +30,47 @@ class DeviceState(State):
             print("Leaving inconsistent state !")
 
 
-class NetworkContext(object):
-    def __init__(self, context_input: ContextInput):
+def get_transition_trigger(key, value):
+    return key + "=" + str(value)
 
+
+class NetworkContext(GraphMachine):
+    def __init__(self, context_input: ContextInput):
         self.members = context_input.members
         self.relations = context_input.relations
         self.inconsistent_states = context_input.inconsistent_states
         self.state_inference = context_input.state_inference
 
-        self.states = []
+        self.device_states = []
         self.transitions = []
-        self.transitions_change = dict()
-
-        self.machine: Machine = GraphMachine(None)
+        self.transitions_change = {}
 
         # if self.check_inferences():
-        self.build_fsm(context_input.initial_state, context_input.state_combinations)
+        initial_state_name = self.build_fsm(context_input.initial_state, context_input.state_combinations)
+
+        super().__init__(states=self.device_states, transitions=self.transitions,
+                         initial=initial_state_name,
+                         send_event=True)
 
     def build_fsm(self, initial_state, state_combinations):
         initial_state_name = ""
         i = 0
         # it.product is lazy, one combination is in memory at a given time
-        for state_src in it.product(*(state_combinations[Name] for Name in state_combinations)):
-            state_src = dict(zip(state_combinations.keys(), state_src))
+
+        states = []
+
+        for state in it.product(*(state_combinations[Name] for Name in state_combinations)):
+            states.append(dict(zip(state_combinations.keys(), state)))
+
+        for state_src in states:
             if state_src == initial_state:
                 initial_state_name = str(i)
 
             is_src_consistent = self.is_consistent(state_src)
-            self.states.append(DeviceState(str(i), state_src, is_src_consistent))
+            self.device_states.append(DeviceState(str(i), state_src, is_src_consistent))
 
             j = 0
-            for state_dst in it.product(*(state_combinations[Name] for Name in state_combinations)):
-                state_dst = dict(zip(state_combinations.keys(), state_dst))
+            for state_dst in states:
 
                 key_trigger = None
                 value_trigger = None
@@ -101,7 +114,7 @@ class NetworkContext(object):
                                 break
 
                 if conforming:
-                    trigger = self.get_transition_trigger(key_trigger, value_trigger)
+                    trigger = get_transition_trigger(key_trigger, value_trigger)
 
                     transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'after': 'action'}
                     self.transitions.append(transition)
@@ -110,9 +123,7 @@ class NetworkContext(object):
 
             i += 1
 
-        self.machine = GraphMachine(model=self, states=self.states, transitions=self.transitions,
-                                    initial=initial_state_name,
-                                    send_event=True)
+        return initial_state_name
 
     def draw_fsm(self):
         self.get_graph(title=str(self.current_state()), show_roi=True).draw('my_state_diagram.png', prog='dot')
@@ -124,17 +135,14 @@ class NetworkContext(object):
 
         return True
 
-    def get_transition_trigger(self, key, value):
-        return key + "=" + str(value)
-
     def show_current_state(self):
         print(self.current_state())
 
     def current_state(self):
-        return self.machine.get_state(self.state).state
+        return self.get_state(self.state).state
 
     def is_current_state_consistent(self):
-        return self.machine.get_state(self.state).is_consistent
+        return self.get_state(self.state).is_consistent
 
     def action(self, event):
         # print("action: " + str(event))
@@ -188,8 +196,8 @@ class NetworkContext(object):
     def add_rules(self, rules):
 
         # add actions of rules in all transitions validating the conditions
-        for state_src in self.states:
-            for state_dst in self.states:
+        for state_src in self.device_states:
+            for state_dst in self.device_states:
                 state_src: DeviceState = state_src
                 state_dst: DeviceState = state_dst
 
@@ -227,8 +235,8 @@ class NetworkContext(object):
     def del_rules(self, rules):
         # delete actions of rules with index in rule_index in all transitions
         if len(rules) > 0:
-            for state_src in self.states:
-                for state_dst in self.states:
+            for state_src in self.device_states:
+                for state_dst in self.device_states:
                     state_src: DeviceState = state_src
                     state_dst: DeviceState = state_dst
 
@@ -240,7 +248,3 @@ class NetworkContext(object):
                                     if action["index"] == rule_to_delete:
                                         changed_element["actions"].remove(action)
                                         break
-
-
-class SelfLoopException(Exception):
-    pass

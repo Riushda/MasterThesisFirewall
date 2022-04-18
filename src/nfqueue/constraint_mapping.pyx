@@ -1,5 +1,4 @@
 from utils.constant import *
-from utils.lock_dictionary import LockDictionary
 
 
 class MappingEntry:
@@ -45,19 +44,19 @@ def match_packet(packet, mapping_entry):
 
 class ConstraintMapping:
     def __init__(self):
-        self.mapping = LockDictionary()
+        self.mapping = {}
 
     def add_mapping(self, mark: int, entry: MappingEntry):
-        self.mapping.set(mark, entry)
+        self.mapping[mark] = entry
 
     def del_mapping(self, mark: int):
-        self.mapping.delete(mark)
+        del self.mapping[mark]
 
     def get_mapping(self, mark: int):
-        return self.mapping.get(mark)
+        return self.mapping[mark]
 
     def decision(self, packet):
-        mapping_entry = self.mapping.get(packet.mark)
+        mapping_entry = self.mapping[packet.mark]
         if match_packet(packet, mapping_entry):
             print("Match!")
             return Policy.ACCEPT

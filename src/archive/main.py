@@ -8,7 +8,7 @@ import pyximport  # This is part of Cython
 pyximport.install()
 
 from context import context
-from client.client_handler import Handler, stop_client_handler
+from archive.client_handler import Handler, stop_client_handler
 from nfqueue.handling_queue import HandlingQueue
 
 handling_queue = HandlingQueue()
