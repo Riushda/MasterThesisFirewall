@@ -56,16 +56,16 @@ def convert_inference(member_key, member):
 class ContextInput:
     def __init__(self, handler: Handler):
         self.handler = handler
-        self.abstract_rules = []
+        self.abstract_rules = handler.triggers
         self.categorization = Categorization()
         self.initial_state = {}
         self.state_combinations = {}
         self.state_inference = {}
         self.inconsistent_states = []
-        self.relations = {}
-        self.members = {}
-        self.convert_input(handler.categorization, handler.members, handler.relations, handler.triggers,
-                           handler.inferences, handler.inconsistencies)
+        self.relations = handler.relations
+        self.members = handler.members
+        self.time_intervals = handler.time_intervals
+        self.convert_input(handler.categorization, handler.members, handler.inferences, handler.inconsistencies)
 
     def __str__(self):
         result = f"Abstract rules: {self.abstract_rules}\n"
@@ -76,10 +76,7 @@ class ContextInput:
         result += f"Inconsistent states: {self.inconsistent_states}\n"
         return result
 
-    def convert_input(self, labels, members, relations, triggers, inferences, inconsistencies):
-        self.members = members
-        self.relations = relations
-        self.abstract_rules = triggers
+    def convert_input(self, labels, members, inferences, inconsistencies):
         for rule in self.abstract_rules:
             rule["condition"] = flatten_state(rule["condition"])
 

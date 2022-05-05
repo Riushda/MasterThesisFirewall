@@ -16,6 +16,7 @@ class Handler:
         self.triggers = []
         self.inferences = []
         self.inconsistencies = []
+        self.time_intervals = {}
         self.mark = 0
         self.nft_api.init_ruleset()
 
@@ -61,6 +62,7 @@ class Handler:
         self.triggers = parser.parsed_triggers
         self.inferences = parser.parsed_inferences
         self.inconsistencies = parser.parsed_inconsistencies
+        self.time_intervals = parser.parsed_time_intervals
 
     def enable_disable(self, key, action):
 

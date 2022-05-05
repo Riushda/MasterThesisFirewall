@@ -7,8 +7,12 @@ from context.abstract_rule import AbstractRule
 from context.input import ContextInput
 from context.network import NetworkContext, get_transition_trigger
 from context.network import SelfLoopException
-from context.utils import is_float, get_device_name
+from context.utils import is_float, get_device_name, get_relations_jobs, cancel_relations_jobs
 from nfqueue.abstract_packet import AbstractPacket
+
+from context.schedule_thread import ScheduleThread
+import schedule
+import threading
 
 
 class Context:
@@ -20,6 +24,11 @@ class Context:
         self.abstract_rules = AbstractRule(context_input.abstract_rules, self.network_context,
                                            context_input.handler)
         self.keep_running = True
+
+        s_mutex = threading.Lock()
+        self.schedule_thread = ScheduleThread(s_mutex, schedule)
+        self.schedule_thread.start()
+        self.jobs = get_relations_jobs(context_input.time_intervals, context_input.handler, self.schedule_thread)
 
     def run(self):
         self.network_context.draw_fsm()
@@ -38,6 +47,8 @@ class Context:
                 pass
 
     def stop(self):
+        cancel_relations_jobs(self.jobs, self.schedule_thread)
+        self.schedule_thread.stop()
         self.keep_running = False
 
     def update_context(self, device, packet_data):

@@ -15,6 +15,7 @@ class Parser:
         self.parsed_triggers = []
         self.parsed_inferences = []
         self.parsed_inconsistencies = []
+        self.parsed_time_intervals = {} # TODO, {"relation_name1": [[time1, time2], [time3, time4], ...], "relation_name2": [[time1, time2]], ...}
 
         self.parse_json()
 

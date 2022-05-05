@@ -66,6 +66,7 @@
   "relation": {
     "trigger_heater": {
       "subject": "th",
+      "broker": "broker",
       "publisher": "thermo",
       "subscriber": "heater",
       "constraints": [
