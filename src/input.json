@@ -1,0 +1,170 @@
+{
+  "categorization": {
+    "temp": {
+      "type": "int",
+      "value": [
+        [
+          "-inf",
+          "10",
+          "20",
+          "inf"
+        ],
+        [
+          "cold",
+          "average",
+          "hot"
+        ]
+      ]
+    },
+    "night": {
+      "type": "time",
+      "value": [
+        "23:00",
+        "06:00"
+      ]
+    }
+  },
+  "member": {
+    "broker": {
+      "src": "192.168.33.11;1883"
+    },
+    "thermo": {
+      "src": "192.168.33.12",
+      "field": {
+        "temp": {
+          "type": "int",
+          "value": "temp",
+          "init": "average"
+        },
+        "name": {
+          "type": "str",
+          "value": [
+            "alice",
+            "bob"
+          ],
+          "init": "alice"
+        }
+      }
+    },
+    "heater": {
+      "src": "192.168.33.13",
+      "field": {
+        "status": {
+          "type": "str",
+          "value": [
+            "on",
+            "off"
+          ],
+          "init": "off"
+        }
+      }
+    },
+    "window": {
+      "src": "192.168.33.14",
+      "field": {
+        "status": {
+          "type": "str",
+          "value": [
+            "open",
+            "closed"
+          ],
+          "init": "closed"
+        }
+      }
+    }
+  },
+  "relation": {
+    "trigger_heater": {
+      "subject": "th",
+      "broker": "broker",
+      "publisher": "thermo",
+      "subscriber": "heater",
+      "constraints": [
+        {
+          "field": "temp",
+          "value": [
+            "cold",
+            "hot"
+          ]
+        },
+        {
+          "field": "name",
+          "value": [
+            "bob"
+          ]
+        }
+      ]
+    },
+    "trigger_window": {
+      "subject": "tw",
+      "broker": "broker",
+      "publisher": "thermo",
+      "subscriber": "window",
+      "constraints": [
+        {
+          "field": "temp",
+          "value": [
+            "cold",
+            "hot"
+          ]
+        }
+      ]
+    }
+  },
+  "trigger": [
+    {
+      "condition": {
+        "field": {
+          "thermo": {
+            "temp": "hot"
+          }
+        }
+      },
+      "action": {
+        "disable": "trigger_heater"
+      }
+    },
+    {
+      "condition": {
+        "time": [
+          "night",
+          [
+            "18:00",
+            "19:00"
+          ],
+          [
+            "20:00",
+            "21:00"
+          ]
+        ]
+      },
+      "action": {
+        "enable": "trigger_window"
+      }
+    }
+  ],
+  "inference": [
+    {
+      "condition": {
+        "thermo": {
+          "temp": "cold"
+        }
+      },
+      "implication": {
+        "window": {
+          "status": "closed"
+        }
+      }
+    }
+  ],
+  "inconsistency": [
+    {
+      "thermo": {
+        "temp": "hot"
+      },
+      "heater": {
+        "status": "on"
+      }
+    }
+  ]
+}

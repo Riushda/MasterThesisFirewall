@@ -21,7 +21,8 @@ class MQTTDecoder:
 	def __init__(self):
 		self.protocol_name = "mqtt"
 		self.port = 1883
-		self.broker_list = []
+		self.broker_list = set()
+		self.connection = {}
 
 	def match_protocol(self, sport, dport):
 		return sport==self.port or dport==self.port
@@ -164,47 +165,149 @@ class MQTTDecoder:
 	def is_subscribe_packet(self, packet):
 		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.SUBSCRIBE
 
-	def is_publish_packet(self, packet):
-		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.PUBLISH
+	def is_suback_packet(self, packet):
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.SUBACK
 
 	def is_unsubscribe_packet(self, packet):
 		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.UNSUBSCRIBE
 
+	def is_unsuback_packet(self, packet):
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.UNSUBACK
+
+	def is_publish_packet(self, packet):
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.PUBLISH
+
+	def is_puback_packet(self, packet):
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.PUBACK
+
 	def is_connect_packet(self, packet):
 		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.CONNECT
+
+	def is_connack_packet(self, packet):
+		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.CONNACK
 
 	def is_disconnect_packet(self, packet):
 		return MQTTMessageType.enum(packet.header["control_header_type"]) == MQTTMessageType.DISCONNECT
 
+	def revert_direction(self, packet):
+		src = packet.src
+		packet.src = packet.dst
+		packet.dst = src
+
 	def add_subscription(self, packet, packet_state):
 		packet_state = packet_state[0]
 
-		packet_state.add_subscription(packet, packet.subject)
+		if not self.has_connection(packet.src, packet.dst):
+			return
+
+		if self.is_subscribe_packet(packet):
+			packet_state.add_subscription(packet, packet.header["packet_identifier"])
+		elif self.is_suback_packet(packet):
+			packet_state.add_subscription(packet, packet.subject)
+
+			self.revert_direction(packet)
+			subscription_packet = packet_state.has_subscription(packet, packet.subject)
+			subscription_packet["valid"] = True
+			self.revert_direction(packet)
 
 	def remove_subscription(self, packet, packet_state):
 		packet_state = packet_state[0]
 
-		packet_state.remove_subscription(packet, packet.subject)
+		if self.is_subscribe_packet(packet):
+			packet_state.remove_subscription(packet, packet.header["packet_identifier"])
+		elif self.is_suback_packet(packet):
+			packet_state.remove_subscription(packet, packet.subject)
 
 	def match_subscription(self, packet, packet_state):
 		packet_state = packet_state[0]
 
 		subscription_packet = packet_state.has_subscription(packet, packet.subject)
-		return subscription_packet
+		if subscription_packet and subscription_packet["valid"]:
+			return subscription_packet
+
+		return None
+
+	def from_broker(self, packet):
+		return packet.src in self.broker_list
 
 	def toward_broker(self, packet):
 		return packet.dst in self.broker_list
 
+	def has_connection(self, client_ip, broker_ip):
+		connected_broker = self.connection.get(client_ip, None)
+		return connected_broker and broker_ip in self.broker_list and connected_broker["valid"] and connected_broker["broker_ip"] == broker_ip
+
 	# this can trigger function in the packet_state class depending on the type of the packet
 	def update_packet_state(self, packet, packet_state):
 		packet_state = packet_state[0]
-		if self.is_unsubscribe_packet(packet):
-			self.remove_subscription(packet, (packet_state,))
+
+		if self.is_suback_packet(packet):
+			if not self.has_connection(packet.dst, packet.src):
+				return False
+
+			subscription_packet = packet_state.has_subscription(packet, packet.header["packet_identifier"])
+			if subscription_packet:
+				sub_packet = subscription_packet["packet"]
+				self.remove_subscription(sub_packet, (packet_state,))
+				sub_packet.header["control_header_type"] = MQTTMessageType.SUBACK.value
+				self.add_subscription(sub_packet, (packet_state,))
+			else:
+				return False
+
+		elif self.is_unsubscribe_packet(packet):
+			if not self.has_connection(packet.src, packet.dst):
+				return False
+
+			subscription_packet = packet_state.has_subscription(packet, packet.subject)
+			if subscription_packet and not subscription_packet["can_remove"]:
+				subscription_packet["can_remove"] = True
+			else:
+				return False
+
+		elif self.is_unsuback_packet(packet):
+			if not self.has_connection(packet.dst, packet.src):
+				return False
+
+			subscription_packet = packet_state.has_subscription(packet, packet.subject)
+			if subscription_packet and subscription_packet["can_remove"]:
+				self.remove_subscription(packet, (packet_state,))
+			else:
+				return False
+
 		elif self.is_disconnect_packet(packet):
 			# if disconnected, client unsubscribe from all topics, this behavior can be changed
+			if packet.dst in self.broker_list:
+				if not self.has_connection(packet.src, packet.dst):
+					return False
+
+				self.connection.pop(packet.src)
+			elif packet.src in self.broker_list:
+				if not self.has_connection(packet.dst, packet.src):
+					return False
+
+				self.connection.pop(packet.dst)
+			else:
+				return False
+
 			packet_state.remove_client_subscriptions(packet)
+
 		elif self.is_connect_packet(packet):
-			pass # Nothing to do for the moment
+			if packet.dst in self.broker_list:
+				self.connection[packet.src] = {"valid": False, "broker_ip": packet.dst}
+			else:
+				return False
+
+		elif self.is_connack_packet(packet):
+			broker_connection = self.connection.get(packet.dst, None)
+			if broker_connection and broker_connection["broker_ip"] == packet.src and not broker_connection["valid"]:
+				broker_connection["valid"] = True
+			else:
+				return False
+
+		elif self.is_puback_packet(packet):
+			return self.has_connection(packet.dst, packet.src)
+
+		return True
 
 class MQTTMessageType(Enum):
 	RESERVED = 0

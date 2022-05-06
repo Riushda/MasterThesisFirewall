@@ -1,27 +1,28 @@
-from context.network_context import DeviceState, NetworkContext
+from client.handler import Handler
+from context.network import NetworkContext
 
-import Pyro4
-
-daemon = Pyro4.Proxy("PYRONAME:ClientHandlers")
+handler: Handler = None
 
 
 def run_action(rule):
     reverse = rule["reverse"]
     action = next(iter(rule["action"]))
-    index = rule["action"][action]
+    relation = rule["action"][action]
 
     if (action == "enable" and not reverse) or (action == "disable" and reverse):
-        daemon.enable_relation(index)
+        handler.enable_relation(relation)
     elif (action == "disable" and not reverse) or (action == "enable" and reverse):
-        daemon.disable_relation(index)
+        handler.disable_relation(relation)
 
 
 class AbstractRule:
-    def __init__(self, abstract_rules, network_context: NetworkContext):
+    def __init__(self, abstract_rules, network_context: NetworkContext, input_handler: Handler):
         self.abstract_rules = {}
         self.network_context = network_context
 
         self.add_multiple_rules(abstract_rules)
+        global handler
+        handler = input_handler
 
     def add_multiple_rules(self, rules):
         # add rules in abstract_rules list

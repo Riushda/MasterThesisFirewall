@@ -1,10 +1,9 @@
 import nftables
 
 from nft.command_builder import *
-from utils.constant import *
 
 
-class NftablesAPI:
+class NftAPI:
     def __init__(self):
         nft = nftables.Nftables()
         nft.set_json_output(True)
@@ -49,12 +48,13 @@ class NftablesAPI:
         builder.init_ruleset()
         self.send_command(builder.get_command())
 
-    def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None, mark: int = 0):
+    def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None, mark: int = 0,
+                 is_ip6: bool = False):
 
         builder = CommandBuilder()
         builder.add_rule()
-        builder.set_ip(src, "saddr")
-        builder.set_ip(dst, "daddr")
+        builder.set_ip(src, "saddr", is_ip6)
+        builder.set_ip(dst, "daddr", is_ip6)
         builder.set_port(sport, "sport")
         builder.set_port(dport, "dport")
         builder.set_mark(mark)
@@ -73,7 +73,7 @@ class NftablesAPI:
 
         self.send_command(builder.get_command())
 
-    def enable_rule(self, handle, policy: Policy = Policy.ACCEPT.value):
+    def enable_rule(self, handle):
         builder = CommandBuilder()
         builder.list_chain()
         rule_list = self.send_command(builder.get_command())

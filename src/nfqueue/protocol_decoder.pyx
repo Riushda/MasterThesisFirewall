@@ -19,6 +19,8 @@ class ProtocolDecoder:
 		if decoded is not None and len(decoded) > 0 and len(decoded[-1]) > 0:
 			decoded[-1] = self.decode_payload(decoded[-1])
 
+		print(decoded)
+
 		return decoded
 
 	def decode_payload(self, payload):
@@ -47,5 +49,5 @@ class ProtocolDecoder:
 		for decoder in self.decoder_list:
 			if proto==decoder.protocol_name:
 				if hasattr(decoder, "broker_list"):
-					decoder.broker_list.append(ip)
+					decoder.broker_list.add(ip)
 				break

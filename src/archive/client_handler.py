@@ -2,18 +2,15 @@ import threading
 
 import Pyro4
 import schedule
-
 from client.constraint import parse_constraints
-from client.member import Member, parse_member
-from client.relation import Relation
-from client.rule import Rule
-from client.schedule_thread import ScheduleThread, schedule_job
-from nfqueue.constraint_mapping import MappingEntry
-from nft.nftables_api import NftablesAPI
+from client.utils import add_with_broker, add_without_broker
+
+from context.schedule_thread import ScheduleThread
+from client.relation import Member, parse_member
+from nft.api import NftAPI
 from utils.constant import *
 
-
-api = NftablesAPI()
+api = NftAPI()
 api.init_ruleset()
 
 s_mutex = threading.Lock()
@@ -21,14 +18,17 @@ schedule_thread = ScheduleThread(s_mutex, schedule)
 schedule_thread.start()
 
 
-def stop_client_handlers():
+def stop_client_handler():
     schedule_thread.stop()
     api.flush_ruleset()
 
 
-class Handlers(object):
-    def __init__(self, mapping, pub_list, sub_list, broker_list, relations):
-        self.mapping = mapping
+class Handler(object):
+    def __init__(self, mapping, packet_handler, pub_list, sub_list, broker_list, relations):
+        self.constraint_mapping = mapping
+        self.packet_handler = packet_handler
+        self.api = api
+        self.schedule = schedule
         self.pub_list = pub_list
         self.sub_list = sub_list
         self.broker_list = broker_list
@@ -111,36 +111,11 @@ class Handlers(object):
                 broker_member = parse_member("dev", broker)
                 if not isinstance(broker_member, Member):
                     return broker_member
-            self.add_with_broker(pub_member, sub_member, broker_member, policy, subject, parsed_constraints)
+            add_with_broker(self, pub_member, sub_member, broker_member, policy, subject, parsed_constraints)
         else:
-            self.add_without_broker(pub_member, sub_member, policy, subject, parsed_constraints)
+            add_without_broker(self, pub_member, sub_member, policy, subject, parsed_constraints)
 
         return "Relation added!"
-
-    def add_without_broker(self, pub: Member, sub: Member, policy: Policy, subject: str, constraints: list):
-        handle = api.add_rule(pub.ip, pub.port, sub.ip, sub.port, self.current_mark)
-        rule = Rule(pub, sub, handle, policy)
-        mapping_entry = MappingEntry(subject, constraints, policy)
-        self.mapping.add_mapping(str(self.current_mark), mapping_entry)
-        relation = Relation(rule, constraints=constraints, mark=str(self.current_mark))
-        self.current_mark += 1
-        relation.add_jobs(api, schedule, schedule_job)
-        self.relations.append(relation)
-
-    def add_with_broker(self, pub: Member, sub: Member, broker: Member, policy: Policy, subject: str,
-                        constraints: list):
-        handle = api.add_rule(pub.ip, pub.port, broker.ip, broker.port, self.current_mark)
-        first_rule = Rule(pub, broker, handle, policy)
-
-        handle = api.add_rule(broker.ip, broker.port, sub.ip, sub.port, self.current_mark)
-        second_rule = Rule(broker, sub, handle, policy)
-
-        mapping_entry = MappingEntry(subject, constraints, policy)
-        self.mapping.add_mapping(str(self.current_mark), mapping_entry)
-        relation = Relation(first_rule, second_rule, constraints=constraints, mark=str(self.current_mark))
-        self.current_mark += 1
-        relation.add_jobs(api, schedule, schedule_job)
-        self.relations.append(relation)
 
     @Pyro4.expose
     def remove_relation(self, index: int):
@@ -151,15 +126,15 @@ class Handlers(object):
         found_relation = self.relations[index]
 
         rule_handle = found_relation.first.handle
-        api.del_rule(rule_handle)
+        self.api.del_rule(rule_handle)
         mark = found_relation.mark
-        self.mapping.del_mapping(str(mark))
+        self.constraint_mapping.del_mapping(str(mark))
 
         if found_relation.second:
             rule_handle = found_relation.second.handle
-            api.del_rule(rule_handle)
+            self.api.del_rule(rule_handle)
 
-        found_relation.cancel_jobs(schedule)
+        found_relation.cancel_jobs(self.schedule)
         del self.relations[index]
 
         return "Relation removed!"
@@ -173,13 +148,13 @@ class Handlers(object):
         found_relation = self.relations[index]
 
         rule_handle = found_relation.first.handle
-        api.enable_rule(rule_handle)
+        self.api.enable_rule(rule_handle)
 
         if found_relation.second:
             rule_handle = found_relation.second.handle
-            api.enable_rule(rule_handle)
+            self.api.enable_rule(rule_handle)
 
-        # found_relation.add_jobs(api, schedule, schedule_job)
+        # found_relation.add_jobs(self.api, self.schedule, schedule_job)
         return "Relation enabled!"
 
     @Pyro4.expose
@@ -191,22 +166,11 @@ class Handlers(object):
         found_relation = self.relations[index]
 
         rule_handle = found_relation.first.handle
-        api.disable_rule(rule_handle)
+        self.api.disable_rule(rule_handle)
 
         if found_relation.second:
             rule_handle = found_relation.second.handle
-            api.disable_rule(rule_handle)
+            self.api.disable_rule(rule_handle)
 
-        # found_relation.cancel_jobs(schedule)
+        # found_relation.cancel_jobs(self.schedule)
         return "Relation disabled!"
-
-    @Pyro4.expose
-    def show(self, table: str):
-
-        result = ""
-
-        if table == TableType.RELATIONS.value:
-            for x in range(0, len(self.relations)):
-                result += f"{x} | {self.relations[x]}\n"
-
-        return result
