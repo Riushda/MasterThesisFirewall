@@ -64,12 +64,16 @@ class Rule:
 
 
 class Relation:
-    def __init__(self, subject: str, mark: int, first: list, second: list = None, constraints: list = None):
+    def __init__(self, subject: str, mark: int, first: list, second: list = None, constraints: list = None,
+                 time_intervals=None):
+        if time_intervals is None:
+            time_intervals = []
         self.subject = subject
         self.mark = mark
         self.first = first
         self.second = second
         self.constraints = constraints
+        self.time_intervals = time_intervals
 
     def __str__(self):
         result = f"subject: {self.subject} | mark: {self.mark} | "

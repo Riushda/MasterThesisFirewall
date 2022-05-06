@@ -15,3 +15,8 @@ class Policy(Enum):
 class FieldType(Enum):
     INT = "int"
     STR = "str"
+
+
+class TriggerType(Enum):
+    TIME = "time"
+    FIELD = "field"

@@ -5,7 +5,7 @@ from transitions.extensions import GraphMachine
 
 import context.abstract_rule as abstract_rule
 from context.input import ContextInput
-from context.utils import get_device
+from context.utils import get_device, get_transition_trigger
 
 
 class SelfLoopException(Exception):
@@ -28,10 +28,6 @@ class DeviceState(State):
     def exit(self, event):
         if not self.is_consistent:
             print("Leaving inconsistent state !")
-
-
-def get_transition_trigger(key, value):
-    return key + "=" + str(value)
 
 
 class NetworkContext(GraphMachine):

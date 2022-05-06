@@ -36,6 +36,7 @@ class Handler:
         pub = relation["publisher"]
         sub = relation["subscriber"]
         constraints = relation["constraints"]
+        time_intervals = relation["time_intervals"]
 
         if broker:
             first = self.add_rule(pub, broker)
@@ -43,11 +44,11 @@ class Handler:
 
             relation = Relation(subject=subject, mark=self.mark, first=first,
                                 second=second,
-                                constraints=constraints)
+                                constraints=constraints, time_intervals=time_intervals)
         else:
             first = self.add_rule(pub, sub)
             relation = Relation(subject=subject, mark=self.mark, first=first,
-                                constraints=constraints)
+                                constraints=constraints, time_intervals=time_intervals)
 
         mapping_entry = MappingEntry(subject, constraints)
         self.constraint_mapping.add_mapping(self.mark, mapping_entry)

@@ -1,6 +1,7 @@
 import json
 
 from client.relation import Constraint, Field, Member, parse_member
+from client.utils import parse_time_interval, check_overlapping, invert_time_intervals
 from utils.constant import *
 
 
@@ -15,7 +16,7 @@ class Parser:
         self.parsed_triggers = []
         self.parsed_inferences = []
         self.parsed_inconsistencies = []
-        self.parsed_time_intervals = {} # TODO, {"relation_name1": [[time1, time2], [time3, time4], ...], "relation_name2": [[time1, time2]], ...}
+        self.parsed_time_intervals = {}
 
         self.parse_json()
 
@@ -48,6 +49,7 @@ class Parser:
             return f"Error: File {self.path} not found."
         except Exception as err:
             print(err.args[0])
+            raise err
             return err.args[0]
         return "Input parsed!"
 
@@ -59,31 +61,43 @@ class Parser:
 
         for categorization_key, category in categorization_dic.items():
             converted_categorization = {}
+
             try:
-                intervals = category[0]
-                labels = category[1]
+                c_type = category["type"]
+                category = category["value"]
             except KeyError:
-                raise KeyError("Error in categorization parsing: A categorization must contain intervals and labels.")
+                raise KeyError("Error in categorization parsing: A categorization must contain a type and a value.")
 
-            int_value = []
-            if len(intervals) != len(labels) + 1:
-                raise ValueError("Error in categorization parsing: Wrong categorization format.")
-            if len(intervals) < 2:
-                raise ValueError("Error in categorization parsing: Wrong categorization format.")
-            for i in range(len(intervals)):
+            if c_type == FieldType.INT.value:
                 try:
-                    int_value.append(float(intervals[i]))
-                    if (i == 0 and intervals[i] == "inf") or (i == len(intervals) - 1 and intervals[i] == "-inf"):
-                        raise ValueError
-                except ValueError:
-                    raise ValueError("Error in categorization parsing: Wrong categorization format.")
+                    intervals = category[0]
+                    labels = category[1]
+                except KeyError:
+                    raise KeyError(
+                        "Error in categorization parsing: A categorization must contain intervals and labels.")
 
-            for i in range(len(labels)):
-                if not isinstance(labels[i], str):
+                int_value = []
+                if len(intervals) != len(labels) + 1:
                     raise ValueError("Error in categorization parsing: Wrong categorization format.")
-                converted_categorization[labels[i]] = [int_value[i], int_value[i + 1]]
-            self.converted_categorization[categorization_key] = converted_categorization
-            self.parsed_categorization[categorization_key] = categorization_dic[categorization_key]
+                if len(intervals) < 2:
+                    raise ValueError("Error in categorization parsing: Wrong categorization format.")
+                for i in range(len(intervals)):
+                    try:
+                        int_value.append(float(intervals[i]))
+                        if (i == 0 and intervals[i] == "inf") or (i == len(intervals) - 1 and intervals[i] == "-inf"):
+                            raise ValueError
+                    except ValueError:
+                        raise ValueError("Error in categorization parsing: Wrong categorization format.")
+
+                for i in range(len(labels)):
+                    if not isinstance(labels[i], str):
+                        raise ValueError("Error in categorization parsing: Wrong categorization format.")
+                    converted_categorization[labels[i]] = [int_value[i], int_value[i + 1]]
+                self.converted_categorization[categorization_key] = converted_categorization
+                self.parsed_categorization[categorization_key] = categorization_dic[categorization_key]["value"]
+            elif c_type == TriggerType.TIME.value:
+                parse_time_interval(category)
+                self.parsed_time_intervals[categorization_key] = category
 
     def parse_member(self):
         try:
@@ -205,6 +219,23 @@ class Parser:
                     if field_value not in found_field.value:
                         raise ValueError(f"Error in {parsing} parsing: Wrong value for str field.")
 
+    def check_time_intervals(self, intervals):
+        result = []
+        for interval in intervals:
+            if isinstance(interval, list):
+                parse_time_interval(interval)
+                result.append(interval)
+            elif isinstance(interval, str):
+                if interval in self.parsed_time_intervals:
+                    result.append(self.parsed_time_intervals[interval])
+                else:
+                    raise ValueError("Error: A time interval must be defined before using it.")
+            else:
+                raise ValueError("Error: Unknown time value.")
+
+        check_overlapping(result)
+        return result
+
     def parse_trigger(self):
         try:
             triggers = self.json["trigger"]
@@ -212,23 +243,48 @@ class Parser:
             return
 
         for trigger in triggers:
+            t_type = None
             try:
                 conditions = trigger["condition"]
                 action = trigger["action"]
             except KeyError:
                 raise KeyError("Error in trigger parsing: A trigger must contain a condition and an action.")
 
-            self.check_conditions(conditions, "trigger")
-
+            # TODO relation list inside trigger
+            relation = None
             if Action.ENABLE.value in action:
                 if action[Action.ENABLE.value] not in self.parsed_relations:
                     raise ValueError("Error in trigger parsing: Unknown action.")
-
-            if Action.DISABLE.value in action:
+                relation = action[Action.ENABLE.value]
+                action = Action.ENABLE
+            elif Action.DISABLE.value in action:
                 if action[Action.DISABLE.value] not in self.parsed_relations:
                     raise ValueError("Error in trigger parsing: Unknown action.")
+                relation = action[Action.DISABLE.value]
+                action = Action.DISABLE
 
-            self.parsed_triggers.append(trigger)
+            try:
+                conditions = conditions["field"]
+                t_type = TriggerType.FIELD
+            except KeyError:
+                pass
+
+            try:
+                conditions = conditions["time"]
+                t_type = TriggerType.TIME
+            except KeyError:
+                pass
+
+            if t_type == TriggerType.FIELD:
+                self.check_conditions(conditions, "trigger")
+                self.parsed_triggers.append(trigger)
+            elif t_type == TriggerType.TIME:
+                intervals = self.check_time_intervals(conditions)
+                if action == Action.ENABLE:
+                    self.parsed_relations[relation]["time_intervals"] = intervals
+                elif action == Action.DISABLE:
+                    # Invert the array of intervals
+                    self.parsed_relations[relation]["time_intervals"] = invert_time_intervals(intervals)
 
     def parse_inference(self):
         try:
@@ -310,4 +366,5 @@ class Parser:
 
             self.parsed_relations[relation_key] = {"subject": subject, "broker": broker, "publisher": publisher,
                                                    "subscriber": subscriber,
-                                                   "constraints": constraints}
+                                                   "constraints": constraints,
+                                                   "time_intervals": []}

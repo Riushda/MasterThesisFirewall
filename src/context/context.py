@@ -1,18 +1,16 @@
 from _queue import Empty
 from multiprocessing import Queue
 
+import schedule
 from transitions import MachineError
 
 from context.abstract_rule import AbstractRule
 from context.input import ContextInput
-from context.network import NetworkContext, get_transition_trigger
+from context.network import NetworkContext
 from context.network import SelfLoopException
-from context.utils import is_float, get_device_name, get_relations_jobs, cancel_relations_jobs
-from nfqueue.abstract_packet import AbstractPacket
-
 from context.schedule_thread import ScheduleThread
-import schedule
-import threading
+from context.utils import is_float, get_device_name, get_transition_trigger, add_relations_jobs
+from nfqueue.abstract_packet import AbstractPacket
 
 
 class Context:
@@ -25,10 +23,9 @@ class Context:
                                            context_input.handler)
         self.keep_running = True
 
-        s_mutex = threading.Lock()
-        self.schedule_thread = ScheduleThread(s_mutex, schedule)
+        self.schedule_thread = ScheduleThread(schedule)
+        add_relations_jobs(context_input, self.schedule_thread)
         self.schedule_thread.start()
-        self.jobs = get_relations_jobs(context_input.time_intervals, context_input.handler, self.schedule_thread)
 
     def run(self):
         self.network_context.draw_fsm()
@@ -47,7 +44,6 @@ class Context:
                 pass
 
     def stop(self):
-        cancel_relations_jobs(self.jobs, self.schedule_thread)
         self.schedule_thread.stop()
         self.keep_running = False
 

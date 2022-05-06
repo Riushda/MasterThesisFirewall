@@ -1,18 +1,28 @@
 {
   "categorization": {
-    "temp": [
-      [
-        "-inf",
-        "10",
-        "20",
-        "inf"
-      ],
-      [
-        "cold",
-        "average",
-        "hot"
+    "temp": {
+      "type": "int",
+      "value": [
+        [
+          "-inf",
+          "10",
+          "20",
+          "inf"
+        ],
+        [
+          "cold",
+          "average",
+          "hot"
+        ]
       ]
-    ]
+    },
+    "night": {
+      "type": "time",
+      "value": [
+        "23:00",
+        "06:00"
+      ]
+    }
   },
   "member": {
     "broker": {
@@ -104,12 +114,32 @@
   "trigger": [
     {
       "condition": {
-        "thermo": {
-          "temp": "hot"
+        "field": {
+          "thermo": {
+            "temp": "hot"
+          }
         }
       },
       "action": {
         "disable": "trigger_heater"
+      }
+    },
+    {
+      "condition": {
+        "time": [
+          "night",
+          [
+            "18:00",
+            "19:00"
+          ],
+          [
+            "20:00",
+            "21:00"
+          ]
+        ]
+      },
+      "action": {
+        "enable": "trigger_window"
       }
     }
   ],

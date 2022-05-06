@@ -29,22 +29,20 @@ def flatten_state(state):
     return flattened
 
 
-def get_relations_jobs(time_intervals, handler, schedule):
-    jobs = {}
-    for relation in time_intervals:
-        for time in time_intervals[relation]:
-            job = schedule.every().day.at(time[0]).do(
-                handler.enable_relation, relation)
-            jobs[relation].append(job)
+def add_relations_jobs(context_input, schedule_thread):
+    schedule = schedule_thread.schedule
+    handler = context_input.handler
+    relations = context_input.relations
+    for relation_key, relation in relations.items():
+        for interval in relation.time_intervals:
+            job = schedule.every().day.at(interval[0]).do(
+                handler.enable_relation, relation_key)
+            schedule_thread.jobs.append(job)
 
-            job = schedule.every().day.at(time[1]).do(
-                handler.disable_relation, relation)
-            jobs[relation].append(job)
-
-    return jobs
+            job = schedule.every().day.at(interval[1]).do(
+                handler.disable_relation, relation_key)
+            schedule_thread.jobs.append(job)
 
 
-def cancel_relations_jobs(jobs, schedule):
-    for relation in jobs:
-        for job in jobs[relation]:
-            schedule.cancel_job(job)
+def get_transition_trigger(key, value):
+    return key + "=" + str(value)
