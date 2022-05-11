@@ -10,10 +10,10 @@ class MappingEntry:
 def match_constraint(field: str, value: str, constraints: list):
     for c in constraints:
         if field == c.field:
-            if c.f_type == FieldType.INT:
+            if c.f_type == FieldType.DEC:
                 for interval in c.value:
                     try:
-                        if interval[0] <= int(value) <= interval[1]:
+                        if interval[0] <= float(value) <= interval[1]:
                             return True
                     except ValueError:
                         return False

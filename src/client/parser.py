@@ -17,6 +17,7 @@ class Parser:
         self.parsed_inferences = []
         self.parsed_inconsistencies = []
         self.parsed_time_intervals = {}
+        self.err = None
 
         self.parse_json()
 
@@ -46,12 +47,11 @@ class Parser:
             self.parse_inference()
             self.parse_inconsistency()
         except FileNotFoundError:
-            return f"Error: File {self.path} not found."
+            self.err = f"Error: File {self.path} not found."
+            return
         except Exception as err:
-            print(err.args[0])
-            raise err
-            return err.args[0]
-        return "Input parsed!"
+            self.err = err.args[0]
+            return
 
     def parse_categorization(self):
         try:
@@ -68,7 +68,7 @@ class Parser:
             except KeyError:
                 raise KeyError("Error in categorization parsing: A categorization must contain a type and a value.")
 
-            if c_type == FieldType.INT.value:
+            if c_type == FieldType.DEC.value:
                 try:
                     intervals = category[0]
                     labels = category[1]
@@ -131,17 +131,18 @@ class Parser:
                     except KeyError as err:
                         raise KeyError(f"Error in field parsing: A field must contain a {err.args[0]}.")
 
-                    if f_type == FieldType.INT.value:
+                    if f_type == FieldType.DEC.value:
                         if value not in self.parsed_categorization:
                             raise ValueError("Error in field parsing: A categorization must be defined before usage.")
                         if init_value not in self.converted_categorization[value].keys():
                             raise ValueError("Error in field parsing: Int field initial value unknown.")
                     elif f_type == FieldType.STR.value:
                         if not isinstance(value, list):
-                            raise KeyError("Error in field parsing: A str field value must be a list.")
+                            raise KeyError("Error in field parsing: A string field value must be a list.")
                         for v in value:
                             if not isinstance(v, str):
-                                raise KeyError("Error in field parsing: A str field value must only contain strings.")
+                                raise KeyError(
+                                    "Error in field parsing: A string field value must only contain strings.")
                         if init_value not in value:
                             raise ValueError("Error in field parsing: Str field initial value unknown.")
 
@@ -169,14 +170,14 @@ class Parser:
             except KeyError:
                 raise KeyError("Error in constraint parsing: The publisher must contain the constrained field.")
 
-            if f_type == FieldType.INT:
+            if f_type == FieldType.DEC:
                 category = pub_fields[field_key].value
                 category_list = []
                 for v in value:
                     try:
                         converted_value = self.converted_categorization[category][v]
                     except KeyError:
-                        raise KeyError("Error in constraint parsing: Invalid value specified for int constraint.")
+                        raise KeyError("Error in constraint parsing: Invalid value specified for decimal constraint.")
                     category_list.append(converted_value)
                 value = category_list
 
@@ -184,7 +185,7 @@ class Parser:
                 field_value = pub_fields[field_key].value
                 for v in value:
                     if v not in field_value:
-                        raise ValueError("Error in constraint parsing: Invalid value specified for str constraint.")
+                        raise ValueError("Error in constraint parsing: Invalid value specified for string constraint.")
 
             constraint_list.append(Constraint(f_type, field_key, value))
 
@@ -210,14 +211,14 @@ class Parser:
 
                 value = found_field.value
 
-                if found_field.f_type == FieldType.INT:
+                if found_field.f_type == FieldType.DEC:
                     if field_value not in self.converted_categorization[value]:
-                        raise ValueError(f"Error in {parsing} parsing: Wrong value for int field.")
+                        raise ValueError(f"Error in {parsing} parsing: Wrong value for decimal field.")
                 elif found_field.f_type == FieldType.STR:
                     if not isinstance(field_value, str):
-                        raise ValueError(f"Error in {parsing} parsing: Wrong value for str field.")
+                        raise ValueError(f"Error in {parsing} parsing: Wrong value for string field.")
                     if field_value not in found_field.value:
-                        raise ValueError(f"Error in {parsing} parsing: Wrong value for str field.")
+                        raise ValueError(f"Error in {parsing} parsing: Wrong value for string field.")
 
     def check_time_intervals(self, intervals):
         result = []

@@ -6,7 +6,7 @@ from nft.api import NftAPI
 
 
 class Handler:
-    def __init__(self, handling_queue: HandlingQueue):
+    def __init__(self, handling_queue: HandlingQueue, dev: bool):
         self.nft_api = NftAPI()
         self.constraint_mapping = handling_queue.constraint_mapping
         self.packet_handler = handling_queue.packet_handler
@@ -18,7 +18,7 @@ class Handler:
         self.inconsistencies = []
         self.time_intervals = {}
         self.mark = 0
-        self.nft_api.init_ruleset()
+        self.nft_api.init_ruleset(dev)
 
     def add_rule(self, src, dst):
         is_ip6 = src.is_ip6

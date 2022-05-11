@@ -83,7 +83,7 @@ class ContextInput:
         for member_key, member in members.items():
             for field_key, field in member.fields.items():
                 name = member_key + "." + field_key
-                if field.f_type == FieldType.INT:
+                if field.f_type == FieldType.DEC:
                     label = field.value
                     self.categorization.add_mapping(name, labels[label][0], labels[label][1])
                     self.state_combinations[name] = labels[label][1]

@@ -13,8 +13,8 @@ class Policy(Enum):
 
 
 class FieldType(Enum):
-    INT = "int"
-    STR = "str"
+    DEC = "decimal"
+    STR = "string"
 
 
 class TriggerType(Enum):

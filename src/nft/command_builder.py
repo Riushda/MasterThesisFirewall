@@ -104,8 +104,11 @@ class CommandBuilder:
     def list_ruleset(self):
         self.command = load_json("list_ruleset")
 
-    def init_ruleset(self):
+    def init_ruleset(self, dev):
         self.command = load_json("init_ruleset")
+        if not dev:
+            for i in range(2, 5):
+                self.command["nftables"][i]["add"]["chain"]["policy"] = "drop"
 
     def flush_ruleset(self):
         self.command = load_json("flush_ruleset")

@@ -1,3 +1,4 @@
+import argparse
 import signal
 from threading import Thread
 
@@ -11,12 +12,24 @@ from nfqueue.handling_queue import HandlingQueue
 from context.input import ContextInput
 from context.context import Context
 
+parser = argparse.ArgumentParser()
+
+parser.add_argument("--input", type=str, default=None)
+parser.add_argument('--dev', dest='dev', action='store_true')
+parser.add_argument('--no-dev', dest='dev', action='store_false')
+parser.set_defaults(dev=True)
+args = parser.parse_args()
+
 if __name__ == "__main__":
-    parser = Parser("input.json")
+    parser = Parser(args.input)
+
+    if parser.err:
+        print(parser.err)
+        exit(1)
 
     handling_queue = HandlingQueue()
 
-    handler = Handler(handling_queue)
+    handler = Handler(handling_queue, args.dev)
     handler.add_parser(parser)
 
     handling_queue_thread = Thread(target=handling_queue.run)

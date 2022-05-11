@@ -43,9 +43,9 @@ class NftAPI:
 
         return output
 
-    def init_ruleset(self):
+    def init_ruleset(self, dev):
         builder = CommandBuilder()
-        builder.init_ruleset()
+        builder.init_ruleset(dev)
         self.send_command(builder.get_command())
 
     def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None, mark: int = 0,

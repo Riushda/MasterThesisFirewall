@@ -1,7 +1,7 @@
 {
   "categorization": {
     "temp": {
-      "type": "int",
+      "type": "decimal",
       "value": [
         [
           "-inf",
@@ -32,12 +32,12 @@
       "src": "192.168.33.12",
       "field": {
         "temp": {
-          "type": "int",
+          "type": "decimal",
           "value": "temp",
           "init": "average"
         },
         "name": {
-          "type": "str",
+          "type": "string",
           "value": [
             "alice",
             "bob"
@@ -50,7 +50,7 @@
       "src": "192.168.33.13",
       "field": {
         "status": {
-          "type": "str",
+          "type": "string",
           "value": [
             "on",
             "off"
@@ -63,7 +63,7 @@
       "src": "192.168.33.14",
       "field": {
         "status": {
-          "type": "str",
+          "type": "string",
           "value": [
             "open",
             "closed"
