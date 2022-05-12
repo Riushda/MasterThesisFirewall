@@ -425,7 +425,7 @@ class CoAPDelta(MultiValueEnum):
 	URI_HOST = 3
 	ETAG = 4
 	IF_NONE_MATCH = 5
-	OBSERVE = 6, 10  # 6 is observer in the coapthon library, 10 is lifetime option (see https://tools.ietf.org/id/draft-ietf-core-observe-01.html#option)
+	OBSERVE = 6, 10  # 6 is observer in the coapthon library, 10 is lifetime option (see https://tools.ietf.org/id/draft-ietf-core-observe-09.html)
 	URI_PORT = 7
 	LOCATION_PATH = 8
 	URI_PATH = 11

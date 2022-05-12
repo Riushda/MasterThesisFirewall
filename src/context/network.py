@@ -7,6 +7,8 @@ import context.abstract_rule as abstract_rule
 from context.input import ContextInput
 from context.utils import get_device, get_transition_trigger
 
+import math
+
 
 class SelfLoopException(Exception):
     pass
@@ -17,11 +19,16 @@ class DeviceState(State):
         super().__init__(name, on_enter="enter", on_exit="exit")
         self.state = state
         self.is_consistent = is_consistent
+        self.count = 0
+
+    def get_count(self):
+        return self.count
 
     def __repr__(self):
         return str(self.state)
 
     def enter(self, event):
+        self.count += 1
         if not self.is_consistent:
             print("Entering inconsistent state !")
 
@@ -39,7 +46,18 @@ class NetworkContext(GraphMachine):
 
         self.device_states = []
         self.transitions = []
-        self.transitions_change = {}
+        self.transitions_data = {}
+
+        # keep track of current sequence probabilities
+        self.proba_queue = []
+        self.sequence_proba = 0
+        # minimum probability for a transition sequence to be considered as normal, frequent
+        self.proba_threshold = 0.05
+        # length of the sequence to maintain
+        self.k = 10
+
+        # minimum count for a state to become frequent
+        self.frequent_state_threshold = 50
 
         # if self.check_inferences():
         initial_state_name = self.build_fsm(context_input.initial_state, context_input.state_combinations)
@@ -85,9 +103,10 @@ class NetworkContext(GraphMachine):
                         key_trigger = diff_keys[0]
                         value_trigger = state_dst[diff_keys[0]]
 
-                        self.transitions_change[(str(i), str(j))] = {"change": {
+                        self.transitions_data[(str(i), str(j))] = {"change": {
                             diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]},
-                            "actions": []
+                            "actions": [],
+                            "count": 0
                         }
 
                 elif len(diff_keys) > 1:
@@ -103,16 +122,16 @@ class NetworkContext(GraphMachine):
                                 key_trigger = key
                                 value_trigger = state_dst[key]
 
-                                self.transitions_change[(str(i), str(j))] = {"change": {}, "actions": []}
+                                self.transitions_data[(str(i), str(j))] = {"change": {}, "actions": [], "count": 0}
                                 for element in diff_keys:
-                                    self.transitions_change[(str(i), str(j))]["change"][element] = [state_src[element],
-                                                                                                    state_dst[element]]
+                                    self.transitions_data[(str(i), str(j))]["change"][element] = [state_src[element],
+                                                                                                  state_dst[element]]
                                 break
 
                 if conforming:
                     trigger = get_transition_trigger(key_trigger, value_trigger)
 
-                    transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'after': 'action'}
+                    transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'before': 'update_sequence', 'after': 'action'}
                     self.transitions.append(transition)
 
                 j += 1
@@ -140,10 +159,34 @@ class NetworkContext(GraphMachine):
     def is_current_state_consistent(self):
         return self.get_state(self.state).is_consistent
 
+    def update_sequence(self, event):
+        # recalculate the current proba
+
+        transition_count = self.transitions_data[(event.transition.source, event.transition.dest)]["count"]
+        state_count = self.get_state(self.state).count
+
+        if state_count >= self.frequent_state_threshold:
+
+            if len(self.proba_queue) == self.k:
+                self.sequence_proba -= math.log2(self.proba_queue.pop(0))
+
+            transition_proba = transition_count / state_count
+            self.proba_queue.append(transition_proba)
+            self.sequence_proba += math.log2(transition_proba)
+
+        if self.sequence_proba < self.proba_threshold and len(self.proba_queue) == self.k:
+            # raise alarm
+            print("Unfrequent sequence of transition, raising alarm !")
+
+        # increase transition counter
+        self.transitions_data[(event.transition.source, event.transition.dest)]["count"] += 1
+
     def action(self, event):
         # print("action: " + str(event))
-        actions = self.transitions_change[(event.transition.source, event.transition.dest)]["actions"]
 
+        # perform actions of transition
+        actions = self.transitions_data[(event.transition.source, event.transition.dest)]["actions"]
+        print("list_actions : "+str(actions))
         for action in actions:
             print("action : " + str(action))
             abstract_rule.run_action(action)
@@ -199,7 +242,7 @@ class NetworkContext(GraphMachine):
 
                 if state_src.name != state_dst.name and state_src.is_consistent and state_dst.is_consistent:
 
-                    changed_element = self.transitions_change.get((state_src.name, state_dst.name))
+                    changed_element = self.transitions_data.get((state_src.name, state_dst.name))
                     if changed_element:  # if transition between both states
                         changed_element = changed_element["change"]
                         changed_element_keys = list(changed_element.keys())
@@ -225,7 +268,7 @@ class NetworkContext(GraphMachine):
                                     action = {"index": rule["index"], "action": rule["action"], "reverse": False}
 
                                 if action:
-                                    self.transitions_change[(state_src.name, state_dst.name)][
+                                    self.transitions_data[(state_src.name, state_dst.name)][
                                         "actions"].append(action)
 
     def del_rules(self, rules):
@@ -237,7 +280,7 @@ class NetworkContext(GraphMachine):
                     state_dst: DeviceState = state_dst
 
                     if state_src != state_dst and state_src.is_consistent and state_dst.is_consistent:
-                        changed_element = self.transitions_change.get((state_src.name, state_dst.name))
+                        changed_element = self.transitions_data.get((state_src.name, state_dst.name))
                         if changed_element:  # if transition between both states
                             for action in changed_element["actions"]:
                                 for rule_to_delete in rules:

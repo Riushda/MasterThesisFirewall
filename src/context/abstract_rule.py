@@ -8,7 +8,7 @@ def run_action(rule):
     reverse = rule["reverse"]
     action = next(iter(rule["action"]))
     relation = rule["action"][action]
-
+    print("ACTION : " + action)
     if (action == "enable" and not reverse) or (action == "disable" and reverse):
         handler.enable_relation(relation)
     elif (action == "disable" and not reverse) or (action == "enable" and reverse):
