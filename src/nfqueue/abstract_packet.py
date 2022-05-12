@@ -4,6 +4,7 @@ from scapy.layers.inet6 import IPv6
 
 from nfqueue.protocol_decoder import ProtocolDecoder
 
+
 class AbstractPacket:
 
     def __init__(self):

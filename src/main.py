@@ -2,16 +2,12 @@ import argparse
 import signal
 from threading import Thread
 
-import pyximport  # This is part of Cython
-
-pyximport.install()
-
 from client.handler import Handler
 from client.parser import Parser
-from nfqueue.handling_queue import HandlingQueue
-from context.input import ContextInput
 from context.context import Context
-from nfqueue.constraint_mapping import ConstraintMapping
+from context.input import ContextInput
+from nfqueue.handling_queue import HandlingQueue
+from nfqueue.relation_mapping import RelationMapping
 
 parser = argparse.ArgumentParser()
 
@@ -28,7 +24,7 @@ if __name__ == "__main__":
         print(parser.err)
         exit(1)
 
-    constraint_mapping = ConstraintMapping()
+    constraint_mapping = RelationMapping()
     handling_queue = HandlingQueue(constraint_mapping)
 
     handler = Handler(handling_queue, constraint_mapping, args.dev)

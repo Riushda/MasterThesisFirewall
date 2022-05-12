@@ -1,13 +1,11 @@
 import itertools as it
+import math
 
 from transitions import State
 from transitions.extensions import GraphMachine
 
-import context.abstract_rule as abstract_rule
 from context.input import ContextInput
 from context.utils import get_device, get_transition_trigger
-
-import math
 
 
 class SelfLoopException(Exception):
@@ -43,7 +41,7 @@ class NetworkContext(GraphMachine):
         self.relations = context_input.relations
         self.inconsistent_states = context_input.inconsistent_states
         self.state_inference = context_input.state_inference
-        self.constraint_mapping = context_input.constraint_mapping
+        self.relation_mapping = context_input.relation_mapping
 
         self.device_states = []
         self.transitions = []
@@ -132,7 +130,8 @@ class NetworkContext(GraphMachine):
                 if conforming:
                     trigger = get_transition_trigger(key_trigger, value_trigger)
 
-                    transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'before': 'update_sequence', 'after': 'action'}
+                    transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'before': 'update_sequence',
+                                  'after': 'action'}
                     self.transitions.append(transition)
 
                 j += 1
@@ -182,26 +181,24 @@ class NetworkContext(GraphMachine):
         # increase transition counter
         self.transitions_data[(event.transition.source, event.transition.dest)]["count"] += 1
 
-    def run_action(self, rule):
-        reverse = rule["reverse"]
-        action = next(iter(rule["action"]))
-        relation = rule["action"][action]
+    def run_action(self, trigger):
+        reverse = trigger["reverse"]
+        action = next(iter(trigger["action"]))
+        relation = trigger["action"][action]
         mark = self.relations[relation].mark
         subject = self.relations[relation].subject
 
         if (action == "enable" and not reverse) or (action == "disable" and reverse):
-            self.constraint_mapping.enable_mapping(mark, subject)
+            self.relation_mapping.enable_relation(mark, subject)
         elif (action == "disable" and not reverse) or (action == "enable" and reverse):
-            self.constraint_mapping.disable_mapping(mark, subject)
+            self.relation_mapping.disable_relation(mark, subject)
 
     def action(self, event):
-        # print("action: " + str(event))
-
         # perform actions of transition
         actions = self.transitions_data[(event.transition.source, event.transition.dest)]["actions"]
-        print("list_actions : "+str(actions))
+        # print("list_actions : " + str(actions))
         for action in actions:
-            print("action : " + str(action))
+            # print("action : " + str(action))
             self.run_action(action)
 
     def self_loop(self, data):
@@ -230,7 +227,6 @@ class NetworkContext(GraphMachine):
                 publisher = relation.first.src.name
                 if publisher == device:
 
-                    subscriber = None
                     if not relation.second:
                         subscriber = relation.first.dst.name
                     else:
@@ -245,9 +241,8 @@ class NetworkContext(GraphMachine):
 
         return True
 
-    def add_rules(self, rules):
-
-        # add actions of rules in all transitions validating the conditions
+    # add actions of triggers in all transitions validating the conditions
+    def add_triggers(self, triggers):
         for state_src in self.device_states:
             for state_dst in self.device_states:
                 state_src: DeviceState = state_src
@@ -260,8 +255,8 @@ class NetworkContext(GraphMachine):
                         changed_element = changed_element["change"]
                         changed_element_keys = list(changed_element.keys())
 
-                        for rule in rules:
-                            condition = rule["condition"]
+                        for trigger in triggers:
+                            condition = trigger["condition"]
 
                             condition_changed = False
                             for key in changed_element_keys:
@@ -272,21 +267,21 @@ class NetworkContext(GraphMachine):
                             if condition_changed:
                                 action = None
 
-                                # if condition of rule does no longer hold
+                                # if condition of trigger does no longer hold
                                 if condition.items() <= state_src.state.items():
-                                    action = {"index": rule["index"], "action": rule["action"], "reverse": True}
+                                    action = {"index": trigger["index"], "action": trigger["action"], "reverse": True}
 
-                                # if condition of rule now holds
+                                # if condition of trigger now holds
                                 if condition.items() <= state_dst.state.items():
-                                    action = {"index": rule["index"], "action": rule["action"], "reverse": False}
+                                    action = {"index": trigger["index"], "action": trigger["action"], "reverse": False}
 
                                 if action:
                                     self.transitions_data[(state_src.name, state_dst.name)][
                                         "actions"].append(action)
 
-    def del_rules(self, rules):
-        # delete actions of rules with index in rule_index in all transitions
-        if len(rules) > 0:
+    # delete actions of triggers with index in trigger_index in all transitions
+    def del_triggers(self, triggers):
+        if len(triggers) > 0:
             for state_src in self.device_states:
                 for state_dst in self.device_states:
                     state_src: DeviceState = state_src
@@ -296,7 +291,7 @@ class NetworkContext(GraphMachine):
                         changed_element = self.transitions_data.get((state_src.name, state_dst.name))
                         if changed_element:  # if transition between both states
                             for action in changed_element["actions"]:
-                                for rule_to_delete in rules:
-                                    if action["index"] == rule_to_delete:
+                                for trigger_to_delete in triggers:
+                                    if action["index"] == trigger_to_delete:
                                         changed_element["actions"].remove(action)
                                         break

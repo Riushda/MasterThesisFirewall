@@ -4,16 +4,16 @@ from netfilterqueue import NetfilterQueue, Packet
 from scapy.layers.inet import IP
 
 from nfqueue.abstract_packet import AbstractPacket
-from nfqueue.constraint_mapping import ConstraintMapping
 from nfqueue.packet_state import PacketState
 from nfqueue.protocol_decoder import ProtocolDecoder
-from utils.constant import *
+from nfqueue.relation_mapping import RelationMapping
+from client.constant import *
 
 
 class PacketHandler:
-    def __init__(self, queue: Queue, constraint_mapping):
+    def __init__(self, queue: Queue, relation_mapping):
         self.packet_queue = queue
-        self.mapping = constraint_mapping
+        self.mapping = relation_mapping
         self.protocol_decoder = ProtocolDecoder()  # protocol decoder supporting many different protocols
         self.protocol_decoder.add_broker("192.168.33.11", "mqtt")
         self.packet_state = PacketState(self.protocol_decoder)  # stateful object for maintaining request/response state
@@ -27,13 +27,13 @@ class PacketHandler:
             raw_packet.accept()
             return
 
-        #print(f"src: {str(abstract_packet.src)} ~ dst: {str(abstract_packet.dst)}")
+        # print(f"src: {str(abstract_packet.src)} ~ dst: {str(abstract_packet.dst)}")
 
         if not abstract_packet.parse_transport(decoded_packet):
             print("Unknown transport layer protocol")
 
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
-            print(abstract_packet)
+            # print(abstract_packet)
 
             allowed_packet, constraint, context = self.packet_state.handle_packet(abstract_packet)
 
@@ -72,10 +72,10 @@ class PacketHandler:
 
 
 class HandlingQueue:
-    def __init__(self, constraint_mapping: ConstraintMapping):
+    def __init__(self, relation_mapping: RelationMapping):
         self.packet_queue = Queue()
         self.nf_queue = NetfilterQueue()
-        self.packet_handler = PacketHandler(self.packet_queue, constraint_mapping)
+        self.packet_handler = PacketHandler(self.packet_queue, relation_mapping)
         self.keep_running = True
 
     def run(self):
@@ -87,5 +87,4 @@ class HandlingQueue:
     def stop(self):
         self.keep_running = False
 
-
-#"broker": "broker",
+# "broker": "broker",

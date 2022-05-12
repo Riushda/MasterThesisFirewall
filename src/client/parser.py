@@ -2,7 +2,7 @@ import json
 
 from client.relation import Constraint, Field, Member, parse_member
 from client.utils import parse_time_interval, check_overlapping, invert_time_intervals
-from utils.constant import *
+from client.constant import *
 
 
 class Parser:

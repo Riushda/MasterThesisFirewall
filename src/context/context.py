@@ -4,11 +4,11 @@ from multiprocessing import Queue
 import schedule
 from transitions import MachineError
 
-from context.abstract_rule import AbstractRule
 from context.input import ContextInput
 from context.network import NetworkContext
 from context.network import SelfLoopException
 from context.schedule_thread import ScheduleThread
+from context.triggers import Triggers
 from context.utils import is_float, get_device_name, get_transition_trigger, add_relations_jobs
 from nfqueue.abstract_packet import AbstractPacket
 
@@ -19,7 +19,7 @@ class Context:
         self.packet_queue = packet_queue
         self.members = context_input.members
         self.categorization = context_input.categorization
-        self.abstract_rules = AbstractRule(context_input.abstract_rules, self.network_context)
+        self.triggers = Triggers(context_input.triggers, self.network_context)
         self.keep_running = True
 
         self.schedule_thread = ScheduleThread(schedule)
@@ -61,7 +61,7 @@ class Context:
             if self.categorization.has_mapping(field):
                 value = self.categorization.map(field, value)
 
-            print(field, value)
+            # print(field, value)
             trigger = get_transition_trigger(field, value)
 
             try:

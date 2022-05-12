@@ -73,7 +73,8 @@
       }
     }
   },
-  "relation": {"trigger_iter": {
+  "relation": {
+    "trigger_iter": {
       "subject": "ti",
       "broker": "broker",
       "publisher": "thermo",

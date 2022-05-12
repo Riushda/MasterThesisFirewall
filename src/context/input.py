@@ -2,7 +2,7 @@ import numpy as np
 
 from client.handler import Handler
 from context.utils import flatten_state
-from utils.constant import *
+from client.constant import *
 
 
 class Categorization:
@@ -55,7 +55,7 @@ def convert_inference(member_key, member):
 
 class ContextInput:
     def __init__(self, handler: Handler):
-        self.abstract_rules = handler.triggers
+        self.triggers = handler.triggers
         self.categorization = Categorization()
         self.initial_state = {}
         self.state_combinations = {}
@@ -64,11 +64,11 @@ class ContextInput:
         self.relations = handler.relations
         self.members = handler.members
         self.time_intervals = handler.time_intervals
-        self.constraint_mapping = handler.constraint_mapping
+        self.relation_mapping = handler.relation_mapping
         self.convert_input(handler.categorization, handler.members, handler.inferences, handler.inconsistencies)
 
     def __str__(self):
-        result = f"Abstract rules: {self.abstract_rules}\n"
+        result = f"Triggers: {self.triggers}\n"
         result += f"Categorization: {self.categorization}\n"
         result += f"State combinations: {self.state_combinations}\n"
         result += f"Initial state: {self.initial_state}\n"
@@ -77,8 +77,8 @@ class ContextInput:
         return result
 
     def convert_input(self, labels, members, inferences, inconsistencies):
-        for rule in self.abstract_rules:
-            rule["condition"] = flatten_state(rule["condition"])
+        for trigger in self.triggers:
+            trigger["condition"] = flatten_state(trigger["condition"])
 
         for member_key, member in members.items():
             for field_key, field in member.fields.items():
