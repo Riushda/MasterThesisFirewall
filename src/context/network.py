@@ -50,7 +50,7 @@ class NetworkContext(GraphMachine):
 
         # keep track of current sequence probabilities
         self.proba_queue = []
-        self.sequence_proba = 1
+        self.sequence_proba = 0
         # minimum probability for a transition sequence to be considered as normal, frequent
         self.proba_threshold = 0.05
         # length of the sequence to maintain
@@ -186,7 +186,7 @@ class NetworkContext(GraphMachine):
 
         # perform actions of transition
         actions = self.transitions_data[(event.transition.source, event.transition.dest)]["actions"]
-
+        print("list_actions : "+str(actions))
         for action in actions:
             print("action : " + str(action))
             abstract_rule.run_action(action)

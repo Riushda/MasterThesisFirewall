@@ -277,6 +277,7 @@ class Parser:
 
             if t_type == TriggerType.FIELD:
                 self.check_conditions(conditions, "trigger")
+                trigger["condition"] = trigger["condition"]["field"]
                 self.parsed_triggers.append(trigger)
             elif t_type == TriggerType.TIME:
                 intervals = self.check_time_intervals(conditions)
