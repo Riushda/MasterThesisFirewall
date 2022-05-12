@@ -31,16 +31,18 @@ def flatten_state(state):
 
 def add_relations_jobs(context_input, schedule_thread):
     schedule = schedule_thread.schedule
-    handler = context_input.handler
+    constraint_mapping = context_input.constraint_mapping
     relations = context_input.relations
     for relation_key, relation in relations.items():
+        mark = relation.mark
+        subject = relation.subject
         for interval in relation.time_intervals:
             job = schedule.every().day.at(interval[0]).do(
-                handler.enable_relation, relation_key)
+                constraint_mapping.enable_mapping, mark, subject)
             schedule_thread.jobs.append(job)
 
             job = schedule.every().day.at(interval[1]).do(
-                handler.disable_relation, relation_key)
+                constraint_mapping.disable_mapping, mark, subject)
             schedule_thread.jobs.append(job)
 
 

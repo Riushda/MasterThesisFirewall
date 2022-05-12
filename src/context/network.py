@@ -43,6 +43,7 @@ class NetworkContext(GraphMachine):
         self.relations = context_input.relations
         self.inconsistent_states = context_input.inconsistent_states
         self.state_inference = context_input.state_inference
+        self.constraint_mapping = context_input.constraint_mapping
 
         self.device_states = []
         self.transitions = []
@@ -181,6 +182,18 @@ class NetworkContext(GraphMachine):
         # increase transition counter
         self.transitions_data[(event.transition.source, event.transition.dest)]["count"] += 1
 
+    def run_action(self, rule):
+        reverse = rule["reverse"]
+        action = next(iter(rule["action"]))
+        relation = rule["action"][action]
+        mark = self.relations[relation].mark
+        subject = self.relations[relation].subject
+
+        if (action == "enable" and not reverse) or (action == "disable" and reverse):
+            self.constraint_mapping.enable_mapping(mark, subject)
+        elif (action == "disable" and not reverse) or (action == "enable" and reverse):
+            self.constraint_mapping.disable_mapping(mark, subject)
+
     def action(self, event):
         # print("action: " + str(event))
 
@@ -189,7 +202,7 @@ class NetworkContext(GraphMachine):
         print("list_actions : "+str(actions))
         for action in actions:
             print("action : " + str(action))
-            abstract_rule.run_action(action)
+            self.run_action(action)
 
     def self_loop(self, data):
         state = self.current_state()

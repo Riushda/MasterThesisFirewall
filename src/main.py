@@ -11,6 +11,7 @@ from client.parser import Parser
 from nfqueue.handling_queue import HandlingQueue
 from context.input import ContextInput
 from context.context import Context
+from nfqueue.constraint_mapping import ConstraintMapping
 
 parser = argparse.ArgumentParser()
 
@@ -27,9 +28,10 @@ if __name__ == "__main__":
         print(parser.err)
         exit(1)
 
-    handling_queue = HandlingQueue()
+    constraint_mapping = ConstraintMapping()
+    handling_queue = HandlingQueue(constraint_mapping)
 
-    handler = Handler(handling_queue, args.dev)
+    handler = Handler(handling_queue, constraint_mapping, args.dev)
     handler.add_parser(parser)
 
     handling_queue_thread = Thread(target=handling_queue.run)

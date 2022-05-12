@@ -1,28 +1,11 @@
-from client.handler import Handler
 from context.network import NetworkContext
-
-handler: Handler = None
-
-
-def run_action(rule):
-    reverse = rule["reverse"]
-    action = next(iter(rule["action"]))
-    relation = rule["action"][action]
-    print("ACTION : " + action)
-    if (action == "enable" and not reverse) or (action == "disable" and reverse):
-        handler.enable_relation(relation)
-    elif (action == "disable" and not reverse) or (action == "enable" and reverse):
-        handler.disable_relation(relation)
 
 
 class AbstractRule:
-    def __init__(self, abstract_rules, network_context: NetworkContext, input_handler: Handler):
+    def __init__(self, abstract_rules, network_context: NetworkContext):
         self.abstract_rules = {}
         self.network_context = network_context
-
         self.add_multiple_rules(abstract_rules)
-        global handler
-        handler = input_handler
 
     def add_multiple_rules(self, rules):
         # add rules in abstract_rules list

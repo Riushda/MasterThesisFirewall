@@ -73,7 +73,27 @@
       }
     }
   },
-  "relation": {
+  "relation": {"trigger_iter": {
+      "subject": "ti",
+      "broker": "broker",
+      "publisher": "thermo",
+      "subscriber": "heater",
+      "constraints": [
+        {
+          "field": "temp",
+          "value": [
+            "cold",
+            "hot"
+          ]
+        },
+        {
+          "field": "name",
+          "value": [
+            "bob"
+          ]
+        }
+      ]
+    },
     "trigger_heater": {
       "subject": "th",
       "broker": "broker",

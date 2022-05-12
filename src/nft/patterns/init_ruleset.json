@@ -63,15 +63,6 @@
     },
     {
       "add": {
-        "chain": {
-          "family": "inet",
-          "table": "filter",
-          "name": "disabled"
-        }
-      }
-    },
-    {
-      "add": {
         "rule": {
           "family": "inet",
           "table": "filter",

@@ -72,11 +72,10 @@ class PacketHandler:
 
 
 class HandlingQueue:
-    def __init__(self):
+    def __init__(self, constraint_mapping: ConstraintMapping):
         self.packet_queue = Queue()
         self.nf_queue = NetfilterQueue()
-        self.constraint_mapping = ConstraintMapping()
-        self.packet_handler = PacketHandler(self.packet_queue, self.constraint_mapping)
+        self.packet_handler = PacketHandler(self.packet_queue, constraint_mapping)
         self.keep_running = True
 
     def run(self):

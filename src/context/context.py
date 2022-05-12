@@ -19,8 +19,7 @@ class Context:
         self.packet_queue = packet_queue
         self.members = context_input.members
         self.categorization = context_input.categorization
-        self.abstract_rules = AbstractRule(context_input.abstract_rules, self.network_context,
-                                           context_input.handler)
+        self.abstract_rules = AbstractRule(context_input.abstract_rules, self.network_context)
         self.keep_running = True
 
         self.schedule_thread = ScheduleThread(schedule)

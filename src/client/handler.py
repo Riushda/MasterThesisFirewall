@@ -1,14 +1,15 @@
 from client.parser import Parser
 from client.relation import Relation, Rule
-from nfqueue.constraint_mapping import MappingEntry
 from nfqueue.handling_queue import HandlingQueue
 from nft.api import NftAPI
+from nfqueue.constraint_mapping import ConstraintMapping
+from nfqueue.constraint_mapping import Subject
 
 
 class Handler:
-    def __init__(self, handling_queue: HandlingQueue, dev: bool):
+    def __init__(self, handling_queue: HandlingQueue, constraint_mapping: ConstraintMapping, dev: bool):
         self.nft_api = NftAPI()
-        self.constraint_mapping = handling_queue.constraint_mapping
+        self.constraint_mapping = constraint_mapping
         self.packet_handler = handling_queue.packet_handler
         self.categorization = {}
         self.members = {}
@@ -19,6 +20,7 @@ class Handler:
         self.time_intervals = {}
         self.mark = 0
         self.nft_api.init_ruleset(dev)
+        self.packet_signatures = {}
 
     def add_rule(self, src, dst):
         is_ip6 = src.is_ip6
@@ -39,21 +41,37 @@ class Handler:
         time_intervals = relation["time_intervals"]
 
         if broker:
-            first = self.add_rule(pub, broker)
-            second = self.add_rule(broker, sub)
-
-            relation = Relation(subject=subject, mark=self.mark, first=first,
-                                second=second,
-                                constraints=constraints, time_intervals=time_intervals)
+            signature = pub.ip + broker.ip + sub.ip
         else:
-            first = self.add_rule(pub, sub)
-            relation = Relation(subject=subject, mark=self.mark, first=first,
-                                constraints=constraints, time_intervals=time_intervals)
+            signature = pub.ip + sub.ip
 
-        mapping_entry = MappingEntry(subject, constraints)
-        self.constraint_mapping.add_mapping(self.mark, mapping_entry)
-        self.relations[name] = relation
-        self.mark += 1
+        if signature in self.packet_signatures:
+            mark = self.packet_signatures[signature]
+            for relation_keys, relation in self.relations.items():
+                if relation.mark == mark:
+                    new_relation = Relation(subject=subject, mark=mark, first=relation.first,
+                                            second=relation.second,
+                                            constraints=constraints, time_intervals=time_intervals)
+                    self.relations[name] = new_relation
+                    break
+            self.constraint_mapping.add_mapping(mark, Subject(subject, constraints))
+        else:
+            if broker:
+                first = self.add_rule(pub, broker)
+                second = self.add_rule(broker, sub)
+
+                relation = Relation(subject=subject, mark=self.mark, first=first,
+                                    second=second,
+                                    constraints=constraints, time_intervals=time_intervals)
+            else:
+                first = self.add_rule(pub, sub)
+                relation = Relation(subject=subject, mark=self.mark, first=first,
+                                    constraints=constraints, time_intervals=time_intervals)
+
+            self.constraint_mapping.add_mapping(self.mark, Subject(subject, constraints))
+            self.relations[name] = relation
+            self.packet_signatures[signature] = self.mark
+            self.mark += 1
 
     def add_parser(self, parser: Parser):
         self.categorization = parser.parsed_categorization
@@ -64,31 +82,6 @@ class Handler:
         self.inferences = parser.parsed_inferences
         self.inconsistencies = parser.parsed_inconsistencies
         self.time_intervals = parser.parsed_time_intervals
-
-    def enable_disable(self, key, action):
-
-        if key in self.relations:
-            found_relation = self.relations[key]
-        else:
-            return
-
-        handles = [found_relation.first[0].handle, found_relation.first[1].handle]
-
-        if found_relation.second:
-            handles.append(found_relation.second[0].handle)
-            handles.append(found_relation.second[1].handle)
-
-        for handle in handles:
-            if action:
-                self.nft_api.enable_rule(handle)
-            else:
-                self.nft_api.disable_rule(handle)
-
-    def enable_relation(self, key):
-        self.enable_disable(key, True)
-
-    def disable_relation(self, key):
-        self.enable_disable(key, False)
 
     def revert_relation_mapping(self):
         revert_mapping = {}

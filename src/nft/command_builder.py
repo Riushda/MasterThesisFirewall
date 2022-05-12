@@ -46,18 +46,6 @@ class CommandBuilder:
         self.command = load_json("delete_rule")
         self.command["nftables"][0]["delete"]["rule"]["handle"] = handle
 
-    def enable_rule(self):
-        self.command["expr"].pop()
-        self.command["expr"].append(load_json("queue_target"))
-        self.command = {"nftables": [{"replace": {"rule": self.command}}]}
-
-    def disable_rule(self):
-        self.command["expr"].pop()
-
-        self.command["expr"].append(load_json("jump_disable"))
-
-        self.command = {"nftables": [{"replace": {"rule": self.command}}]}
-
     def set_ip(self, ip, direction, is_ip6):
         if not ip:
             return
@@ -112,9 +100,3 @@ class CommandBuilder:
 
     def flush_ruleset(self):
         self.command = load_json("flush_ruleset")
-
-    def restore_ruleset(self):
-        backup_ruleset = load_json("ruleset")
-        self.command = {"nftables": []}
-        for element in backup_ruleset[1:]:
-            self.command["nftables"].append({"add": element})

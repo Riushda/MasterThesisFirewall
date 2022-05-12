@@ -55,7 +55,6 @@ def convert_inference(member_key, member):
 
 class ContextInput:
     def __init__(self, handler: Handler):
-        self.handler = handler
         self.abstract_rules = handler.triggers
         self.categorization = Categorization()
         self.initial_state = {}
@@ -65,6 +64,7 @@ class ContextInput:
         self.relations = handler.relations
         self.members = handler.members
         self.time_intervals = handler.time_intervals
+        self.constraint_mapping = handler.constraint_mapping
         self.convert_input(handler.categorization, handler.members, handler.inferences, handler.inconsistencies)
 
     def __str__(self):
