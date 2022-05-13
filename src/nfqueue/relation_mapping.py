@@ -17,23 +17,23 @@ def match_constraint(field: str, value: str, constraints: list):
 
 
 def match_packet(packet, mapping_entry):
-    for subject in mapping_entry.relations:
-        if packet.subject == subject.subject:
-            if not subject.enabled:
+    if packet.subject in mapping_entry.relations:
+        relation = mapping_entry.relations[packet.subject]
+        if not relation.enabled:
+            return False
+
+        # No constraint on this relation
+        if not relation.constraints:
+            return True
+
+        for data in packet.content:
+            if len(data) > 1:
+                if not match_constraint(data[0], data[1], relation.constraints):
+                    return False
+            else:
                 return False
 
-            # No constraint on this relation
-            if len(subject.constraints) == 0:
-                return True
-
-            for data in packet.content:
-                if len(data) > 1:
-                    if not match_constraint(data[0], data[1], subject.constraints):
-                        return False
-                else:
-                    return False
-
-            return True
+        return True
     return False
 
 
@@ -46,10 +46,10 @@ class Relation:
 
 class Entry:
     def __init__(self, relation: Relation):
-        self.relations = [relation]
+        self.relations = {relation.subject: relation}
 
     def add_relation(self, relation: Relation):
-        self.relations.append(relation)
+        self.relations[relation.subject] = relation
 
 
 class RelationMapping:
@@ -69,14 +69,10 @@ class RelationMapping:
         return self.mapping[mark]
 
     def enable_relation(self, mark: int, subject: str):
-        for relation in self.mapping[mark].relations:
-            if relation.subject == subject:
-                relation.enabled = True
+        self.mapping[mark].relations[subject].enabled = True
 
     def disable_relation(self, mark: int, subject: str):
-        for relation in self.mapping[mark].relations:
-            if relation.subject == subject:
-                relation.enabled = False
+        self.mapping[mark].relations[subject].enabled = False
 
     def decision(self, packet):
         mapping_entry = self.mapping[packet.mark]

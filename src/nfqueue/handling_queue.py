@@ -27,13 +27,10 @@ class PacketHandler:
             raw_packet.accept()
             return
 
-        # print(f"src: {str(abstract_packet.src)} ~ dst: {str(abstract_packet.dst)}")
-
         if not abstract_packet.parse_transport(decoded_packet):
-            print("Unknown transport layer protocol")
+            print("Handling queue log: Unknown transport layer protocol")
 
         if abstract_packet.parse_application(decoded_packet, self.protocol_decoder):
-            # print(abstract_packet)
 
             allowed_packet, constraint, context = self.packet_state.handle_packet(abstract_packet)
 
@@ -46,11 +43,11 @@ class PacketHandler:
 
                     # The packet has an app layer which matches
                     if decision == Policy.ACCEPT:
-                        print("Packet accepted!")
+                        # print("Handling queue log: Packet accepted!")
                         raw_packet.accept()
                     # The packet has an app layer which does not match
                     else:
-                        print("Packet dropped!")
+                        # print("Handling queue log: Packet dropped!")
                         raw_packet.drop()
                         return
 
@@ -59,11 +56,12 @@ class PacketHandler:
 
                 else:
                     # accept packet which doesn't trigger context without constraint matching
-                    print("Packet accepted!")
+                    # print("Handling queue log: Packet accepted!")
                     raw_packet.accept()
 
                 return
             else:
+                # print("Handling queue log: Packet dropped!")
                 raw_packet.drop()
                 return
 

@@ -28,11 +28,11 @@ class DeviceState(State):
     def enter(self, event):
         self.count += 1
         if not self.is_consistent:
-            print("Entering inconsistent state !")
+            print("Network log: Entering inconsistent state")
 
     def exit(self, event):
         if not self.is_consistent:
-            print("Leaving inconsistent state !")
+            print("Network log: Leaving inconsistent state")
 
 
 class NetworkContext(GraphMachine):
@@ -71,14 +71,12 @@ class NetworkContext(GraphMachine):
         # it.product is lazy, one combination is in memory at a given time
 
         states = []
-
         for state in it.product(*(state_combinations[Name] for Name in state_combinations)):
             states.append(dict(zip(state_combinations.keys(), state)))
 
         for state_src in states:
             if state_src == initial_state:
                 initial_state_name = str(i)
-
             is_src_consistent = self.is_consistent(state_src)
             self.device_states.append(DeviceState(str(i), state_src, is_src_consistent))
 
@@ -176,7 +174,7 @@ class NetworkContext(GraphMachine):
 
         if self.sequence_proba < self.proba_threshold and len(self.proba_queue) == self.k:
             # raise alarm
-            print("Unfrequent sequence of transition, raising alarm !")
+            print("Network log: Infrequent sequence of transition, raising alarm")
 
         # increase transition counter
         self.transitions_data[(event.transition.source, event.transition.dest)]["count"] += 1
@@ -214,7 +212,7 @@ class NetworkContext(GraphMachine):
 
             # check if keys are publishers
             if device not in self.members:
-                print(device + " : keys in inferences must be publishers !")
+                print("Network log: " + device + " - keys in inferences must be publishers")
                 return False
 
             # check if values are subscribers of their key
@@ -236,7 +234,8 @@ class NetworkContext(GraphMachine):
                         devices.remove(subscriber)
 
             if len(devices) > 0:
-                print(str(devices) + " : devices values in inferences must be subscribers of their key !")
+                print("Network log: " + str(devices) +
+                      " - devices values in inferences must be subscribers of their key !")
                 return False
 
         return True

@@ -15,7 +15,7 @@ from nfqueue.abstract_packet import AbstractPacket
 
 class Context:
     def __init__(self, packet_queue: Queue, context_input: ContextInput):
-        self.network_context = NetworkContext(context_input)
+        self.network_context: NetworkContext = NetworkContext(context_input)
         self.packet_queue = packet_queue
         self.members = context_input.members
         self.categorization = context_input.categorization
@@ -27,17 +27,17 @@ class Context:
         self.schedule_thread.start()
 
     def run(self):
-        self.network_context.draw_fsm()
+        # self.network_context.draw_fsm()
 
         while self.keep_running:
             try:
-                packet: AbstractPacket = self.packet_queue.get(block=True, timeout=3)
+                packet: AbstractPacket = self.packet_queue.get(block=True, timeout=1)
 
                 for content in packet.content:
                     device = get_device_name(packet.src, self.members)
                     self.update_context(device, content)
-                    self.network_context.show_current_state()
-                    self.network_context.draw_fsm()
+                    # self.network_context.show_current_state()
+                    # self.network_context.draw_fsm()
 
             except Empty:
                 pass
@@ -49,7 +49,10 @@ class Context:
     def update_context(self, device, packet_data):
         try:
             if device is None:
-                print("Unknown publisher !")
+                print("Context log: Unknown publisher")
+                return
+
+            if packet_data[0] not in self.members[device].fields:
                 return
 
             field = device + "." + packet_data[0]
@@ -61,7 +64,6 @@ class Context:
             if self.categorization.has_mapping(field):
                 value = self.categorization.map(field, value)
 
-            # print(field, value)
             trigger = get_transition_trigger(field, value)
 
             try:
@@ -70,15 +72,15 @@ class Context:
                 if self.network_context.self_loop((field, value)):
                     raise SelfLoopException()
                 else:
-                    print("MachineError: " + str(e))
+                    # print("Context log: MachineError - " + str(e))
                     return False
 
             except AttributeError as e:
-                print(str(e))
+                # print("Context log: AttributeError - " + str(e))
                 return False
 
         except SelfLoopException:
-            print("Self Loop")
+            print("Context log: Self loop")
             return False
 
         return True

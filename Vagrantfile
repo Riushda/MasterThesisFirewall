@@ -15,10 +15,6 @@ boxes = [
 
 Vagrant.configure("2") do |config|
   
-  config.vagrant.plugins = {
-    "vagrant-libvirt" => {"version" => "0.7.0"}
-  }
-  
   config.vm.provider "libvirt"
   config.vm.synced_folder ".", "/vagrant", type: "nfs"
 

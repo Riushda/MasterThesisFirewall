@@ -2,6 +2,9 @@ import argparse
 import signal
 from threading import Thread
 
+import os
+import psutil
+
 from client.handler import Handler
 from client.parser import Parser
 from context.context import Context
@@ -18,6 +21,9 @@ parser.set_defaults(dev=True)
 args = parser.parse_args()
 
 if __name__ == "__main__":
+    p = psutil.Process(os.getpid())
+    p.nice(-20)
+
     parser = Parser(args.input)
 
     if parser.err:
@@ -38,7 +44,7 @@ if __name__ == "__main__":
 
     context_thread = Thread(target=context.run)
     context_thread.start()
-
+    print("Firewall ready!")
 
     def signal_handler(sig, frame):
         print('You pressed Ctrl+C!')

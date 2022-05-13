@@ -1,0 +1,14 @@
+{
+  "timing": {
+    "type": "decimal",
+    "value": [
+      [
+        "-inf",
+        "inf"
+      ],
+      [
+        "unique"
+      ]
+    ]
+  }
+}
