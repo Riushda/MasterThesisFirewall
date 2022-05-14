@@ -31,7 +31,7 @@ class PacketState:
                                                                           request_packet)
                 else:
                     # print("Packet state log: Response not matched")
-                    return Verdict.DROP  # if response doesn't match any previous request, drop it
+                    return Verdict.DROP.value  # if response doesn't match any previous request, drop it
 
             else:
                 # neither a request nor a response
