@@ -21,7 +21,6 @@ class PacketHandler:
     def handle_packet(self, raw_packet: Packet):
         abstract_packet = AbstractPacket()
         decoded_packet = IP(raw_packet.get_payload())
-
         if not abstract_packet.parse_network(decoded_packet):
             # should never reach there because only IP packets are hooked
             raw_packet.accept()

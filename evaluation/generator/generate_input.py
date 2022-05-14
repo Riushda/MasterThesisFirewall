@@ -83,5 +83,5 @@ if __name__ == "__main__":
     categorization = json.load(open("categorization.json"))
     new_input = {"categorization": categorization, "member": members, "relation": relations}
     json_object = json.dumps(new_input, indent=4)
-    with open('../../src/test.json', 'w') as f:
+    with open('../../src/bench.json', 'w') as f:
         f.write(json_object)

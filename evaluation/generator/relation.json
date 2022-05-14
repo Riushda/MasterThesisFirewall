@@ -1,6 +1,5 @@
 {
   "subject": "bench",
-  "broker": "broker",
   "publisher": "publisher",
   "subscriber": "subscriber",
   "constraints": [

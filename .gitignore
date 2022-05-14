@@ -187,3 +187,4 @@ ruleset.json
 tmux.sh
 my_state_diagram.*
 my_state_diagram
+bench.json
