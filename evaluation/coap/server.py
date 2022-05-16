@@ -6,6 +6,10 @@ import asyncio
 import aiocoap.resource as resource
 import aiocoap
 
+# logging setup
+logging.basicConfig(level=logging.INFO)
+logging.getLogger("coap-server").setLevel(logging.DEBUG)
+
 
 class BenchResource(resource.Resource):
     def __init__(self):
@@ -14,11 +18,6 @@ class BenchResource(resource.Resource):
     async def render_get(self, request):
         payload = f"?timing={str(time.time_ns())}".encode('ascii')
         return aiocoap.Message(payload=payload)
-
-
-# logging setup
-logging.basicConfig(level=logging.INFO)
-logging.getLogger("coap-server").setLevel(logging.DEBUG)
 
 
 async def main():

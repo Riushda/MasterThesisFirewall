@@ -12,15 +12,16 @@ def sleep(duration, get_now=time.perf_counter):
         now = get_now()
 
 
-def on_publish(mqttc, obj, mid):
-    pass
+def main():
+    mqttc = mqtt.Client()
+    mqttc.connect(BROKER_IP, PORT)
+
+    for j in range(NB_TRY):
+        for i in range(MESSAGE_COUNT):
+            mqttc.publish("bench", "?timing=" + str(time.time_ns()))
+            sleep(INTERVAL_TIME)
+        sleep(LOOP_WAIT)
 
 
 if __name__ == "__main__":
-    mqttc = mqtt.Client()
-    mqttc.on_publish = on_publish
-    mqttc.connect(BROKER_IP, PORT)
-
-    for i in range(MESSAGE_COUNT):
-        mqttc.publish("bench", "?timing=" + str(time.time_ns()))
-        sleep(INTERVAL_TIME)
+    main()
