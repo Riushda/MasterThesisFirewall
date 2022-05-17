@@ -46,27 +46,19 @@ async def create_tasks_func():
 def main():
     global total, count
     asyncio.set_event_loop(asyncio.new_event_loop())
-    with open('plot/output.csv', 'w', encoding='UTF8') as f:
-        writer = csv.writer(f)
-        total_average = 0
-        for i in range(NB_TRY):
-            asyncio.get_event_loop().run_until_complete(create_tasks_func())
-            if count != 0:
-                current_average = total / (count * 1000000)
-                row = [i, current_average]
-                writer.writerow(row)
-                print("Message count: " + str(count) + " message(s)")
-                print("Average time: " + str(current_average) + " ms")
-            else:
-                print("Zero count!")
-            total_average += current_average
-            count = 0
-            total = 0
-            time.sleep(LOOP_WAIT)
-        total_average /= NB_TRY
-        row = ["mean", total_average]
-        writer.writerow(row)
-        print("Average 10 tries: " + str(total_average) + " ms")
+    total_average = 0
+    for i in range(NB_TRY):
+        asyncio.get_event_loop().run_until_complete(create_tasks_func())
+        if count != 0:
+            current_average = total / (count * 1000000)
+            print("Message count: " + str(count) + " message(s)")
+            print("Average time: " + str(current_average) + " ms")
+        total_average += current_average
+        count = 0
+        total = 0
+        time.sleep(LOOP_WAIT)
+    total_average /= NB_TRY
+    print("Average 10 tries: " + str(total_average) + " ms")
 
 
 if __name__ == "__main__":

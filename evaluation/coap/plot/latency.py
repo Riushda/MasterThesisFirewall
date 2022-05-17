@@ -35,9 +35,11 @@ for y in y_axis:
             width=0.8)
     # plt.xlabel('Number of messages', fontsize=FONT_SIZE)
     # plt.ylabel('Latency (ms)', fontsize=FONT_SIZE)
+
     if FIREWALL:
         plt.savefig(f"./graphs/{str(interval[i])}_firewall_coap.png")
     else:
         plt.savefig(f"./graphs/{str(interval[i])}_coap.png")
+
     plt.show()
     i += 1
