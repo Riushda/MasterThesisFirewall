@@ -43,9 +43,9 @@ class NftAPI:
 
         return output
 
-    def init_ruleset(self):
+    def init_ruleset(self, dev):
         builder = CommandBuilder()
-        builder.init_ruleset()
+        builder.init_ruleset(dev)
         self.send_command(builder.get_command())
 
     def add_rule(self, src: str = None, sport: int = None, dst: str = None, dport: int = None, mark: int = 0,
@@ -73,22 +73,6 @@ class NftAPI:
 
         self.send_command(builder.get_command())
 
-    def enable_rule(self, handle):
-        builder = CommandBuilder()
-        builder.list_chain()
-        rule_list = self.send_command(builder.get_command())
-        builder.set_command(get_rule(rule_list, handle))
-        builder.enable_rule()
-        self.send_command(builder.get_command())
-
-    def disable_rule(self, handle):
-        builder = CommandBuilder()
-        builder.list_chain()
-        rule_list = self.send_command(builder.get_command())
-        builder.set_command(get_rule(rule_list, handle))
-        builder.disable_rule()
-        self.send_command(builder.get_command())
-
     def list_ruleset(self):
         builder = CommandBuilder()
         builder.list_ruleset()
@@ -98,18 +82,4 @@ class NftAPI:
     def flush_ruleset(self):
         builder = CommandBuilder()
         builder.flush_ruleset()
-        self.send_command(builder.get_command())
-
-    def store_ruleset(self):
-        builder = CommandBuilder()
-        builder.list_ruleset()
-        ruleset = self.send_command(builder.get_command())
-        file = open("nft/patterns/ruleset.json.json", "w")
-        file.write(json.dumps(ruleset))
-
-    def restore_ruleset(self):
-        self.init_ruleset()
-        builder = CommandBuilder()
-        builder.restore_ruleset()
-        print(json.dumps(builder.get_command(), indent=4, sort_keys=True))
         self.send_command(builder.get_command())

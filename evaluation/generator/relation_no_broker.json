@@ -1,0 +1,13 @@
+{
+  "subject": "bench",
+  "publisher": "publisher",
+  "subscriber": "subscriber",
+  "constraints": [
+    {
+      "field": "timing",
+      "value": [
+        "unique"
+      ]
+    }
+  ]
+}

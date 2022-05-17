@@ -1,6 +1,6 @@
 import ipaddress
 
-from utils.constant import FieldType
+from client.constant import FieldType
 
 
 class Member:

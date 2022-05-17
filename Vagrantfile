@@ -15,10 +15,6 @@ boxes = [
 
 Vagrant.configure("2") do |config|
   
-  config.vagrant.plugins = {
-    "vagrant-libvirt" => {"version" => "0.7.0"}
-  }
-  
   config.vm.provider "libvirt"
   config.vm.synced_folder ".", "/vagrant", type: "nfs"
 
@@ -39,11 +35,7 @@ Vagrant.configure("2") do |config|
   boxes.reverse_each do |opts|
         config.vm.define opts[:name] do |config|
             
-            if opts[:name] == "broker"
-            	config.vm.provision :shell, path: "./bootstrap/broker_bootstrap.sh"
-            else 
-            	config.vm.provision :shell, path: "./bootstrap/device_bootstrap.sh"
-            end	
+            config.vm.provision :shell, path: "./bootstrap/device_bootstrap.sh"
             #config.vm.box = "generic/alpine38"
             config.vm.box = "fedora/35-cloud-base"
             config.vm.hostname = opts[:name]
