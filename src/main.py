@@ -31,7 +31,7 @@ if __name__ == "__main__":
         exit(1)
 
     constraint_mapping = RelationMapping()
-    handling_queue = HandlingQueue(constraint_mapping)
+    handling_queue = HandlingQueue(constraint_mapping, parser.parsed_members)
 
     handler = Handler(handling_queue, constraint_mapping, args.dev)
     handler.add_parser(parser)

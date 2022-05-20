@@ -2,7 +2,13 @@ import ipaddress
 import json
 import random
 
-from constant import *
+INVALID_IPS = ["192.168.33.10", "192.168.33.11", "192.168.33.12", "192.168.33.13", "192.168.121.123"]
+MAX_IP = 4294967295
+
+N_MEMBERS = 5
+N_RELATIONS = 100
+N_FIELDS = 1
+N_VALUES = 2
 
 
 def integer_to_ip(int_ip):
@@ -70,16 +76,16 @@ class RelationGenerator:
         return self.relations
 
 
-
-
 if __name__ == "__main__":
     members = MemberGenerator(N_MEMBERS, N_FIELDS, N_VALUES).generate()
     relations = RelationGenerator(members, N_RELATIONS).generate()
     members["broker"] = {"src": "192.168.33.11;1883"}
     members["subscriber"] = {"src": "192.168.33.13"}
     members["publisher"] = json.load(open("publisher.json"))
-    relation = json.load(open("relation.json"))
-    relations["relation"] = relation
+    relation_no_broker = json.load(open("relation_no_broker.json"))
+    relations["relation_no_broker"] = relation_no_broker
+    relation_broker = json.load(open("relation_broker.json"))
+    relations["relation_broker"] = relation_broker
     categorization = json.load(open("categorization.json"))
     new_input = {"categorization": categorization, "member": members, "relation": relations}
     json_object = json.dumps(new_input, indent=4)

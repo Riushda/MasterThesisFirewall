@@ -1,6 +1,6 @@
 # Smart Firewall
 
-## Setup vagrant
+## Environment setup
 
 We use vagrant to automate the installation of the whole project. 
 Please refer to the official [documentation](https://www.vagrantup.com/downloads) to install it.
@@ -10,7 +10,7 @@ You should also be asked to provide root privileges in order to configure the sh
 
 ```sh
 vagrant plugin install vagrant-libvirt # If you use libvirt
-vagrant up --no-parallel # Build the network
+vagrant up --no-parallel # Build the network, this will ask you root privileges
 vagrant reload # Refresh the network configuration
 ```
 
@@ -23,14 +23,27 @@ vagrant ssh publisher
 vagrant ssh subscriber
 ```
 
+## Input file
+
+The input file should be placed in /vagrant/src, and 
+you should refer to the manuscript for documentation on its design. 
+We provide a sample input in input.json. 
+Note that you can also generate inputs with the generator in /evaluation/generator.
+
 ## Simulation
 
-Start the firewall:
+Start the firewall in dev mode:
 
 ```sh
 vagrant ssh firewall
 cd /vagrant/src
 sudo python main.py --input input.json
+```
+
+For production mode (default policy drop):
+
+```sh
+sudo python main.py --input input.json --no-dev
 ```
 
 ### MQTT
@@ -39,7 +52,7 @@ Start the mosquitto broker:
 
 ```sh
 vagrant ssh broker
-cd /vagrant/evaluation/devices/mqtt
+cd /vagrant/evaluation/mqtt
 mosquitto -v -c mosquitto.conf
 ```
 
@@ -49,3 +62,11 @@ Publish a message:
 vagrant ssh publisher
 mosquitto_pub -h 192.168.33.11 -t "th" -m "?temp=21&name=bob"
 ```
+
+You can also use the publisher.py and subscriber.py scripts that we used for the evaluation.
+
+### CoAP
+
+You can use the client.py and server.py scripts such as in the evaluation. 
+
+

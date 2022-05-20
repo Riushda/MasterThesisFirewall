@@ -179,12 +179,10 @@ dmypy.json
 cython_debug/
 
 # This project
-build/
 .vscode
 .idea
-ruleset.json
 .vagrant
 tmux.sh
 my_state_diagram.*
-my_state_diagram
 bench.json
+latency.csv

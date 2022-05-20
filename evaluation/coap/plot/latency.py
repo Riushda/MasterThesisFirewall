@@ -14,7 +14,7 @@ FIREWALL = True
 
 x = ["25", "50", "100", "250", "500", "1000"]
 y_axis = [l_10, l_1, l_01]
-interval = ["10", "1", "0.1"]
+interval = ["10", "7.5", "5"]
 
 
 def float_array(array):
@@ -37,9 +37,9 @@ for y in y_axis:
     # plt.ylabel('Latency (ms)', fontsize=FONT_SIZE)
 
     if FIREWALL:
-        plt.savefig(f"./graphs/{str(interval[i])}_firewall_mqtt.png")
+        plt.savefig(f"./graphs/{str(interval[i])}_firewall_coap.png")
     else:
-        plt.savefig(f"./graphs/{str(interval[i])}_mqtt.png")
+        plt.savefig(f"./graphs/{str(interval[i])}_coap.png")
 
     plt.show()
     i += 1

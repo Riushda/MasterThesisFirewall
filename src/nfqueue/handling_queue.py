@@ -11,11 +11,13 @@ from client.constant import *
 
 
 class PacketHandler:
-    def __init__(self, queue: Queue, relation_mapping):
+    def __init__(self, queue: Queue, relation_mapping, members):
         self.packet_queue = queue
         self.mapping = relation_mapping
         self.protocol_decoder = ProtocolDecoder()  # protocol decoder supporting many different protocols
-        self.protocol_decoder.add_broker("192.168.33.11", "mqtt")
+        for _, member in members.items():
+            if member.port == 1883:
+                self.protocol_decoder.add_broker(member.ip, "mqtt")
         self.packet_state = PacketState(self.protocol_decoder)  # stateful object for maintaining request/response state
 
     def handle_packet(self, raw_packet: Packet):
@@ -69,10 +71,10 @@ class PacketHandler:
 
 
 class HandlingQueue:
-    def __init__(self, relation_mapping: RelationMapping):
+    def __init__(self, relation_mapping: RelationMapping, members):
         self.packet_queue = Queue()
         self.nf_queue = NetfilterQueue()
-        self.packet_handler = PacketHandler(self.packet_queue, relation_mapping)
+        self.packet_handler = PacketHandler(self.packet_queue, relation_mapping, members)
         self.keep_running = True
 
     def run(self):
