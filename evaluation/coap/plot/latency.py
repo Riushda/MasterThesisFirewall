@@ -14,7 +14,7 @@ FIREWALL = True
 
 x = ["25", "50", "100", "250", "500", "1000"]
 y_axis = [l_10, l_1, l_01]
-interval = ["10", "7.5", "5"]
+interval = ["1", "0.75", "0.5"]
 
 
 def float_array(array):
