@@ -50,10 +50,10 @@ class Context:
         try:
             if device is None:
                 print("Context log: Unknown publisher")
-                return
+                return False
 
             if packet_data[0] not in self.members[device].fields:
-                return
+                return False
 
             field = device + "." + packet_data[0]
 

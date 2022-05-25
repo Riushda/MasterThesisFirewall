@@ -10,11 +10,11 @@ l_1 = next(csvreader)
 l_01 = next(csvreader)
 
 FONT_SIZE = 14
-FIREWALL = True
+FIREWALL = False
 
 x = ["25", "50", "100", "250", "500", "1000"]
 y_axis = [l_10, l_1, l_01]
-interval = ["10", "1", "0.1"]
+interval = ["1", "0.1", "0.01"]
 
 
 def float_array(array):
