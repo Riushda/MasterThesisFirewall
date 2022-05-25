@@ -37,11 +37,11 @@ This file contains a basic configuration with four members: broker, thermo, heat
 The thermo has a decimal field to keep track of the temperature, it is attached to a categorization that defines cold below 10, average between 10 and 20 and hot above 20. 
 Both the window and the heater have a single status field with two values: on and off.
 
-Then we define two relations: trigger_heater and trigger_window. The first ones only allow
+Then we define two relations: trigger_heater and trigger_window. The first one only allow
 thermo to send cold and hot temperatures to the heater. The second one does the same thing but with
 the window. 
 
-Next, we define two dummy relations, one that disables the trigger_heater
+Next, we define two dummy triggers, one that disables the trigger_heater
 relationship if a hot temperature is observed and another one that deactivates the trigger_window relationship at night and 
 between 18:00 and 19:00. The night corresponds to a categorization that matches the time between
 23:00 and 06:00.
