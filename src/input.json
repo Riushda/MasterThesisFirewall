@@ -35,14 +35,6 @@
           "type": "decimal",
           "value": "temp",
           "init": "average"
-        },
-        "name": {
-          "type": "string",
-          "value": [
-            "alice",
-            "bob"
-          ],
-          "init": "alice"
         }
       }
     },
@@ -74,27 +66,6 @@
     }
   },
   "relation": {
-    "trigger_iter": {
-      "subject": "ti",
-      "broker": "broker",
-      "publisher": "thermo",
-      "subscriber": "heater",
-      "constraints": [
-        {
-          "field": "temp",
-          "value": [
-            "cold",
-            "hot"
-          ]
-        },
-        {
-          "field": "name",
-          "value": [
-            "bob"
-          ]
-        }
-      ]
-    },
     "trigger_heater": {
       "subject": "th",
       "broker": "broker",
@@ -106,12 +77,6 @@
           "value": [
             "cold",
             "hot"
-          ]
-        },
-        {
-          "field": "name",
-          "value": [
-            "bob"
           ]
         }
       ]
@@ -152,10 +117,6 @@
           [
             "18:00",
             "19:00"
-          ],
-          [
-            "20:00",
-            "21:00"
           ]
         ]
       },

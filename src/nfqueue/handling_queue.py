@@ -1,3 +1,9 @@
+"""
+This class defines the queue responsible for the application layer matching. This is where
+most of the other Nfqueue classes are used to decide whether a packet should be accepted or
+dropped.
+"""
+
 from multiprocessing import Queue
 
 from netfilterqueue import NetfilterQueue, Packet
@@ -16,7 +22,7 @@ class PacketHandler:
         self.mapping = relation_mapping
         self.protocol_decoder = ProtocolDecoder()  # protocol decoder supporting many different protocols
         for _, member in members.items():
-            if member.port == 1883:
+            if member.port == 1883 or member.port == 8883:
                 self.protocol_decoder.add_broker(member.ip, "mqtt")
         self.packet_state = PacketState(self.protocol_decoder)  # stateful object for maintaining request/response state
 
@@ -44,11 +50,11 @@ class PacketHandler:
 
                     # The packet has an app layer which matches
                     if decision == Policy.ACCEPT:
-                        # print("Handling queue log: Packet accepted!")
+                        print("Handling queue log: Packet accepted!")
                         raw_packet.accept()
                     # The packet has an app layer which does not match
                     else:
-                        # print("Handling queue log: Packet dropped!")
+                        print("Handling queue log: Packet dropped!")
                         raw_packet.drop()
                         return
 
@@ -85,5 +91,3 @@ class HandlingQueue:
 
     def stop(self):
         self.keep_running = False
-
-# "broker": "broker",

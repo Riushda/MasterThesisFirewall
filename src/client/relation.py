@@ -1,3 +1,8 @@
+"""
+This file defines the abstractions used in the system: member, rule,
+relation, field and constraint.
+"""
+
 import ipaddress
 
 from client.constant import FieldType

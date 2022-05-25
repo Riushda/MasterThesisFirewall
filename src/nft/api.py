@@ -1,3 +1,7 @@
+"""
+This class provides the API used to communicate with Nftables.
+"""
+
 import nftables
 
 from nft.command_builder import *

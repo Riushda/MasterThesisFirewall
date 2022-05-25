@@ -1,3 +1,10 @@
+"""
+This file contains the class responsible for categorizing floating values
+into labels. It also defines the context input, which uses the previously
+parsed input to build the necessary data structures used to initialize the
+context.
+"""
+
 import numpy as np
 
 from client.handler import Handler

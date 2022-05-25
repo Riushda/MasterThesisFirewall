@@ -1,3 +1,8 @@
+"""
+The handler communicates with the Nft API and modifies the Nftables ruleset,
+it is also responsible for building the rules and the relations with the different members.
+"""
+
 from client.parser import Parser
 from client.relation import Relation, Rule
 from nfqueue.handling_queue import HandlingQueue

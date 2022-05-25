@@ -1,3 +1,7 @@
+"""
+The parser is responsible for parsing the input file and returning parsing errors.
+"""
+
 import json
 
 from client.relation import Constraint, Field, Member, parse_member
