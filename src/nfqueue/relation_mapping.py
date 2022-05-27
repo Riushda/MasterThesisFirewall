@@ -26,7 +26,6 @@ def match_packet(packet, mapping_entry):
     if packet.subject in mapping_entry.relations:
         relation = mapping_entry.relations[packet.subject]
         if not relation.enabled:
-            print("relation not enabled")
             return False
 
         # No constraint on this relation
