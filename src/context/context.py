@@ -1,5 +1,7 @@
+import time
 from _queue import Empty
 from multiprocessing import Queue
+import threading
 
 import schedule
 from transitions import MachineError
@@ -26,6 +28,19 @@ class Context:
         add_relations_jobs(context_input, self.schedule_thread)
         self.schedule_thread.start()
 
+        self.avg_queue_size = 0
+        self.count_queue_size = 0
+        self.avg_update_time = 0
+        self.count_update = 0
+
+        self.measure_thread = None
+
+    def measure(self):
+        while self.count_update < 10000 and False:
+            time.sleep(0.05)
+            queue_size = self.packet_queue.qsize()
+            self.avg_queue_size += queue_size
+
     def run(self):
         # self.network_context.draw_fsm()
 
@@ -33,9 +48,18 @@ class Context:
             try:
                 packet: AbstractPacket = self.packet_queue.get(block=True, timeout=1)
 
+                if self.count_update == 0:
+                    self.measure_thread = threading.Thread(target=self.measure, args=())
+                    self.measure_thread.start()
+
                 for content in packet.content:
                     device = get_device_name(packet.src, self.members)
+                    start = time.time_ns()
                     self.update_context(device, content)
+                    end = time.time_ns()
+                    self.avg_update_time += end - start
+                    self.count_update += 1
+                    # print("updating : "+str(self.count_update))
                     # self.network_context.show_current_state()
                     # self.network_context.draw_fsm()
 
@@ -43,7 +67,11 @@ class Context:
                 pass
 
     def stop(self):
+        print(self.count_update)
         self.schedule_thread.stop()
+        self.measure_thread.join()
+        print("avg queue size : "+str(self.avg_queue_size/self.count_queue_size))
+        print("avg update time : "+str(self.avg_update_time/self.count_update)+" ms")
         self.keep_running = False
 
     def update_context(self, device, packet_data):

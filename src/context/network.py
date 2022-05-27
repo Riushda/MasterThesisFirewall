@@ -1,5 +1,6 @@
 import itertools as it
 import math
+import time
 
 from transitions import State
 from transitions.extensions import GraphMachine
@@ -58,85 +59,64 @@ class NetworkContext(GraphMachine):
         # minimum count for a state to become frequent
         self.frequent_state_threshold = 50
 
-        # if self.check_inferences():
-        initial_state_name = self.build_fsm(context_input.initial_state, context_input.state_combinations)
+        start = time.time_ns()
+        initial_state_id = self.build_fsm_opti(context_input.initial_state, context_input.state_combinations)
+        end = time.time_ns()
+        time_spent = float(end-start)/1000000
+        print("time spent building = "+str(time_spent)+" ms")
+        print(len(self.transitions))
 
         super().__init__(states=self.device_states, transitions=self.transitions,
-                         initial=initial_state_name,
+                         initial=initial_state_id,
                          send_event=True)
 
     def build_fsm(self, initial_state, state_combinations):
-        initial_state_name = ""
-        i = 0
+        initial_state_id = ""
         # it.product is lazy, one combination is in memory at a given time
 
-        states = []
+        states_ids = {}
+        i = 0
         for state in it.product(*(state_combinations[Name] for Name in state_combinations)):
-            states.append(dict(zip(state_combinations.keys(), state)))
+            state = dict(zip(state_combinations.keys(), state))
 
-        for state_src in states:
-            if state_src == initial_state:
-                initial_state_name = str(i)
-            is_src_consistent = self.is_consistent(state_src)
-            self.device_states.append(DeviceState(str(i), state_src, is_src_consistent))
+            states_ids[str(state)] = str(i)
 
-            j = 0
-            for state_dst in states:
+            if state == initial_state:
+                initial_state_id = str(i)
 
-                key_trigger = None
-                value_trigger = None
-
-                # get all keys in state_src and state dst which doesn't have the same value
-                diff_keys = [key for key in state_src.keys() & state_dst if state_src[key] != state_dst[key]]
-
-                conforming = False
-
-                # no state self loop and transition only between states with 1 difference
-                if len(diff_keys) == 1:
-                    infer = self.state_inference.get((diff_keys[0], state_dst[diff_keys[0]]))
-                    if infer is None or state_dst[infer[0][0]] == infer[0][1]:
-                        conforming = True
-
-                        key_trigger = diff_keys[0]
-                        value_trigger = state_dst[diff_keys[0]]
-
-                        self.transitions_data[(str(i), str(j))] = {"change": {
-                            diff_keys[0]: [state_src[diff_keys[0]], state_dst[diff_keys[0]]]},
-                            "actions": [],
-                            "count": 0
-                        }
-
-                elif len(diff_keys) > 1:
-                    for key in diff_keys:
-                        infer = self.state_inference.get((key, state_dst[key]))
-
-                        if infer:
-                            diff = [element for element in diff_keys if element != key]
-                            inferred_keys = [element[0] for element in infer]
-                            conforming = set(diff).issubset(set(inferred_keys))
-
-                            if conforming:
-                                key_trigger = key
-                                value_trigger = state_dst[key]
-
-                                self.transitions_data[(str(i), str(j))] = {"change": {}, "actions": [], "count": 0}
-                                for element in diff_keys:
-                                    self.transitions_data[(str(i), str(j))]["change"][element] = [state_src[element],
-                                                                                                  state_dst[element]]
-                                break
-
-                if conforming:
-                    trigger = get_transition_trigger(key_trigger, value_trigger)
-
-                    transition = {'trigger': trigger, 'source': str(i), 'dest': str(j), 'before': 'update_sequence',
-                                  'after': 'action'}
-                    self.transitions.append(transition)
-
-                j += 1
-
+            is_src_consistent = self.is_consistent(state)
+            self.device_states.append(DeviceState(str(i), state, is_src_consistent))
             i += 1
 
-        return initial_state_name
+        for device_state in self.device_states:
+            state_src = device_state.state
+            state_src_id = states_ids[str(state_src)]
+
+            for field in state_combinations:
+                for value in state_combinations[field]:
+                    if state_src[field] != value:
+
+                        state_dst = state_src.copy()
+                        state_dst[field] = value
+
+                        change = {field: [state_src[field], value]}
+
+                        inferences = self.state_inference.get((field, value))
+                        if inferences:
+                            for infer in inferences:
+                                state_dst[infer[0]] = infer[1]
+                                change[infer[0]] = [state_src[infer[0]], infer[1]]
+
+                        state_dst_id = states_ids[str(state_dst)]
+
+                        self.transitions_data[(state_src_id, state_dst_id)] = {"change": change, "actions": [], "count": 0}
+
+                        trigger = get_transition_trigger(field, value)
+                        transition = {'trigger': trigger, 'source': state_src_id, 'dest': state_dst_id, 'before': 'update_sequence',
+                                      'after': 'action'}
+                        self.transitions.append(transition)
+
+        return initial_state_id
 
     def draw_fsm(self):
         self.get_graph(title=str(self.current_state()), show_roi=True).draw('my_state_diagram.png', prog='dot')
@@ -202,43 +182,6 @@ class NetworkContext(GraphMachine):
     def self_loop(self, data):
         state = self.current_state()
         return state[data[0]] == data[1]
-
-    # check that the inferences keys are publishers and that the values are the subscribers of their key
-    def check_inferences(self):
-        keys = self.state_inference.keys()
-
-        for key in keys:
-            device = get_device(key[0])
-
-            # check if keys are publishers
-            if device not in self.members:
-                print("Network log: " + device + " - keys in inferences must be publishers")
-                return False
-
-            # check if values are subscribers of their key
-            values = self.state_inference[key]
-            devices = []
-            for value in values:
-                devices.append(get_device(value[0]))
-
-            for _, relation in self.relations.items():
-                publisher = relation.first.src.name
-                if publisher == device:
-
-                    if not relation.second:
-                        subscriber = relation.first.dst.name
-                    else:
-                        subscriber = relation.second.dst.name
-
-                    if subscriber in devices:
-                        devices.remove(subscriber)
-
-            if len(devices) > 0:
-                print("Network log: " + str(devices) +
-                      " - devices values in inferences must be subscribers of their key !")
-                return False
-
-        return True
 
     # add actions of triggers in all transitions validating the conditions
     def add_triggers(self, triggers):
