@@ -60,7 +60,7 @@ class NetworkContext(GraphMachine):
         self.frequent_state_threshold = 50
 
         start = time.time_ns()
-        initial_state_id = self.build_fsm_opti(context_input.initial_state, context_input.state_combinations)
+        initial_state_id = self.build_fsm(context_input.initial_state, context_input.state_combinations)
         end = time.time_ns()
         time_spent = float(end-start)/1000000
         print("time spent building = "+str(time_spent)+" ms")
