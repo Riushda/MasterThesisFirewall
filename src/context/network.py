@@ -1,3 +1,9 @@
+"""
+This class defines the main data structure to represent the context of the Network. The NetworkContext class maintains a
+finite state machine which can take (field, value) input to perform a transition. The FSM can be drawn at runtime
+and its triggers functions are used to attach functions to the transitions.
+"""
+
 import itertools as it
 import math
 

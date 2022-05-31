@@ -1,3 +1,8 @@
+"""
+A specialized MQTT Decoder, with a decode function to parse the application layer and functions to decode the behavior
+of the protocol.
+"""
+
 from enum import Enum
 
 
@@ -40,7 +45,7 @@ class MQTTDecoder:
 
         msg_len: int = app_layer[1]
 
-        offset = 2
+        offset = 2  # used to make sure to not read further than the real packet size
 
         if len(app_layer) < offset + msg_len:
             return None  # app_layer too small
@@ -76,7 +81,6 @@ class MQTTDecoder:
             else:
                 return None
 
-        topic_len = 0
         topic = None
         if MQTTMessageType.has_topic(MQTTMessageType(header["control_header_type"])):
             if len(app_layer) < offset + 2:
@@ -111,7 +115,7 @@ class MQTTDecoder:
         if len(app_layer) < offset + 2:
             return None  # app_layer too small
         protocol_name_length = int.from_bytes(app_layer[offset:offset + 2],
-                                              byteorder='big')  # maybe change to little here (not sure)
+                                              byteorder='big')
         offset += 2
 
         if len(app_layer) < offset + protocol_name_length:
@@ -145,11 +149,11 @@ class MQTTDecoder:
         if len(app_layer) < offset + 2:
             return None  # app_layer too small
         connect_variable_header["keep_alive"] = int.from_bytes(app_layer[offset:offset + 2],
-                                                               byteorder='big')  # maybe change to little here (not sure)
+                                                               byteorder='big')
         offset += 2
 
         # connect properties
-        # TODO
+        # TODO Not essential for the moment
 
         header["connect_variable_header"] = connect_variable_header
 
@@ -242,6 +246,7 @@ class MQTTDecoder:
             "broker_ip"] == broker_ip
 
     # this can trigger function in the packet_state class depending on the type of the packet
+    # (other than request and response). Mainly for signaling packets.
     def update_packet_state(self, packet, packet_state):
         packet_state = packet_state[0]
 

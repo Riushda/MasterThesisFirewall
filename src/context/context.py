@@ -1,3 +1,9 @@
+"""
+This class is the main module for updating the context, it coordinates the NetworkContext class and the Triggers
+class. The packet placed in the queue in the PacketHandler class arrives here to be fed into the NetworkContext Class
+data structure.
+"""
+
 from _queue import Empty
 from multiprocessing import Queue
 
@@ -25,8 +31,6 @@ class Context:
         self.schedule_thread = ScheduleThread(schedule)
         add_relations_jobs(context_input, self.schedule_thread)
         self.schedule_thread.start()
-
-        self.measure_thread = None
 
     def run(self):
         # self.network_context.draw_fsm()

@@ -1,3 +1,8 @@
+"""
+This class contains some utilities function used by many classes in this package.
+"""
+
+
 def get_device_name(ip, members):
     for device_key, device in members.items():
         if device.ip == ip:

@@ -1,3 +1,8 @@
+"""
+A specialized Coap Decoder, with a decode function to parse the application layer and functions to decode the behavior
+of the protocol.
+"""
+
 from enum import Enum
 
 from aenum import MultiValueEnum
@@ -67,7 +72,7 @@ class CoAPDecoder:
         header["Code"] = int(buffer[8:16], 2)
         header["msg_id"] = int(buffer[16:32], 2)
 
-        offset = 32
+        offset = 32  # used to make sure to not read further than the real packet size
 
         if len(app_layer) < (offset / 8) + header["TKL"]:
             return None  # app_layer too small
@@ -246,7 +251,8 @@ class CoAPDecoder:
 
         if request_packet:
             if CoAPRequestCode.enum(request_packet.header["Code"]) == CoAPRequestCode.GET:
-                packet.subject = request_packet.subject  # for get request, response doesn't have the path (needed because context is updated with response)
+                # for get request, response doesn't have the path (needed because context is updated with response)
+                packet.subject = request_packet.subject
 
             valid = CoAPType(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT and \
                     packet.header["token"] == request_packet.header["token"]
@@ -316,7 +322,8 @@ class CoAPDecoder:
     def toward_broker(self, packet):
         return False  # CoAP doesn't have brokers
 
-    # this can trigger function in the packet_state class depending on the type of the packet (other than subscribe and publish)
+    # this can trigger function in the packet_state class depending on the type of the packet
+    # (other than subscribe and publish). Mainly for signaling packets.
     def update_packet_state(self, packet, packet_state):
         packet_code = CoAPResponseCode.enum(packet.header["Code"])
         if self.is_push_packet(packet) and CoAPResponseCode.enum(packet.header["T"]) == CoAPType.ACKNOWLEDGMENT:

@@ -1,3 +1,11 @@
+"""
+This class checks if packets are protocol compliant and detect their role by asking questions
+to the ProtocolDecoder class.
+This class makes no assumption on the protocol used and divide the packets in push and pull protocols.
+At the end, it returns a verdict indicating to the PacketHandler class if the packet should be allowed, matched to the
+constraints and fed to the context.
+"""
+
 from enum import Enum
 
 from nfqueue.abstract_packet import AbstractPacket

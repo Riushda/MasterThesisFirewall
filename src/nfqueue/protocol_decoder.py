@@ -1,3 +1,8 @@
+"""
+This class is responsible for the decoding of the application layer of the packets and to answer the questions of
+the PacketState class. For both of these tasks, it has to choose the correct specialized decoder.
+"""
+
 import re
 
 from nfqueue.coap_decoder import CoAPDecoder

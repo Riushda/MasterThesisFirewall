@@ -1,3 +1,8 @@
+"""
+This class handles the triggers of the NetworkContext class, theses are functions used to disable and enable
+the relations dynamically. No assumption on the data structure used in the NetworkContext class is made here.
+"""
+
 from context.network import NetworkContext
 
 
