@@ -1,11 +1,11 @@
-# Smart Firewall
+# Smart firewall for IoT and Smart Home applications
 
-## Environment setup
+## Experimental setup
 
-We use vagrant to automate the installation of the whole project. 
+We use vagrant with the libvirt provider to automate the installation of the whole project. 
 Please refer to the official [documentation](https://www.vagrantup.com/downloads) to install it.
-Note that the provider we used is libvirt, but it is possible to change it with the provider option. 
-You may need to install the plugin for libvirt support. 
+It is possible to use virtualbox, but this will require to allow the range of IPs we used or to change the IPs in the Vagrantfile and in the input file directly. 
+The Vagrantfile is designed to work with Linux distributions, it is possible to make it work on other operating systems but it requires changing the settings of the shared folder.
 You should also be asked to provide root privileges in order to configure the shared folder.
 
 ```sh
@@ -67,7 +67,8 @@ sudo python main.py --input input.json --no-dev
 ```
 
 The firewall can be stopped with a SIGINT (ctrl+c). It also prints some logs, for example when
-a packet that has reached the constraint mapping is accepted or dropped.
+a packet that has reached the constraint mapping is accepted or dropped. Prints are also made 
+to trigger alarms.
 
 ### MQTT
 
