@@ -1,3 +1,7 @@
+"""
+This class contains some utility functions used by the classes of this package.
+"""
+
 from datetime import datetime
 
 

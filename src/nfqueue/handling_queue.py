@@ -1,7 +1,6 @@
 """
-This class defines the queue responsible for the application layer matching. This is where
-most of the other Nfqueue classes are used to decide whether a packet should be accepted or
-dropped.
+This class defines the queue responsible for the application layer matching. This is where most of the other Nfqueue
+classes are used to decide whether a packet should be accepted or dropped.
 """
 
 from multiprocessing import Queue
@@ -48,11 +47,11 @@ class PacketHandler:
                     abstract_packet.set_mark(raw_packet.get_mark())
                     decision = self.mapping.decision(abstract_packet)
 
-                    # The packet has an app layer which matches
+                    # the packet has an app layer which matches
                     if decision == Policy.ACCEPT:
                         print("Handling queue log: Packet accepted!")
                         raw_packet.accept()
-                    # The packet has an app layer which does not match
+                    # the packet has an app layer which does not match
                     else:
                         print("Handling queue log: Packet dropped!")
                         raw_packet.drop()
@@ -72,7 +71,7 @@ class PacketHandler:
                 raw_packet.drop()
                 return
 
-        # This can be reached if this is a signal packet such as SYN/ACK
+        # this can be reached if this is a signal packet such as SYN/ACK
         raw_packet.accept()
 
 

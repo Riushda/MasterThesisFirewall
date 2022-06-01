@@ -1,6 +1,6 @@
 """
-This class is responsible for the decoding of the application layer of the packets and to answer the questions of
-the PacketState class. For both of these tasks, it has to choose the correct specialized decoder.
+This class is responsible for decoding the application layer of packets and answering questions from the PacketState
+class. For these two tasks, it must choose the right specialized decoder.
 """
 
 import re
