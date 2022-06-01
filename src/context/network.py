@@ -1,7 +1,7 @@
 """
-This class defines the main data structure to represent the context of the Network. The NetworkContext class maintains a
-finite state machine which can take (field, value) input to perform a transition. The FSM can be drawn at runtime
-and its triggers functions are used to attach functions to the transitions.
+This class defines the main data structure to represent the network context. The NetworkContext class maintains a finite
+state machine that can take an input (field, value) to perform a transition. The FSM can be drawn at runtime and its
+trigger functions are used to attach functions to transition.
 """
 
 import itertools as it
@@ -34,7 +34,7 @@ class DeviceState(State):
     def enter(self, event):
         self.count += 1
         if not self.is_consistent:
-            print("Network log: Entering inconsistent state")
+            print("Network log: Entering inconsistent state, raising alarm")
 
     def exit(self, event):
         if not self.is_consistent:
@@ -59,7 +59,6 @@ class NetworkContext(GraphMachine):
         self.proba_threshold = 0.05
         # length of the sequence to maintain
         self.k = 10
-
         # minimum count for a state to become frequent
         self.frequent_state_threshold = 50
 
@@ -141,7 +140,6 @@ class NetworkContext(GraphMachine):
 
     def update_sequence(self, event):
         # recalculate the current proba
-
         transition_count = self.transitions_data[(event.transition.source, event.transition.dest)]["count"]
         state_count = self.get_state(self.state).count
 

@@ -1,6 +1,6 @@
 """
-A specialized Coap Decoder, with a decode function to parse the application layer and functions to decode the behavior
-of the protocol.
+A specialized CoAP decoder, with a decoding function to parse the application layer and functions to decode the protocol
+behavior.
 """
 
 from enum import Enum
@@ -279,7 +279,6 @@ class CoAPDecoder:
     def is_unsubscribe_packet(self, packet):
         response = CoAPResponseCode.enum(packet.header["Code"])
         # should unsubscribe when observation time reaches MAX_AGE without refreshing or a code 4.xx or 5.xx is received
-        # TODO trigger packet_state.unsubscribe when MAX_AGE is reached (in this class) or trigger it when response after MAX_AGE arrives (in this function then)
         return CoAPResponseCode.is_unsuccessful(response)
 
     def revert_direction(self, packet):

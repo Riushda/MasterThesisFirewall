@@ -1,6 +1,6 @@
 """
-This class defines the abstract data of a packet common for all application protocols. It contains all the
-functions to parse all the packet layers and communicate with the ProtocolDecoder class to parse the application layer.
+This class defines the abstract data of a packet common to all application layer protocols. It contains all the
+functions to parse the different layers, but also to communicate with the ProtocolDecoder.
 """
 
 import scapy.all as scapy

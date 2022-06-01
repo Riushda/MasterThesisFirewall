@@ -1,6 +1,5 @@
 """
-This file defines the abstractions used in the system: member, rule,
-relation, field and constraint.
+This file defines the abstractions used in the system: member, rule, relation, field and constraint.
 """
 
 import ipaddress

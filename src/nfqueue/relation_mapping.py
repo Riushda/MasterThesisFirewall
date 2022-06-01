@@ -1,7 +1,7 @@
 """
-This class defines the relation mapping used to match relations to their constraints
-in order to complete the last step of the application layer matching. It is also
-responsible for tracking the status of relations, whether they are enabled or disabled.
+This class defines the relation mapping used to match relations to their constraints in order to complete the last step
+of the application layer matching. It is also responsible for tracking the status of relations, whether they are enabled
+or disabled.
 """
 
 from client.constant import *
@@ -28,7 +28,7 @@ def match_packet(packet, mapping_entry):
         if not relation.enabled:
             return False
 
-        # No constraint on this relation
+        # no constraint on this relation
         if not relation.constraints:
             return True
 

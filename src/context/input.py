@@ -1,8 +1,6 @@
 """
-This file contains the class responsible for categorizing floating values
-into labels. It also defines the context input, which uses the previously
-parsed input to build the necessary data structures used to initialize the
-context.
+This file contains the class responsible for categorizing floating values into labels. It also defines the context
+input, which uses the previously parsed input to build the necessary data structures used to initialize the context.
 """
 
 import numpy as np
@@ -48,7 +46,7 @@ class Categorization:
         categorizer = self.mapping[field]["categorizer"]
         intervals = self.mapping[field]["intervals"]
 
-        result = categorizer(np.digitize(value, intervals))  # also work with array
+        result = categorizer(np.digitize(value, intervals))
 
         return result.__str__()
 

@@ -1,5 +1,5 @@
 """
-This class contains some utilities function used by many classes in this package.
+This class contains some utility functions used by the classes of this package.
 """
 
 

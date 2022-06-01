@@ -1,6 +1,6 @@
 """
-The handler communicates with the Nft API and modifies the Nftables ruleset,
-it is also responsible for building the rules and the relations with the different members.
+The handler communicates with the Nft API and modifies the Nftables ruleset, it is also responsible for building the
+rules and the relations with the different members.
 """
 
 from client.parser import Parser

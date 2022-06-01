@@ -1,6 +1,6 @@
 """
-A specialized MQTT Decoder, with a decode function to parse the application layer and functions to decode the behavior
-of the protocol.
+A specialized MQTT decoder, with a decoding function to parse the application layer and functions to decode the protocol
+behavior.
 """
 
 from enum import Enum
@@ -62,7 +62,7 @@ class MQTTDecoder:
             header["RETAIN"] = header["control_header_flag"] & 1
 
         # variable header
-        ## packet_identifier
+        # packet_identifier
 
         if MQTTMessageType.has_packet_identifier(MQTTMessageType(header["control_header_type"]),
                                                  header.get("QOS", None)):
@@ -72,7 +72,7 @@ class MQTTDecoder:
             header["packet_identifier"] = int.from_bytes(app_layer[offset:offset + 2], byteorder='big')
             offset += 2
 
-        ## connect fields
+        # connect fields
 
         if MQTTMessageType(header["control_header_type"]) == MQTTMessageType.CONNECT:
             decoded_length = self.decode_connect_variable_header(header, app_layer, offset)
@@ -153,8 +153,6 @@ class MQTTDecoder:
         offset += 2
 
         # connect properties
-        # TODO Not essential for the moment
-
         header["connect_variable_header"] = connect_variable_header
 
         return offset
