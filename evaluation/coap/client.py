@@ -5,7 +5,7 @@ import logging
 
 from aiocoap import *
 
-MESSAGE_COUNT = 1000
+MESSAGE_COUNT = 10000
 INTERVAL_TIME = 0.0005
 NB_TRY = 10
 LOOP_WAIT = 1
@@ -43,7 +43,7 @@ async def create_tasks_func():
     return res
 
 
-def main():
+def burst_measurements():
     global total, count
     asyncio.set_event_loop(asyncio.new_event_loop())
     total_average = 0
@@ -61,6 +61,29 @@ def main():
     print("Average 10 tries: " + str(total_average) + " ms")
 
 
+def throughput_measurements():
+    global total, count
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+    asyncio.get_event_loop().run_until_complete(create_tasks_func())
+
+    average = total / (count * 1000000)
+    print("Message count: " + str(count) + " message(s)")
+    print("Average latency: " + str(average) + " ms")
+
+    """                            latency (ms)  |  queue size
+        results : 0.01 (100)        7.426        |   0.283
+                  0.005 (200)       15.627       |   1.023            
+                  0.004 (250)       33.244       |   20.363
+                  0.002 (500)       5732.803     |   151.648
+                  0.001 (1000)      5105.861     |   206.242
+                  0.0005 (2000)     5785.709     |   317.484
+    """
+
+
 if __name__ == "__main__":
-    main()
+    # burst_measurements()
+    throughput_measurements()
+
+
 
