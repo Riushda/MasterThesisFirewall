@@ -1,0 +1,94 @@
+{
+  "member": {
+    "any": {
+      "src": "0.0.0.0/0"
+    },
+    "broker": {
+      "src": "192.168.33.11;1883"
+    },
+    "motion_sensor": {
+      "src": "192.168.33.12",
+      "field": {
+        "motion": {
+          "type": "string",
+          "value": [
+            "true",
+            "false"
+          ],
+          "init": "false"
+        }
+      }
+    },
+    "heater": {
+      "src": "192.168.33.13"
+    },
+    "door_sensor": {
+      "src": "192.168.33.14",
+      "field": {
+        "presence": {
+          "type": "string",
+          "value": [
+            "true",
+            "false"
+          ],
+          "init": "false"
+        }
+      }
+    }
+  },
+  "relation": {
+    "trigger_heater": {
+      "subject": "th",
+      "broker": "broker",
+      "publisher": "any",
+      "subscriber": "heater"
+    },
+    "trigger_motion": {
+      "subject": "tm",
+      "broker": "broker",
+      "publisher": "motion_sensor",
+      "subscriber": "motion_sensor",
+      "constraints": [
+        {
+          "field": "motion",
+          "value": [
+            "true",
+            "false"
+          ]
+        }
+      ]
+    },
+    "trigger_door": {
+      "subject": "td",
+      "broker": "broker",
+      "publisher": "door_sensor",
+      "subscriber": "door_sensor",
+      "constraints": [
+        {
+          "field": "presence",
+          "value": [
+            "true",
+            "false"
+          ]
+        }
+      ]
+    }
+  },
+  "trigger": [
+    {
+      "condition": {
+        "field": {
+          "motion_sensor": {
+            "motion": "true"
+          },
+          "door_sensor": {
+            "presence": "true"
+          }
+        }
+      },
+      "action": {
+        "enable": "trigger_heater"
+      }
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "member": {
+    "window_switch": {
+      "src": "192.168.33.12",
+      "field": {
+        "status": {
+          "type": "string",
+          "value": [
+            "on",
+            "off"
+          ],
+          "init": "off"
+        }
+      }
+    },
+    "radio_switch": {
+      "src": "192.168.33.17",
+      "field": {
+        "status": {
+          "type": "string",
+          "value": [
+            "on",
+            "off"
+          ],
+          "init": "off"
+        }
+      }
+    },
+    "radio": {
+      "src": "192.168.33.13",
+      "field": {
+        "status": {
+          "type": "string",
+          "value": [
+            "on",
+            "off"
+          ],
+          "init": "off"
+        }
+      }
+    },
+    "window": {
+      "src": "192.168.33.14",
+      "field": {
+        "status": {
+          "type": "string",
+          "value": [
+            "open",
+            "closed"
+          ],
+          "init": "closed"
+        }
+      }
+    },
+    "motion_sensor": {
+      "src": "192.168.33.15",
+      "field": {
+        "motion": {
+          "type": "string",
+          "value": [
+            "true",
+            "false"
+          ],
+          "init": "false"
+        }
+      }
+    }
+  },
+  "relation": {
+    "trigger_motion": {
+      "subject": "tm",
+      "publisher": "motion_sensor",
+      "subscriber": "motion_sensor",
+      "constraints": [
+        {
+          "field": "motion",
+          "value": [
+            "true",
+            "false"
+          ]
+        }
+      ]
+    },
+    "trigger_window": {
+      "subject": "tw",
+      "publisher": "window_switch",
+      "subscriber": "window",
+      "constraints": [
+        {
+          "field": "status",
+          "value": [
+            "on",
+            "off"
+          ]
+        }
+      ]
+    },
+    "trigger_radio": {
+      "subject": "tr",
+      "publisher": "radio_switch",
+      "subscriber": "radio",
+      "constraints": [
+        {
+          "field": "status",
+          "value": [
+            "on",
+            "off"
+          ]
+        }
+      ]
+    }
+  },
+  "trigger": [
+    {
+      "condition": {
+        "field": {
+          "motion_sensor": {
+            "motion": "true"
+          },
+          "radio": {
+            "status": "on"
+          }
+        }
+      },
+      "action": {
+        "enable": "trigger_window"
+      }
+    }
+  ],
+   "inference": [
+    {
+      "condition": {
+        "window_switch": {
+          "status": "on"
+        }
+      },
+      "implication": {
+        "window": {
+          "status": "open"
+        }
+      }
+    },
+     {
+      "condition": {
+        "window_switch": {
+          "status": "off"
+        }
+      },
+      "implication": {
+        "window": {
+          "status": "closed"
+        }
+      }
+    },
+     {
+      "condition": {
+        "radio_switch": {
+          "status": "on"
+        }
+      },
+      "implication": {
+        "radio": {
+          "status": "on"
+        }
+      }
+    },
+     {
+      "condition": {
+        "radio_switch": {
+          "status": "off"
+        }
+      },
+      "implication": {
+        "radio": {
+          "status": "off"
+        }
+      }
+    }
+  ],
+  "inconsistency": [
+    {
+      "window_switch": {
+        "status": "on"
+      },
+      "window": {
+        "status": "closed"
+      }
+    },
+    {
+      "window_switch": {
+        "status": "off"
+      },
+      "window": {
+        "status": "open"
+      }
+    },
+    {
+      "radio_switch": {
+        "status": "on"
+      },
+      "radio": {
+        "status": "off"
+      }
+    },
+    {
+      "radio_switch": {
+        "status": "off"
+      },
+      "radio": {
+        "status": "on"
+      }
+    }
+  ]
+}
