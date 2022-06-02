@@ -2,7 +2,6 @@
 This class defines the queue responsible for the application layer matching. This is where most of the other Nfqueue
 classes are used to decide whether a packet should be accepted or dropped.
 """
-
 from multiprocessing import Queue
 
 from netfilterqueue import NetfilterQueue, Packet

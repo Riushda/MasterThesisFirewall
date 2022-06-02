@@ -3,7 +3,6 @@ This class is the main module for the context update, it coordinates the Network
 The packets placed in the queue of the PacketHandler class arrive here to be fed to the data structure of
 the NetworkContext.
 """
-
 from _queue import Empty
 from multiprocessing import Queue
 
@@ -37,6 +36,7 @@ class Context:
         while self.keep_running:
             try:
                 packet: AbstractPacket = self.packet_queue.get(block=True, timeout=1)
+
                 for content in packet.content:
                     device = get_device_name(packet.src, self.members)
                     self.update_context(device, content)
