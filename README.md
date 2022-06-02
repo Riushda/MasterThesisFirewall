@@ -31,8 +31,8 @@ The input file should be placed in /vagrant/src, and
 you should refer to the manuscript for documentation on its design.
 Note that you can also generate inputs with the generator in /evaluation/generator.
 
-We provide an example of input in input.json. 
-This file contains a basic configuration with four members: broker, thermo, heater and window. 
+We provide an example of input in input.json but also in /vagrant/examples.
+The file input.json contains a basic configuration with four members: broker, thermo, heater and window. 
 
 The thermo has a decimal field to keep track of the temperature, it is attached to a categorization that defines cold below 10, average between 10 and 20 and hot above 20. 
 Both the window and the heater have a single status field with two values: on and off.
