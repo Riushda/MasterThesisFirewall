@@ -1,12 +1,17 @@
+"""
+This class defines the main data structure to represent the network context. The NetworkContext class maintains a finite
+state machine that can take an input (field, value) to perform a transition. The FSM can be drawn at runtime and its
+trigger functions are used to attach functions to transition.
+"""
+
 import itertools as it
 import math
-import time
 
 from transitions import State
 from transitions.extensions import GraphMachine
 
 from context.input import ContextInput
-from context.utils import get_device, get_transition_trigger
+from context.utils import get_transition_trigger
 
 
 class SelfLoopException(Exception):
@@ -29,7 +34,7 @@ class DeviceState(State):
     def enter(self, event):
         self.count += 1
         if not self.is_consistent:
-            print("Network log: Entering inconsistent state")
+            print("Network log: Entering inconsistent state, raising alarm")
 
     def exit(self, event):
         if not self.is_consistent:
@@ -45,7 +50,6 @@ class NetworkContext(GraphMachine):
         self.relation_mapping = context_input.relation_mapping
 
         self.device_states = []
-        self.transitions = []
         self.transitions_data = {}
 
         # keep track of current sequence probabilities
@@ -55,27 +59,22 @@ class NetworkContext(GraphMachine):
         self.proba_threshold = 0.05
         # length of the sequence to maintain
         self.k = 10
-
         # minimum count for a state to become frequent
         self.frequent_state_threshold = 50
 
-        start = time.time_ns()
-        initial_state_id = self.build_fsm(context_input.initial_state, context_input.state_combinations)
-        end = time.time_ns()
-        time_spent = float(end-start)/1000000
-        print("time spent building = "+str(time_spent)+" ms")
-        print(len(self.transitions))
+        initial_state_id, transitions = self.build_fsm(context_input.initial_state, context_input.state_combinations)
 
-        super().__init__(states=self.device_states, transitions=self.transitions,
+        super().__init__(states=self.device_states, transitions=transitions,
                          initial=initial_state_id,
-                         send_event=True)
+                         send_event=True, auto_transitions=False)
 
     def build_fsm(self, initial_state, state_combinations):
         initial_state_id = ""
-        # it.product is lazy, one combination is in memory at a given time
+        transitions = []
 
         states_ids = {}
         i = 0
+        # it.product is lazy, one combination is in memory at a given time
         for state in it.product(*(state_combinations[Name] for Name in state_combinations)):
             state = dict(zip(state_combinations.keys(), state))
 
@@ -109,14 +108,16 @@ class NetworkContext(GraphMachine):
 
                         state_dst_id = states_ids[str(state_dst)]
 
-                        self.transitions_data[(state_src_id, state_dst_id)] = {"change": change, "actions": [], "count": 0}
+                        self.transitions_data[(state_src_id, state_dst_id)] = {"change": change, "actions": [],
+                                                                               "count": 0}
 
                         trigger = get_transition_trigger(field, value)
-                        transition = {'trigger': trigger, 'source': state_src_id, 'dest': state_dst_id, 'before': 'update_sequence',
+                        transition = {'trigger': trigger, 'source': state_src_id, 'dest': state_dst_id,
+                                      'before': 'update_sequence',
                                       'after': 'action'}
-                        self.transitions.append(transition)
+                        transitions.append(transition)
 
-        return initial_state_id
+        return initial_state_id, transitions
 
     def draw_fsm(self):
         self.get_graph(title=str(self.current_state()), show_roi=True).draw('my_state_diagram.png', prog='dot')
@@ -139,7 +140,6 @@ class NetworkContext(GraphMachine):
 
     def update_sequence(self, event):
         # recalculate the current proba
-
         transition_count = self.transitions_data[(event.transition.source, event.transition.dest)]["count"]
         state_count = self.get_state(self.state).count
 
@@ -174,66 +174,59 @@ class NetworkContext(GraphMachine):
     def action(self, event):
         # perform actions of transition
         actions = self.transitions_data[(event.transition.source, event.transition.dest)]["actions"]
-        # print("list_actions : " + str(actions))
         for action in actions:
-            # print("action : " + str(action))
             self.run_action(action)
 
     def self_loop(self, data):
         state = self.current_state()
         return state[data[0]] == data[1]
 
-    # add actions of triggers in all transitions validating the conditions
+    # add a list of triggers in all transitions validating the conditions
     def add_triggers(self, triggers):
-        for state_src in self.device_states:
-            for state_dst in self.device_states:
-                state_src: DeviceState = state_src
-                state_dst: DeviceState = state_dst
+        for event in self.events:
+            for key in self.events[event].transitions:
+                transition = self.events[event].transitions[key][0]
+                transition_data = self.transitions_data.get((transition.source, transition.dest), None)
 
-                if state_src.name != state_dst.name and state_src.is_consistent and state_dst.is_consistent:
+                if transition_data:
+                    state_src: DeviceState = self.get_state(transition.source)
+                    state_dst: DeviceState = self.get_state(transition.dest)
 
-                    changed_element = self.transitions_data.get((state_src.name, state_dst.name))
-                    if changed_element:  # if transition between both states
-                        changed_element = changed_element["change"]
-                        changed_element_keys = list(changed_element.keys())
+                    for trigger in triggers:
+                        condition = trigger["condition"]
+                        action = None
 
-                        for trigger in triggers:
-                            condition = trigger["condition"]
+                        field_in_condition = False
+                        for field in transition_data["change"]:
+                            if field in condition:
+                                field_in_condition = True
 
-                            condition_changed = False
-                            for key in changed_element_keys:
-                                if key in condition:
-                                    condition_changed = True
-                                    break
+                        # if some changing fields of the transition are part of the trigger condition
+                        if field_in_condition:
 
-                            if condition_changed:
-                                action = None
+                            # if condition of trigger does no longer hold
+                            if condition.items() <= state_src.state.items():
+                                action = {"index": trigger["index"], "action": trigger["action"], "reverse": True}
 
-                                # if condition of trigger does no longer hold
-                                if condition.items() <= state_src.state.items():
-                                    action = {"index": trigger["index"], "action": trigger["action"], "reverse": True}
+                            # if condition of trigger now holds
+                            if condition.items() <= state_dst.state.items():
+                                action = {"index": trigger["index"], "action": trigger["action"], "reverse": False}
 
-                                # if condition of trigger now holds
-                                if condition.items() <= state_dst.state.items():
-                                    action = {"index": trigger["index"], "action": trigger["action"], "reverse": False}
+                            if action:
+                                self.transitions_data[(state_src.name, state_dst.name)][
+                                    "actions"].append(action)
 
-                                if action:
-                                    self.transitions_data[(state_src.name, state_dst.name)][
-                                        "actions"].append(action)
-
-    # delete actions of triggers with index in trigger_index in all transitions
+    # delete a list of triggers in all the transitions
     def del_triggers(self, triggers):
         if len(triggers) > 0:
-            for state_src in self.device_states:
-                for state_dst in self.device_states:
-                    state_src: DeviceState = state_src
-                    state_dst: DeviceState = state_dst
+            for event in self.events:
+                for key in self.events[event].transitions:
+                    transition = self.events[event].transitions[key][0]
+                    transition_data = self.transitions_data.get((transition.source, transition.dest), None)
 
-                    if state_src != state_dst and state_src.is_consistent and state_dst.is_consistent:
-                        changed_element = self.transitions_data.get((state_src.name, state_dst.name))
-                        if changed_element:  # if transition between both states
-                            for action in changed_element["actions"]:
-                                for trigger_to_delete in triggers:
-                                    if action["index"] == trigger_to_delete:
-                                        changed_element["actions"].remove(action)
-                                        break
+                    if transition_data:
+                        for action in transition_data["actions"]:
+                            for trigger_to_delete in triggers:
+                                if action["index"] == trigger_to_delete:
+                                    transition_data["actions"].remove(action)
+                                    break

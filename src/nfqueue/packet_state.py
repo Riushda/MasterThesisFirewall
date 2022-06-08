@@ -1,3 +1,10 @@
+"""
+This class checks if the packets are protocol compliant and detects their role by asking questions to the
+ProtocolDecoder class. This class makes no assumptions about the protocol used and divides packets into push and pull
+protocols. At the end, it returns a verdict telling the PacketHandler class whether the packet should be allowed, match
+the constraints and be sent to the context.
+"""
+
 from enum import Enum
 
 from nfqueue.abstract_packet import AbstractPacket
@@ -25,7 +32,6 @@ class PacketState:
                 request_packet = self.protocol_decoder.ask_protocol(packet, "match_request", self)
                 if request_packet:
                     # print("Packet state log: Response matched")
-
                     # allow and update context if request was successful
                     return True, True, self.protocol_decoder.ask_protocol(packet, "is_request_successful",
                                                                           request_packet)
@@ -35,7 +41,6 @@ class PacketState:
 
             else:
                 # neither a request nor a response
-
                 # action can be triggered by the protocol when it sees a certain signaling packet
                 # print("Packet state log: Pull packet signaling")
                 return self.protocol_decoder.ask_protocol(packet, "update_packet_state", self), False, False
@@ -66,7 +71,6 @@ class PacketState:
 
             else:
                 # neither subscribe message nor publish message
-
                 # action can be triggered by the protocol when it sees a certain signaling packet
                 # print("Packet state log: Push packet signaling")
                 return self.protocol_decoder.ask_protocol(packet, "update_packet_state", self), False, False
@@ -98,9 +102,7 @@ class PacketState:
                 del self.subscriptions[key]
 
     # pull packet matching
-
     def has_request(self, packet, key):
-
         # src and dst inverted because check done with response
         packet_request: AbstractPacket = self.requests.get((packet.dst, packet.src, packet.proto, key))
         if packet_request:
@@ -108,9 +110,7 @@ class PacketState:
         return None
 
     # push packet matching
-
     def has_subscription(self, packet, key):
-
         # src and dst inverted because check done with publish
         # print("Packet state log: has_subscription: " + str((packet.dst, packet.src, packet.proto, key)))
         packet_subscription: AbstractPacket = self.subscriptions.get((packet.dst, packet.src, packet.proto, key))

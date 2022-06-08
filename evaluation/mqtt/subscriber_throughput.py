@@ -12,7 +12,8 @@ total_average = 0
 def on_message(mqttc, obj, msg):
     global total, count, total_average
     timing = int(str(msg.payload).split("=")[1][:-1])
-    total += time.time_ns() - timing
+    sample = time.time_ns() - timing
+    total += sample
     count += 1
     # if count == MESSAGE_COUNT:
     if count == 50000:
@@ -20,8 +21,6 @@ def on_message(mqttc, obj, msg):
         total_average += current_average
         print("Message count: " + str(count) + " message(s)")
         print("Average time: " + str(current_average) + " ms")
-        # total = 0
-        # count = 0
 
 
 def on_connect(mqttc, obj, flags, rc):
@@ -41,12 +40,6 @@ def main():
     mqttc.connect(BROKER_IP, PORT)
     mqttc.subscribe("bench")
     mqttc.loop_forever(timeout=30)
-    """mqttc.loop_start()
-    time.sleep(WAITING_TIME)
-    mqttc.loop_stop()""
-    global total_average
-    total_average /= NB_TRY
-    print("Average 10 tries: " + str(total_average) + " ms")"""
 
 
 if __name__ == "__main__":

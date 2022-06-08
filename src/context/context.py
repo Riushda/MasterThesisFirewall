@@ -1,7 +1,10 @@
-import time
+"""
+This class is the main module for the context update, it coordinates the NetworkContext class and the Triggers class.
+The packets placed in the queue of the PacketHandler class arrive here to be fed to the data structure of
+the NetworkContext.
+"""
 from _queue import Empty
 from multiprocessing import Queue
-import threading
 
 import schedule
 from transitions import MachineError
@@ -28,51 +31,22 @@ class Context:
         add_relations_jobs(context_input, self.schedule_thread)
         self.schedule_thread.start()
 
-        self.avg_queue_size = 0
-        self.count_queue_size = 0
-        self.avg_update_time = 0
-        self.count_update = 0
-
-        self.measure_thread = None
-
-    def measure(self):
-        while self.count_update < 10000 and self.keep_running:
-            time.sleep(0.05)
-            queue_size = self.packet_queue.qsize()
-            self.avg_queue_size += queue_size
-            self.count_queue_size += 1
-
-        print("All packets fed to context !")
-
     def run(self):
         # self.network_context.draw_fsm()
-
         while self.keep_running:
             try:
                 packet: AbstractPacket = self.packet_queue.get(block=True, timeout=1)
 
-                if self.count_update == 0:
-                    self.measure_thread = threading.Thread(target=self.measure, args=())
-                    self.measure_thread.start()
-
                 for content in packet.content:
                     device = get_device_name(packet.src, self.members)
-                    start = time.time_ns()
                     self.update_context(device, content)
-                    end = time.time_ns()
-                    self.avg_update_time += end - start
-                    self.count_update += 1
                     # self.network_context.show_current_state()
                     # self.network_context.draw_fsm()
-
             except Empty:
                 pass
 
     def stop(self):
-        print(self.count_update)
         self.schedule_thread.stop()
-        print("avg queue size : "+str(self.avg_queue_size/self.count_queue_size))
-        print("avg update time : "+str(self.avg_update_time/(self.count_update*1000000))+" ms")
         self.keep_running = False
 
     def update_context(self, device, packet_data):

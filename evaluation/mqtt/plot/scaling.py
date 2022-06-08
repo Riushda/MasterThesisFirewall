@@ -26,7 +26,17 @@ plt.rcParams.update({'font.size': FONT_SIZE})
 plt.xlabel('Number of members', fontsize=FONT_SIZE)
 plt.ylabel('Latency (ms)', fontsize=FONT_SIZE)
 for i in range(len(y_axis)):
-    plt.plot(x, float_array(y_axis[i]), label=labels[i])
+    y_axis[i] = float_array(y_axis[i])
+ymin = []
+ymax = []
+for i in range(len(y_axis[0])):
+    ymin.append(min(y_axis[0][i], y_axis[1][i]))
+    ymax.append(max(y_axis[0][i], y_axis[1][i]))
+plt.vlines(x=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], ymin=ymin, ymax=ymax,
+           colors='teal', ls='--')
+
+for i in range(len(y_axis)):
+    plt.plot(x, y_axis[i], label=labels[i], marker='o')
 plt.legend()
 plt.savefig(f"./graphs/scaling_mqtt.png")
 plt.show()

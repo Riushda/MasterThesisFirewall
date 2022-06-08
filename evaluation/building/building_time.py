@@ -5,14 +5,15 @@ import matplotlib.pyplot as plt
 file = open('data.csv')
 csvreader = csv.reader(file)
 
-nftables = next(csvreader)
-context = next(csvreader)
+nftables_time = next(csvreader)
+context_time = next(csvreader)
+relations_time = next(csvreader)
 
 FONT_SIZE = 14
 
-x = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]
-y_axis = [nftables, context]
-titles = ["Nftables", "context", "total"]
+x_relations = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"]
+x_context = ["3", "6", "9", "12", "15"]
+
 
 def float_array(array):
     r = []
@@ -21,30 +22,25 @@ def float_array(array):
     return r
 
 
-i = 0
-for y in y_axis:
-    plt.rcParams.update({'font.size': FONT_SIZE})
-    y = float_array(y)
-    title = f"Building time for {titles[i]}"
-    plt.title(title, fontsize=FONT_SIZE)
-    plt.bar(x, y, color='black', width=0.8)
-    plt.xlabel('Number of members', fontsize=FONT_SIZE)
-    plt.ylabel('Time (s)', fontsize=FONT_SIZE)
-    plt.savefig(f"./graphs/{titles[i]}_building_time.png")
-    plt.show()
-    i += 1
+plt.rcParams.update({'font.size': FONT_SIZE})
+plt.bar(x_context, float_array(context_time), color='black', width=0.8)
+plt.xlabel('Number of members', fontsize=FONT_SIZE)
+plt.ylabel('Time (s)', fontsize=FONT_SIZE)
+plt.savefig(f"./graphs/context_building_time.png")
+plt.show()
 
-y1 = float_array(y_axis[0])
-y2 = float_array(y_axis[1])
-y = []
-for j in range(len(y1)):
-    y.append(y1[j] + y2[j])
-print()
-title = "Total building time"
-plt.title(title, fontsize=FONT_SIZE)
-plt.bar(x, y, color='black', width=0.8)
+y_total = []
+for j in range(len(nftables_time)):
+    y_total .append(float(nftables_time[j]) + float(context_time[j]))
+plt.bar(x_context, y_total, color='black', width=0.8)
 plt.xlabel('Number of members', fontsize=FONT_SIZE)
 plt.ylabel('Time (s)', fontsize=FONT_SIZE)
 plt.savefig(f"./graphs/total_building_time.png")
 plt.show()
 
+
+plt.bar(x_relations, float_array(relations_time), color='black', width=0.8)
+plt.xlabel('Number of relations', fontsize=FONT_SIZE)
+plt.ylabel('Time (s)', fontsize=FONT_SIZE)
+plt.savefig(f"./graphs/relations_building_time.png")
+plt.show()

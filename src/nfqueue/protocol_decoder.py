@@ -1,3 +1,8 @@
+"""
+This class is responsible for decoding the application layer of packets and answering questions from the PacketState
+class. For these two tasks, it must choose the right specialized decoder.
+"""
+
 import re
 
 from nfqueue.coap_decoder import CoAPDecoder
@@ -18,17 +23,19 @@ class ProtocolDecoder:
                 decoded = decoder.decode(app_layer)
                 break
 
-        if decoded is not None and len(decoded) > 0 and len(decoded[-1]) > 0:
-            decoded[-1] = self.decode_payload(decoded[-1])
+        if decoded is not None and len(decoded) > 0 and len(decoded[3]) > 0:
+            decoded[-1] = self.decode_payload(decoded)
 
         return decoded
 
-    def decode_payload(self, payload):
+    def decode_payload(self, decoded):
+        subject = decoded[2]
+        payload = decoded[3]
         groups = self.pattern.findall(payload)
 
         for i in range(len(groups)):
-            if len(groups[i]) > 1 and groups[i][1] == "":
-                groups[i] = groups[i][:-1]  # pop second element if only value
+            if len(groups[i]) == 1 or (len(groups[i]) > 1 and groups[i][1] == ""):
+                groups[i] = (subject, groups[i][0])  # set subject as field if only value
 
         return groups
 

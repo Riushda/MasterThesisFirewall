@@ -1,0 +1,73 @@
+{  "categorization": {
+    "night": {
+      "type": "time",
+      "value": [
+        "23:00",
+        "06:00"
+      ]
+    }
+  },
+  "member": {
+    "any": {
+      "src": "0.0.0.0/0"
+    },
+    "light": {
+      "src": "192.168.33.12"
+    },
+    "window": {
+      "src": "192.168.33.13"
+    },
+    "shutter": {
+      "src": "192.168.33.14"
+    }
+  },
+  "relation": {
+    "trigger_light": {
+      "subject": "tl",
+      "publisher": "any",
+      "subscriber": "light"
+    },
+    "trigger_window": {
+      "subject": "tw",
+      "publisher": "any",
+      "subscriber": "window"
+    },
+    "trigger_shutter": {
+      "subject": "ts",
+      "publisher": "any",
+      "subscriber": "shutter"
+    }
+  },
+  "trigger": [
+    {
+      "condition": {
+        "time": [
+          "night"
+        ]
+      },
+      "action": {
+        "disable": "trigger_light"
+      }
+    },
+    {
+      "condition": {
+        "time": [
+          "night"
+        ]
+      },
+      "action": {
+        "disable": "trigger_window"
+      }
+    },
+    {
+      "condition": {
+        "time": [
+          "night"
+        ]
+      },
+      "action": {
+        "disable": "trigger_shutter"
+      }
+    }
+  ]
+}

@@ -1,6 +1,5 @@
 """
-This class provides a command constructor used to build the command sent to the Nftables
-daemon from the API.
+This class provides a command constructor used to build the command sent to the Nftables daemon from the API.
 """
 
 import json

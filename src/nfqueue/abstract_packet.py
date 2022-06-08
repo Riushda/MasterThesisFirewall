@@ -1,3 +1,8 @@
+"""
+This class defines the abstract data of a packet common to all application layer protocols. It contains all the
+functions to parse the different layers, but also to communicate with the ProtocolDecoder.
+"""
+
 import scapy.all as scapy
 from scapy.layers.inet import IP, TCP, UDP
 from scapy.layers.inet6 import IPv6

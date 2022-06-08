@@ -1,6 +1,6 @@
 """
-This class defines the scheduling thread responsible for activating and
-deactivating the relations depending on the time of day.
+This class defines the scheduling thread responsible for activating and deactivating the relations depending on the time
+of day.
 """
 
 import threading

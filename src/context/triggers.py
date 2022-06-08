@@ -1,3 +1,8 @@
+"""
+This class manages the triggers of the NetworkContext class, these are functions used to deactivate and activate
+relations dynamically. This class can interact with any type of NetworkContext data structure, not necessarily an FSM.
+"""
+
 from context.network import NetworkContext
 
 
