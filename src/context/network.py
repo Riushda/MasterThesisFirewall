@@ -120,7 +120,7 @@ class NetworkContext(GraphMachine):
         return initial_state_id, transitions
 
     def draw_fsm(self):
-        self.get_graph(title=str(self.current_state()), show_roi=True).draw('my_state_diagram.png', prog='dot')
+        self.get_graph(title=str(self.current_state())).draw('my_state_diagram.png', prog='dot')  # , show_roi=True
 
     def is_consistent(self, state):
         for inconsistent in self.inconsistent_states:  # no forbidden state

@@ -32,7 +32,7 @@ class Context:
         self.schedule_thread.start()
 
     def run(self):
-        # self.network_context.draw_fsm()
+        self.network_context.draw_fsm()
         while self.keep_running:
             try:
                 packet: AbstractPacket = self.packet_queue.get(block=True, timeout=1)
@@ -41,7 +41,7 @@ class Context:
                     device = get_device_name(packet.src, self.members)
                     self.update_context(device, content)
                     # self.network_context.show_current_state()
-                    # self.network_context.draw_fsm()
+                    self.network_context.draw_fsm()
             except Empty:
                 pass
 

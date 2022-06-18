@@ -4,12 +4,16 @@ boxes = [
         :eth1 => "192.168.33.11"
     },
     {
-        :name => "publisher",
+        :name => "lightswitch",
         :eth1 => "192.168.33.12"
     },
     {
-        :name => "subscriber",
+        :name => "light",
         :eth1 => "192.168.33.13"
+    },
+    {
+        :name => "motionsensor",
+        :eth1 => "192.168.33.14"
     }
 ]
 
@@ -37,7 +41,7 @@ Vagrant.configure("2") do |config|
         config.vm.define opts[:name] do |config|
 
             config.vm.provision :shell, path: "./bootstrap/device_bootstrap.sh"
-            config.vm.box = "fedora/35-cloud-base"
+            config.vm.box = "generic/alpine38"
             config.vm.hostname = opts[:name]
             config.vm.network :private_network, ip: opts[:eth1]
 

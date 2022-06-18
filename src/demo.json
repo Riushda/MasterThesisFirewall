@@ -30,7 +30,7 @@
       }
     },
     "motion_sensor": {
-      "src": "192.168.33.12",
+      "src": "192.168.33.14",
       "field": {
         "motion": {
           "type": "string",
