@@ -44,7 +44,7 @@
     }
   },
   "relation": {
-    "trigger_motion": {
+    "motion_relation": {
       "subject": "tm",
       "publisher": "motion_sensor",
       "broker": "broker",
@@ -59,7 +59,7 @@
         }
       ]
     },
-    "trigger_light": {
+    "light_relation": {
       "subject": "tl",
       "publisher": "light_switch",
       "broker": "broker",
