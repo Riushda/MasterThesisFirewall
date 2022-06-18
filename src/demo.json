@@ -1,0 +1,136 @@
+{
+  "member": {
+    "broker": {
+      "src": "192.168.33.11;1883"
+    },
+    "light_switch": {
+      "src": "192.168.33.12",
+      "field": {
+        "status": {
+          "type": "string",
+          "value": [
+            "on",
+            "off"
+          ],
+          "init": "off"
+        }
+      }
+    },
+    "light": {
+      "src": "192.168.33.13",
+      "field": {
+        "status": {
+          "type": "string",
+          "value": [
+            "on",
+            "off"
+          ],
+          "init": "off"
+        }
+      }
+    },
+    "motion_sensor": {
+      "src": "192.168.33.12",
+      "field": {
+        "motion": {
+          "type": "string",
+          "value": [
+            "true",
+            "false"
+          ],
+          "init": "false"
+        }
+      }
+    }
+  },
+  "relation": {
+    "trigger_motion": {
+      "subject": "tm",
+      "publisher": "motion_sensor",
+      "broker": "broker",
+      "subscriber": "motion_sensor",
+      "constraints": [
+        {
+          "field": "motion",
+          "value": [
+            "true",
+            "false"
+          ]
+        }
+      ]
+    },
+    "trigger_light": {
+      "subject": "tl",
+      "publisher": "light_switch",
+      "broker": "broker",
+      "subscriber": "light",
+      "constraints": [
+        {
+          "field": "status",
+          "value": [
+            "on",
+            "off"
+          ]
+        }
+      ]
+    }
+  },
+  "trigger": [
+    {
+      "condition": {
+        "field": {
+          "motion_sensor": {
+            "motion": "true"
+          }
+        }
+      },
+      "action": {
+        "enable": "trigger_light"
+      }
+    }
+  ],
+   "inference": [
+    {
+      "condition": {
+        "light_switch": {
+          "status": "on"
+        }
+      },
+      "implication": {
+        "light": {
+          "status": "on"
+        }
+      }
+    },
+     {
+      "condition": {
+        "light_switch": {
+          "status": "off"
+        }
+      },
+      "implication": {
+        "light": {
+          "status": "off"
+        }
+      }
+    }
+  ],
+  "inconsistency": [
+    {
+      "light_switch": {
+        "status": "on"
+      },
+      "light": {
+        "status": "off"
+      }
+    },
+    {
+      "light_switch": {
+        "status": "off"
+      },
+      "light": {
+        "status": "on"
+      }
+    }
+  ]
+}
