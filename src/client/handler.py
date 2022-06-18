@@ -24,16 +24,28 @@ class Handler:
         self.inconsistencies = []
         self.time_intervals = {}
         self.mark = 0
-        self.packet_signatures = {}
+        self.signatures = {}
         self.nft_api.init_ruleset(dev)
 
     def add_rule(self, src, dst):
         is_ip6 = src.is_ip6
         handle = self.nft_api.add_rule(src.ip, src.port, dst.ip, dst.port, self.mark, is_ip6)
-        forward_rule = Rule(src, dst, handle)
+        forward_rule = Rule(src, dst, handle, self.mark)
         handle = self.nft_api.add_rule(dst.ip, dst.port, src.ip, src.port, self.mark, is_ip6)
-        backward_rule = Rule(dst, src, handle)
+        backward_rule = Rule(dst, src, handle, self.mark)
         return [forward_rule, backward_rule]
+
+    def add_signature(self, src, dst, entry):
+        signature = src.ip + src.str_port + dst.ip + dst.str_port
+        if signature in self.signatures:
+            rule = self.signatures[signature]
+            self.relation_mapping.add_relation(rule[0].mark, entry)
+        else:
+            rule = self.add_rule(src, dst)
+            self.signatures[signature] = rule
+            self.relation_mapping.add_relation(self.mark, entry)
+            self.mark += 1
+        return rule
 
     def add_relation(self, name, relation):
         subject = relation["subject"]
@@ -43,38 +55,18 @@ class Handler:
         constraints = relation["constraints"]
         time_intervals = relation["time_intervals"]
 
+        second = None
+
         if broker:
-            signature = pub.ip + broker.ip + sub.ip
+            first = self.add_signature(pub, broker, RelationEntry(subject, constraints))
+            second = self.add_signature(broker, sub, RelationEntry(subject, constraints))
         else:
-            signature = pub.ip + sub.ip
+            first = self.add_signature(pub, sub, RelationEntry(subject, constraints))
 
-        if signature in self.packet_signatures:
-            mark = self.packet_signatures[signature]
-            for relation_keys, relation in self.relations.items():
-                if relation.mark == mark:
-                    new_relation = Relation(subject=subject, mark=mark, first=relation.first,
-                                            second=relation.second,
-                                            constraints=constraints, time_intervals=time_intervals)
-                    self.relations[name] = new_relation
-                    break
-            self.relation_mapping.add_relation(mark, RelationEntry(subject, constraints))
-        else:
-            if broker:
-                first = self.add_rule(pub, broker)
-                second = self.add_rule(broker, sub)
-
-                relation = Relation(subject=subject, mark=self.mark, first=first,
-                                    second=second,
-                                    constraints=constraints, time_intervals=time_intervals)
-            else:
-                first = self.add_rule(pub, sub)
-                relation = Relation(subject=subject, mark=self.mark, first=first,
-                                    constraints=constraints, time_intervals=time_intervals)
-
-            self.relation_mapping.add_relation(self.mark, RelationEntry(subject, constraints))
-            self.relations[name] = relation
-            self.packet_signatures[signature] = self.mark
-            self.mark += 1
+        relation = Relation(subject=subject, first=first,
+                            second=second,
+                            constraints=constraints, time_intervals=time_intervals)
+        self.relations[name] = relation
 
     def add_parser(self, parser: Parser):
         self.categorization = parser.parsed_categorization
@@ -85,9 +77,3 @@ class Handler:
         self.inferences = parser.parsed_inferences
         self.inconsistencies = parser.parsed_inconsistencies
         self.time_intervals = parser.parsed_time_intervals
-
-    def revert_relation_mapping(self):
-        revert_mapping = {}
-        for key, relation in self.relations.items():
-            revert_mapping[relation.mark] = relation
-        return revert_mapping

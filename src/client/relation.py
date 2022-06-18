@@ -12,6 +12,10 @@ class Member:
         self.ip = ip
         self.is_ip6 = is_ip6
         self.port = port
+        if port:
+            self.str_port = str(port)
+        else:
+            self.str_port = "*"
         if fields is None:
             self.fields = {}
         else:
@@ -58,29 +62,29 @@ class Field:
 
 
 class Rule:
-    def __init__(self, src: Member, dst: Member, handle: int):
+    def __init__(self, src: Member, dst: Member, handle: int, mark: int):
         self.src = src
         self.dst = dst
         self.handle = handle
+        self.mark = mark
 
     def __str__(self):
         return f"{self.src} -> {self.dst}"
 
 
 class Relation:
-    def __init__(self, subject: str, mark: int, first: list, second: list = None, constraints: list = None,
+    def __init__(self, subject: str, first: list, second: list = None, constraints: list = None,
                  time_intervals=None):
         if time_intervals is None:
             time_intervals = []
         self.subject = subject
-        self.mark = mark
         self.first = first
         self.second = second
         self.constraints = constraints
         self.time_intervals = time_intervals
 
     def __str__(self):
-        result = f"subject: {self.subject} | mark: {self.mark} | "
+        result = f"subject: {self.subject} | "
         constraint_str = ""
         for c in self.constraints:
             constraint_str += f"{c} ; "

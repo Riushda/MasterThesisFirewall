@@ -162,14 +162,21 @@ class NetworkContext(GraphMachine):
     def run_action(self, trigger):
         reverse = trigger["reverse"]
         action = next(iter(trigger["action"]))
-        relation = trigger["action"][action]
-        mark = self.relations[relation].mark
-        subject = self.relations[relation].subject
+        relation_name = trigger["action"][action]
+        relation = self.relations[relation_name]
 
-        if (action == "enable" and not reverse) or (action == "disable" and reverse):
-            self.relation_mapping.enable_relation(mark, subject)
-        elif (action == "disable" and not reverse) or (action == "enable" and reverse):
-            self.relation_mapping.disable_relation(mark, subject)
+        if relation.second:
+            marks = [relation.first[0].mark, relation.second[0].mark]
+        else:
+            marks = [relation.first[0].mark]
+
+        subject = relation.subject
+
+        for mark in marks:
+            if (action == "enable" and not reverse) or (action == "disable" and reverse):
+                self.relation_mapping.enable_relation(mark, subject)
+            elif (action == "disable" and not reverse) or (action == "enable" and reverse):
+                self.relation_mapping.disable_relation(mark, subject)
 
     def action(self, event):
         # perform actions of transition
