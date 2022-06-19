@@ -85,7 +85,7 @@
         }
       },
       "action": {
-        "enable": "trigger_light"
+        "enable": "light_relation"
       }
     }
   ],
